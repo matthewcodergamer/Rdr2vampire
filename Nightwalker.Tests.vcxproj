@@ -7,7 +7,7 @@
 <PropertyGroup Condition="'$(Configuration)'=='Release'" Label="Configuration"><ConfigurationType>Application</ConfigurationType><UseDebugLibraries>false</UseDebugLibraries><PlatformToolset>v143</PlatformToolset><WholeProgramOptimization>true</WholeProgramOptimization><CharacterSet>Unicode</CharacterSet></PropertyGroup>
 <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
 <PropertyGroup><TargetName>Nightwalker.Tests</TargetName><OutDir>$(ProjectDir)bin\tests\$(Configuration)\</OutDir><IntDir>$(ProjectDir)build\tests\$(Configuration)\</IntDir></PropertyGroup>
-<ItemDefinitionGroup><ClCompile><WarningLevel>Level4</WarningLevel><ConformanceMode>true</ConformanceMode><LanguageStandard>stdcpp20</LanguageStandard><AdditionalIncludeDirectories>$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories></ClCompile></ItemDefinitionGroup>
+<ItemDefinitionGroup><ClCompile><WarningLevel>Level4</WarningLevel><ConformanceMode>true</ConformanceMode><LanguageStandard>stdcpp20</LanguageStandard><ExceptionHandling>Sync</ExceptionHandling><AdditionalIncludeDirectories>$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories></ClCompile></ItemDefinitionGroup>
 <ItemGroup><ClCompile Include="tests\RuntimeFoundationTests.cpp"/><ClCompile Include="src\core\Config.cpp"/><ClCompile Include="src\core\SafetyWatchdog.cpp"/></ItemGroup>
 <ItemGroup><ClInclude Include="include\nightwalker\core\Config.h"/><ClInclude Include="include\nightwalker\core\SafetyWatchdog.h"/><ClInclude Include="include\nightwalker\util\Timing.h"/></ItemGroup>
 <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
