@@ -10,6 +10,46 @@ For Nightwalker, the goal is **not** to duplicate proprietary code or animation 
 
 ---
 
+## Current implementation status — Phase 4
+
+The safe Phase 3 forward resolver is retained unchanged as the authority for the primary teleport. Phase 4 layers presentation only after that endpoint is valid.
+
+Implemented sequence:
+
+```text
+Idle
+→ ResolveIntent
+→ ValidateDestination
+→ Departure smoke
+→ Relocate
+→ HiddenTransit (very short)
+→ Arrival smoke
+→ ArrivalCarry
+→ MeleeWindow
+→ Recovery
+→ Cooldown
+→ Idle
+```
+
+Key implementation rules:
+
+- visibility ownership is registered with an idempotent watchdog **before** the player is hidden;
+- player collision is not disabled in Phase 4;
+- primary relocation still uses the Phase 3 resolver and rollback verification;
+- the carry endpoint is prevalidated separately, then its short moving segment is checked again while carrying;
+- blocked/inconclusive carry movement ends early rather than clipping;
+- particle failure never blocks relocation or restoration;
+- every active presentation state has a watchdog timeout;
+- no cooldown/power HUD or landing marker is drawn;
+- melee intent is observed/buffered, but synthetic replay of a released tap is intentionally disabled until a target-environment-safe dispatch path is implemented and verified;
+- aimed/hold Shadowstep is deferred because the current F7 debug input is edge-triggered and Phase 4 does not justify adding an unapproved landing UI.
+
+Current presentation defaults are `DisappearMs=110`, `ArrivalCarryMeters=1.25`, `ArrivalCarryMs=140`, `MeleeBufferMs=220`, `StateTimeoutMs=1000`, and `SmokeFx=true`.
+
+The current smoke reference is RDR2 runtime content: asset `scr_fme_spawn_effects`, effect `scr_fme_smoke_puff_tint`. It is best-effort. Bats and custom audio remain deferred.
+
+---
+
 ## State machine
 
 ```text
