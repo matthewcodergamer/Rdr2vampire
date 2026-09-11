@@ -12,7 +12,7 @@ void Runtime::Tick(){
 }
 
 void Runtime::ReloadConfig(){
- bool wasDebug=config_.debug.enabled;config_=Config::Load(gameContext_.PluginDirectory()/L"Nightwalker.ini",[this](std::string_view m){logger_.Write(util::LogLevel::Warning,m);});logger_.SetMinimumLevel(config_.debug.enabled?util::LogLevel::Debug:util::LogLevel::Info);debugInput_.Configure(config_.debug);if(wasDebug&&!config_.debug.enabled){debugVampireSpawner_.RequestDespawn();shadowstepController_.Cancel();}logger_.Write(util::LogLevel::Info,"Configuration reloaded.");
+ bool wasDebug=config_.debug.enabled;const auto iniPath=gameContext_.PluginDirectory()/L"Nightwalker.ini";config_=Config::Load(iniPath,[this](std::string_view m){logger_.Write(util::LogLevel::Warning,m);});logger_.SetMinimumLevel(config_.debug.enabled?util::LogLevel::Debug:util::LogLevel::Info);debugInput_.Configure(config_.debug);shadowstepController_.ReloadPresentationSettings(iniPath);if(wasDebug&&!config_.debug.enabled){debugVampireSpawner_.RequestDespawn();shadowstepController_.Cancel();}logger_.Write(util::LogLevel::Info,"Configuration reloaded.");
 }
 
 void Runtime::CancelSystems()noexcept{for(auto it=systems_.rbegin();it!=systems_.rend();++it)if(*it)try{(*it)->Cancel();}catch(...){logger_.Write(util::LogLevel::Error,"System cancellation failed.");}}
