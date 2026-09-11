@@ -2,7 +2,7 @@
 #include <array>
 #include "nightwalker/core/Config.h"
 namespace nightwalker::core {
-struct DebugActions { bool reloadConfig{false}; bool restoreState{false}; };
+struct DebugActions { bool reloadConfig{false}; bool restoreState{false}; bool spawnTestPed{false}; bool despawnTestPed{false}; };
 class DebugInput final {
 public:
  void Configure(const DebugSettings& settings) noexcept;
@@ -12,6 +12,8 @@ public:
 private:
  bool PressedOnce(int key) noexcept;
  bool enabled_{false};
+ int spawnKey_{0x77};
+ int despawnKey_{0x78};
  int reloadKey_{0x79};
  int restoreKey_{0x7A};
  std::array<bool,256> wasDown_{};
