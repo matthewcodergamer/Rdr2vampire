@@ -23,6 +23,12 @@ bool GameApi::PedAlive(PedHandle ped) const noexcept {
     return EntityExists(ped) && !ENTITY::IS_ENTITY_DEAD(static_cast<Entity>(ped));
 }
 
+ModelHash GameApi::EntityModel(EntityHandle entity) const noexcept {
+    return EntityExists(entity)
+        ? static_cast<ModelHash>(ENTITY::GET_ENTITY_MODEL(static_cast<Entity>(entity)))
+        : 0;
+}
+
 Vec3 GameApi::EntityCoords(EntityHandle entity) const noexcept {
     if (!EntityExists(entity)) {
         return {};
