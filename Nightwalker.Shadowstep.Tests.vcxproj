@@ -8,7 +8,7 @@
 <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
 <PropertyGroup><TargetName>Nightwalker.Shadowstep.Tests</TargetName><OutDir>$(ProjectDir)bin\tests\$(Configuration)\</OutDir><IntDir>$(ProjectDir)build\shadowstep-tests\$(Configuration)\</IntDir></PropertyGroup>
 <ItemDefinitionGroup><ClCompile><WarningLevel>Level4</WarningLevel><ConformanceMode>true</ConformanceMode><LanguageStandard>stdcpp20</LanguageStandard><ExceptionHandling>Sync</ExceptionHandling><AdditionalIncludeDirectories>$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories></ClCompile></ItemDefinitionGroup>
-<ItemGroup><ClCompile Include="tests\ShadowstepV1Tests.cpp"/><ClCompile Include="src\core\Config.cpp"/><ClCompile Include="src\systems\ShadowstepMath.cpp"/><ClCompile Include="src\systems\ShadowstepResolver.cpp"/></ItemGroup>
-<ItemGroup><ClInclude Include="include\nightwalker\core\Config.h"/><ClInclude Include="include\nightwalker\game\GameApi.h"/><ClInclude Include="include\nightwalker\systems\ShadowstepMath.h"/><ClInclude Include="include\nightwalker\systems\ShadowstepResolver.h"/></ItemGroup>
+<ItemGroup><ClCompile Include="tests\ShadowstepV1Tests.cpp"/><ClCompile Include="src\core\Config.cpp"/><ClCompile Include="src\core\ConfigParse.cpp"/><ClCompile Include="src\core\ConfigValidation.cpp"/><ClCompile Include="src\systems\ShadowstepMath.cpp"/><ClCompile Include="src\systems\ShadowstepResolver.cpp"/></ItemGroup>
+<ItemGroup><ClInclude Include="src\core\ConfigInternal.h"/><ClInclude Include="include\nightwalker\core\Config.h"/><ClInclude Include="include\nightwalker\game\GameApi.h"/><ClInclude Include="include\nightwalker\systems\ShadowstepMath.h"/><ClInclude Include="include\nightwalker\systems\ShadowstepResolver.h"/></ItemGroup>
 <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>
