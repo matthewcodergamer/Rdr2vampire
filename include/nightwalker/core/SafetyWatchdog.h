@@ -14,7 +14,8 @@ public:
  bool Restore(OwnedState state) noexcept;
  std::size_t RestoreAll() noexcept;
 private:
+ static constexpr std::size_t kStateCount=static_cast<std::size_t>(OwnedState::Count);
  static constexpr std::size_t Index(OwnedState state)noexcept{return static_cast<std::size_t>(state);}
- std::array<Action,Index(OwnedState::Count)> actions_{};
+ std::array<Action,kStateCount> actions_{};
 };
 }
