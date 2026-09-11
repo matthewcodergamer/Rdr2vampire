@@ -28,9 +28,7 @@ bool ShadowstepController::Initialize() {
 }
 
 void ShadowstepController::RequestForward(std::uint64_t nowMs) noexcept {
-    if (!config_.debug.enabled || !config_.IsFeatureEnabled(core::Feature::Shadowstep)) {
-        return;
-    }
+    if (!config_.debug.enabled || !config_.IsFeatureEnabled(core::Feature::Shadowstep)) return;
     if (state_ != ShadowstepState::Idle) {
         logger_.Write(util::LogLevel::Debug,
             std::string("Shadowstep request ignored while state=") + StateName(state_));
@@ -87,6 +85,7 @@ void ShadowstepController::Update(const core::FrameContext& frame) {
             }
             resolution_ = resolver_.Resolve(player_, startPosition_, forwardDirection_);
             if (!resolution_.valid) {
+                stressSuccessCount_ = 0;
                 logger_.Write(util::LogLevel::Debug,
                     std::string("Shadowstep rejected: ") + ShadowstepResolver::ReasonText(resolution_.reason));
                 Transition(ShadowstepState::Error, frame.nowMs);
@@ -123,6 +122,19 @@ void ShadowstepController::Update(const core::FrameContext& frame) {
             }
             const game::Vec3 actual = api_.EntityCoords(player_);
             if (shadowstep_math::Distance3D(actual, resolution_.finalPosition) > kRelocateVerificationTolerance) {
+                bool rolledBack = false;
+                if (api_.PedAlive(player_) && api_.SetEntityCoordsNoOffset(player_, startPosition_)) {
+                    const game::Vec3 rollbackPosition = api_.EntityCoords(player_);
+                    rolledBack = shadowstep_math::Distance3D(rollbackPosition, startPosition_) <=
+                                 kRelocateVerificationTolerance;
+                }
+                if (!rolledBack) {
+                    logger_.Write(util::LogLevel::Error,
+                        "Shadowstep relocation verification failed and rollback could not be confirmed.");
+                } else {
+                    logger_.Write(util::LogLevel::Warning,
+                        "Shadowstep relocation verification failed; player rolled back to validated start point.");
+                }
                 Fail("relocation verification mismatch", frame.nowMs);
                 return;
             }
@@ -133,11 +145,11 @@ void ShadowstepController::Update(const core::FrameContext& frame) {
         case ShadowstepState::Arrive:
             ++stressSuccessCount_;
             logger_.Write(util::LogLevel::Debug,
-                "Shadowstep success; stressCounter=" + std::to_string(stressSuccessCount_) +
+                "Shadowstep success; consecutiveStressCounter=" + std::to_string(stressSuccessCount_) +
                 "/" + std::to_string(kStressTarget));
             if (stressSuccessCount_ == kStressTarget) {
                 logger_.Write(util::LogLevel::Info,
-                    "Shadowstep stress milestone reached: 100 successful V1 relocations in this session.");
+                    "Shadowstep stress milestone reached: 100 consecutive successful V1 relocations.");
             }
             Transition(ShadowstepState::Recovery, frame.nowMs);
             return;
@@ -166,6 +178,7 @@ void ShadowstepController::Cancel() noexcept {
         logger_.Write(util::LogLevel::Debug,
             std::string("Shadowstep cancelled from state=") + StateName(state_));
     }
+    stressSuccessCount_ = 0;
     ClearTransient();
     state_ = ShadowstepState::Idle;
     stateStartedMs_ = 0;
@@ -188,6 +201,7 @@ void ShadowstepController::Transition(ShadowstepState next, std::uint64_t nowMs)
 }
 
 void ShadowstepController::Fail(const char* reason, std::uint64_t nowMs) noexcept {
+    stressSuccessCount_ = 0;
     logger_.Write(util::LogLevel::Warning,
         std::string("Shadowstep aborted safely: ") + reason + " state=" + StateName(state_));
     Transition(ShadowstepState::Error, nowMs);
