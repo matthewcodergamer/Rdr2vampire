@@ -10,6 +10,12 @@
 namespace nightwalker::core {
 namespace {
 
+constexpr int kDebugSpawnKey = 0x77;   // F8
+constexpr int kDebugDespawnKey = 0x78; // F9
+constexpr int kDefaultShadowstepKey = 0x76; // F7
+constexpr int kDefaultReloadKey = 0x79;     // F10
+constexpr int kDefaultRestoreKey = 0x7A;    // F11
+
 std::string Trim(std::string value) {
     auto notSpace = [](unsigned char ch) { return !std::isspace(ch); };
     value.erase(value.begin(), std::find_if(value.begin(), value.end(), notSpace));
@@ -73,6 +79,18 @@ void Invalid(const Config::DiagnosticSink& sink, std::size_t line, std::string_v
     Warn(sink, "Invalid value at line " + std::to_string(line) + " for " + std::string(key) + "; using the previous/default value.");
 }
 
+bool DebugHotkeysCollide(const DebugSettings& debug) noexcept {
+    if (debug.shadowstepHotkey == debug.reloadHotkey || debug.shadowstepHotkey == debug.restoreHotkey ||
+        debug.reloadHotkey == debug.restoreHotkey) {
+        return true;
+    }
+    const int reserved[] = {kDebugSpawnKey, kDebugDespawnKey};
+    for (const int key : reserved) {
+        if (debug.shadowstepHotkey == key || debug.reloadHotkey == key || debug.restoreHotkey == key) return true;
+    }
+    return false;
+}
+
 } // namespace
 
 bool Config::IsFeatureEnabled(Feature feature) const noexcept {
@@ -130,6 +148,7 @@ Config Config::Parse(std::string_view text, DiagnosticSink diagnostics) {
             else handled = false;
         } else if (section == "debug") {
             if (key == "enabled") parsed = ParseBool(value, config.debug.enabled);
+            else if (key == "shadowstephotkey") parsed = ParseHotkey(value, config.debug.shadowstepHotkey);
             else if (key == "restorehotkey") parsed = ParseHotkey(value, config.debug.restoreHotkey);
             else if (key == "reloadhotkey") parsed = ParseHotkey(value, config.debug.reloadHotkey);
             else handled = false;
@@ -138,6 +157,9 @@ Config Config::Parse(std::string_view text, DiagnosticSink diagnostics) {
             else if (key == "quickdistance") parsed = ParseNumber(value, config.shadowstep.quickDistance);
             else if (key == "aimdistance") parsed = ParseNumber(value, config.shadowstep.aimDistance);
             else if (key == "cooldownms") parsed = ParseNumber(value, config.shadowstep.cooldownMs);
+            else if (key == "maxverticaldelta" || key == "maxverticalrise") parsed = ParseNumber(value, config.shadowstep.maxVerticalDelta);
+            else if (key == "validationtimeoutms") parsed = ParseNumber(value, config.shadowstep.validationTimeoutMs);
+            else if (key == "wallclearance") parsed = ParseNumber(value, config.shadowstep.wallClearance);
             else handled = false;
         } else if (section == "movement") {
             if (key == "enabled") parsed = ParseBool(value, config.movement.enabled);
@@ -168,9 +190,12 @@ Config Config::Parse(std::string_view text, DiagnosticSink diagnostics) {
         if (handled && !parsed) Invalid(diagnostics, lineNumber, key);
     }
 
-    Clamp(config.shadowstep.quickDistance, 1.0, 15.0, "Shadowstep.QuickDistance", diagnostics);
-    Clamp(config.shadowstep.aimDistance, 1.0, 25.0, "Shadowstep.AimDistance", diagnostics);
-    Clamp(config.shadowstep.cooldownMs, 100, 10000, "Shadowstep.CooldownMs", diagnostics);
+    Clamp(config.shadowstep.quickDistance, 1.5, 12.0, "Shadowstep.QuickDistance", diagnostics);
+    Clamp(config.shadowstep.aimDistance, 1.5, 20.0, "Shadowstep.AimDistance", diagnostics);
+    Clamp(config.shadowstep.cooldownMs, 200, 5000, "Shadowstep.CooldownMs", diagnostics);
+    Clamp(config.shadowstep.maxVerticalDelta, 0.25, 3.0, "Shadowstep.MaxVerticalDelta", diagnostics);
+    Clamp(config.shadowstep.validationTimeoutMs, 50, 2000, "Shadowstep.ValidationTimeoutMs", diagnostics);
+    Clamp(config.shadowstep.wallClearance, 0.40, 1.50, "Shadowstep.WallClearance", diagnostics);
     Clamp(config.movement.sprintMoveRate, 1.0, 2.0, "Movement.SprintMoveRate", diagnostics);
     Clamp(config.encounter.startHour, 0, 23, "Encounter.StartHour", diagnostics);
     Clamp(config.encounter.endHour, 0, 23, "Encounter.EndHour", diagnostics);
@@ -179,10 +204,11 @@ Config Config::Parse(std::string_view text, DiagnosticSink diagnostics) {
     Clamp(config.bossHud.fadeSeconds, 0.1, 3.0, "BossHUD.FadeSeconds", diagnostics);
     Clamp(config.bossHud.deathHoldSeconds, 0.0, 5.0, "BossHUD.DeathHoldSeconds", diagnostics);
 
-    if (config.debug.restoreHotkey == config.debug.reloadHotkey) {
-        Warn(diagnostics, "Debug hotkeys collided; restoring safe defaults (F10 reload, F11 cleanup).");
-        config.debug.reloadHotkey = 0x79;
-        config.debug.restoreHotkey = 0x7A;
+    if (DebugHotkeysCollide(config.debug)) {
+        Warn(diagnostics, "Debug hotkeys collided with F8/F9 or each other; restoring safe F7/F10/F11 defaults.");
+        config.debug.shadowstepHotkey = kDefaultShadowstepKey;
+        config.debug.reloadHotkey = kDefaultReloadKey;
+        config.debug.restoreHotkey = kDefaultRestoreKey;
     }
     if (config.bossHud.showNumericHealth) {
         Warn(diagnostics, "BossHUD.ShowNumericHealth is locked off by DESIGN_LOCKS.md.");
