@@ -1,8 +1,8 @@
 #pragma once
 
-// Phase 0 forward declarations only. Concrete systems are added in their owning phase.
+// Implemented foundation types and future gameplay seams.
 namespace nightwalker::core {
-class Config;
+struct Config;
 class SafetyWatchdog;
 class SaveData;
 }
