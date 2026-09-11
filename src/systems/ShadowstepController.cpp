@@ -16,14 +16,25 @@ ShadowstepController::ShadowstepController(
     game::IGameApi& api,
     util::Logger& logger,
     const core::Config& config) noexcept
-    : api_(api), logger_(logger), config_(config), resolver_(api, config.shadowstep) {}
+    : api_(api),
+      logger_(logger),
+      config_(config),
+      resolver_(api, config.shadowstep),
+      carryResolverSettings_(config.shadowstep),
+      carryResolver_(api, carryResolverSettings_) {}
 
 bool ShadowstepController::Initialize() {
     state_ = ShadowstepState::Idle;
     stateStartedMs_ = 0;
     cooldownUntilMs_ = 0;
+    hiddenUntilMs_ = 0;
+    meleeBufferUntilMs_ = 0;
     stressSuccessCount_ = 0;
+    meleeBuffered_ = false;
+    fxUnavailableLogged_ = false;
     ClearTransient();
+    presentationWatchdog_.RestoreAll();
+    if (presentationSettings_.smokeFx) presentationApi_.RequestShadowSmoke();
     return true;
 }
 
@@ -46,6 +57,10 @@ void ShadowstepController::RequestForward(std::uint64_t nowMs) noexcept {
 void ShadowstepController::Update(const core::FrameContext& frame) {
     if (!config_.IsFeatureEnabled(core::Feature::Shadowstep)) {
         if (state_ != ShadowstepState::Idle) Cancel();
+        return;
+    }
+    if (StateTimedOut(frame.nowMs)) {
+        Fail("state watchdog timeout", frame.nowMs);
         return;
     }
 
@@ -91,6 +106,18 @@ void ShadowstepController::Update(const core::FrameContext& frame) {
                 Transition(ShadowstepState::Error, frame.nowMs);
                 return;
             }
+
+            carryResolution_ = {};
+            if (presentationSettings_.carryMeters > 0.05F) {
+                carryResolution_ = carryResolver_.Resolve(
+                    player_, resolution_.finalPosition, forwardDirection_);
+                if (!carryResolution_.valid) {
+                    logger_.Write(util::LogLevel::Debug,
+                        std::string("Arrival carry disabled for this step: ") +
+                        ShadowstepResolver::ReasonText(carryResolution_.reason));
+                }
+            }
+
             logger_.Write(util::LogLevel::Debug,
                 "Shadowstep resolved to (" + std::to_string(resolution_.finalPosition.x) + "," +
                 std::to_string(resolution_.finalPosition.y) + "," +
@@ -102,11 +129,23 @@ void ShadowstepController::Update(const core::FrameContext& frame) {
         }
 
         case ShadowstepState::Depart:
-            // Phase 3 deliberately has no VFX, hiding, collision, camera, or input mutation.
+            SampleMelee(frame.nowMs);
+            if (presentationSettings_.smokeFx &&
+                !presentationApi_.PlayShadowSmoke(startPosition_, 0.82F) &&
+                !fxUnavailableLogged_) {
+                fxUnavailableLogged_ = true;
+                logger_.Write(util::LogLevel::Debug,
+                    "Shadowstep smoke unavailable at departure; continuing without blocking cleanup.");
+            }
+            if (!BeginHiddenTransit(frame.nowMs)) {
+                Fail("could not enter hidden transit safely", frame.nowMs);
+                return;
+            }
             Transition(ShadowstepState::Relocate, frame.nowMs);
             return;
 
         case ShadowstepState::Relocate: {
+            SampleMelee(frame.nowMs);
             if (!api_.PedAlive(player_)) {
                 Fail("player became invalid before relocation", frame.nowMs);
                 return;
@@ -128,19 +167,30 @@ void ShadowstepController::Update(const core::FrameContext& frame) {
                     rolledBack = shadowstep_math::Distance3D(rollbackPosition, startPosition_) <=
                                  kRelocateVerificationTolerance;
                 }
-                if (!rolledBack) {
-                    logger_.Write(util::LogLevel::Error,
-                        "Shadowstep relocation verification failed and rollback could not be confirmed.");
-                } else {
-                    logger_.Write(util::LogLevel::Warning,
-                        "Shadowstep relocation verification failed; player rolled back to validated start point.");
-                }
+                logger_.Write(rolledBack ? util::LogLevel::Warning : util::LogLevel::Error,
+                    rolledBack
+                        ? "Shadowstep relocation verification failed; player rolled back to start."
+                        : "Shadowstep relocation verification failed and rollback was not confirmed.");
                 Fail("relocation verification mismatch", frame.nowMs);
                 return;
             }
-            Transition(ShadowstepState::Arrive, frame.nowMs);
+            Transition(ShadowstepState::HiddenTransit, frame.nowMs);
             return;
         }
+
+        case ShadowstepState::HiddenTransit:
+            SampleMelee(frame.nowMs);
+            if (frame.nowMs < hiddenUntilMs_) return;
+            RestorePresentation();
+            if (presentationSettings_.smokeFx &&
+                !presentationApi_.PlayShadowSmoke(resolution_.finalPosition, 1.05F) &&
+                !fxUnavailableLogged_) {
+                fxUnavailableLogged_ = true;
+                logger_.Write(util::LogLevel::Debug,
+                    "Shadowstep smoke unavailable at arrival; presentation continues safely.");
+            }
+            Transition(ShadowstepState::Arrive, frame.nowMs);
+            return;
 
         case ShadowstepState::Arrive:
             ++stressSuccessCount_;
@@ -149,7 +199,33 @@ void ShadowstepController::Update(const core::FrameContext& frame) {
                 "/" + std::to_string(kStressTarget));
             if (stressSuccessCount_ == kStressTarget) {
                 logger_.Write(util::LogLevel::Info,
-                    "Shadowstep stress milestone reached: 100 consecutive successful V1 relocations.");
+                    "Shadowstep stress milestone reached: 100 consecutive successful relocations.");
+            }
+            carryStart_ = api_.EntityCoords(player_);
+            Transition(carryResolution_.valid ? ShadowstepState::ArrivalCarry
+                                              : ShadowstepState::MeleeWindow,
+                       frame.nowMs);
+            return;
+
+        case ShadowstepState::ArrivalCarry:
+            SampleMelee(frame.nowMs);
+            if (UpdateArrivalCarry(frame.nowMs)) {
+                Transition(ShadowstepState::MeleeWindow, frame.nowMs);
+            }
+            return;
+
+        case ShadowstepState::MeleeWindow:
+            if (meleeBuffered_) {
+                if (presentationApi_.MeleeInputPressed()) {
+                    logger_.Write(util::LogLevel::Debug,
+                        "Buffered melee remains physically held; normal RDR2 input stays live.");
+                } else if (frame.nowMs <= meleeBufferUntilMs_ && presentationApi_.PulseMeleeInput()) {
+                    logger_.Write(util::LogLevel::Debug, "Buffered melee input handed back to RDR2.");
+                } else {
+                    logger_.Write(util::LogLevel::Debug,
+                        "Buffered melee tap expired without synthetic replay; normal controls remain live.");
+                }
+                meleeBuffered_ = false;
             }
             Transition(ShadowstepState::Recovery, frame.nowMs);
             return;
@@ -167,6 +243,7 @@ void ShadowstepController::Update(const core::FrameContext& frame) {
             return;
 
         case ShadowstepState::Error:
+            RestorePresentation();
             ClearTransient();
             Transition(ShadowstepState::Idle, frame.nowMs);
             return;
@@ -179,14 +256,16 @@ void ShadowstepController::Cancel() noexcept {
             std::string("Shadowstep cancelled from state=") + StateName(state_));
     }
     stressSuccessCount_ = 0;
+    RestorePresentation();
     ClearTransient();
     state_ = ShadowstepState::Idle;
     stateStartedMs_ = 0;
+    cooldownUntilMs_ = 0;
 }
 
 void ShadowstepController::Shutdown() noexcept {
     Cancel();
-    cooldownUntilMs_ = 0;
+    presentationApi_.ReleaseShadowSmoke();
 }
 
 void ShadowstepController::Transition(ShadowstepState next, std::uint64_t nowMs) noexcept {
@@ -202,6 +281,7 @@ void ShadowstepController::Transition(ShadowstepState next, std::uint64_t nowMs)
 
 void ShadowstepController::Fail(const char* reason, std::uint64_t nowMs) noexcept {
     stressSuccessCount_ = 0;
+    RestorePresentation();
     logger_.Write(util::LogLevel::Warning,
         std::string("Shadowstep aborted safely: ") + reason + " state=" + StateName(state_));
     Transition(ShadowstepState::Error, nowMs);
@@ -211,7 +291,12 @@ void ShadowstepController::ClearTransient() noexcept {
     player_ = 0;
     startPosition_ = {};
     forwardDirection_ = {};
+    carryStart_ = {};
     resolution_ = {};
+    carryResolution_ = {};
+    hiddenUntilMs_ = 0;
+    meleeBufferUntilMs_ = 0;
+    meleeBuffered_ = false;
 }
 
 bool ShadowstepController::ValidationTimedOut(std::uint64_t nowMs) const noexcept {
@@ -227,7 +312,10 @@ const char* ShadowstepController::StateName(ShadowstepState state) noexcept {
         case ShadowstepState::ValidateDestination: return "ValidateDestination";
         case ShadowstepState::Depart: return "Depart";
         case ShadowstepState::Relocate: return "Relocate";
+        case ShadowstepState::HiddenTransit: return "HiddenTransit";
         case ShadowstepState::Arrive: return "Arrive";
+        case ShadowstepState::ArrivalCarry: return "ArrivalCarry";
+        case ShadowstepState::MeleeWindow: return "MeleeWindow";
         case ShadowstepState::Recovery: return "Recovery";
         case ShadowstepState::Cooldown: return "Cooldown";
         case ShadowstepState::Error: return "Error";
