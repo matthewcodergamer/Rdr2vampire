@@ -1,42 +1,10 @@
 #include "nightwalker/core/SafetyWatchdog.h"
 #include <utility>
-
 namespace nightwalker::core {
-
-bool SafetyWatchdog::Own(OwnedState state, Action restore) {
-    if (!restore) return false;
-    auto& slot = actions_[Index(state)];
-    if (slot) return false;
-    slot = std::move(restore);
-    return true;
-}
-
-void SafetyWatchdog::Release(OwnedState state) noexcept {
-    actions_[Index(state)] = {};
-}
-
-bool SafetyWatchdog::IsOwned(OwnedState state) const noexcept {
-    return static_cast<bool>(actions_[Index(state)]);
-}
-
-std::size_t SafetyWatchdog::OwnedCount() const noexcept {
-    std::size_t count = 0;
-    for (const auto& action : actions_) if (action) ++count;
-    return count;
-}
-
-void SafetyWatchdog::Restore(OwnedState state) noexcept {
-    auto& slot = actions_[Index(state)];
-    Action action = std::move(slot);
-    slot = {};
-    if (!action) return;
-    try { action(); } catch (...) { }
-}
-
-void SafetyWatchdog::RestoreAll() noexcept {
-    for (std::size_t i = 0; i < actions_.size(); ++i) {
-        Restore(static_cast<OwnedState>(i));
-    }
-}
-
+bool SafetyWatchdog::Own(OwnedState s,Action a){if(!a)return false;auto&slot=actions_[Index(s)];if(slot)return false;slot=std::move(a);return true;}
+void SafetyWatchdog::Release(OwnedState s)noexcept{actions_[Index(s)]={};}
+bool SafetyWatchdog::IsOwned(OwnedState s)const noexcept{return(bool)actions_[Index(s)];}
+std::size_t SafetyWatchdog::OwnedCount()const noexcept{std::size_t n=0;for(const auto&a:actions_)if(a)++n;return n;}
+bool SafetyWatchdog::Restore(OwnedState s)noexcept{auto&slot=actions_[Index(s)];Action action=std::move(slot);slot={};if(!action)return true;try{action();return true;}catch(...){return false;}}
+std::size_t SafetyWatchdog::RestoreAll()noexcept{std::size_t failures=0;for(std::size_t i=0;i<actions_.size();++i)if(!Restore(static_cast<OwnedState>(i)))++failures;return failures;}
 }
