@@ -15,9 +15,11 @@ public:
  bool Initialize()override;void Update(const core::FrameContext& frame)override;void Cancel()noexcept override;void Shutdown()noexcept override;
  void RequestSpawn(std::uint64_t nowMs)noexcept;void RequestDespawn()noexcept;game::PedHandle OwnedPed()const noexcept{return ownedPed_;}
 private:
+ struct BoolRef{const bool* value{};operator bool()const noexcept{return value&&*value;}};
+ struct LocalSettings{struct Debug{BoolRef enabled{};std::uint64_t modelLoadTimeoutMs{5000};}debug{};explicit LocalSettings(const core::Config& c)noexcept{debug.enabled.value=&c.debug.enabled;}};
  enum class State{Idle,LoadingModel,Spawned};
  bool FindSpawnPoint(game::PedHandle player,game::Vec3& position,float& heading)const noexcept;
  bool SpawnLoadedModel(std::uint64_t nowMs)noexcept;void ResetRequest()noexcept;
- game::IGameApi& api_;util::Logger& logger_;const core::Config& config_;game::ModelStreamRequest modelRequest_{};game::PedHandle ownedPed_{0};State state_{State::Idle};
+ game::IGameApi& api_;util::Logger& logger_;LocalSettings config_;game::ModelStreamRequest modelRequest_{};game::PedHandle ownedPed_{0};State state_{State::Idle};
 };
 }
