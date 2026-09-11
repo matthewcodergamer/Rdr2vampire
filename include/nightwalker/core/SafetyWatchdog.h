@@ -3,7 +3,7 @@
 #include <cstddef>
 #include <functional>
 namespace nightwalker::core {
-enum class OwnedState : std::size_t { Visibility, Collision, Motion, Protection, Input, Camera, Attachment, Task, Count };
+enum class OwnedState : std::size_t { Visibility, Collision, Motion, Invincibility, Input, Camera, Attachment, Task, Count };
 class SafetyWatchdog final {
 public:
  using Action=std::function<void()>;
