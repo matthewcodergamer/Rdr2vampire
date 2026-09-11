@@ -17,6 +17,7 @@ public:
  nightwalker::game::PedHandle PlayerPed()const noexcept override{return 1;}
  bool EntityExists(nightwalker::game::EntityHandle)const noexcept override{return true;}
  bool PedAlive(nightwalker::game::PedHandle)const noexcept override{return true;}
+ nightwalker::game::ModelHash EntityModel(nightwalker::game::EntityHandle)const noexcept override{return 0xD95BCB7D;}
  nightwalker::game::Vec3 EntityCoords(nightwalker::game::EntityHandle)const noexcept override{return {};}
  float EntityHeading(nightwalker::game::EntityHandle)const noexcept override{return 0.0F;}
  nightwalker::game::Vec3 OffsetFromEntity(nightwalker::game::EntityHandle,float,float,float)const noexcept override{return {};}
