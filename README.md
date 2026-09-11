@@ -6,40 +6,34 @@ Nightwalker is a native C++ Red Dead Redemption 2 vampire mod project. The repos
 
 ## Status
 
-**Phase 1: runtime foundation.** No Shadowstep, feeding, vampire combat, boss AI, or custom combat HUD is implemented yet.
-
-The runtime now owns deterministic initialization/update/shutdown, timestamped logging, typed INI configuration with safe defaults and clamping, feature flags, monotonic timing, debug-only hotkeys, conservative player/mission transition detection, and an idempotent cleanup ledger for temporary state future systems may own.
+**Phase 2: safe game-native integration.** Nightwalker can now request and validate the existing `cs_vampire` model, find a nearby navmesh-safe dry spawn point, create one locally owned debug ped, and clean up only that owned entity. No Shadowstep, feeding, boss AI, boss HUD, or combat phases are implemented yet.
 
 ## Build
 
 Use Visual Studio 2022 with the Desktop C++ workload, a Windows SDK, and the external Script Hook RDR2 developer SDK. Keep SDK files local under `third_party/ScriptHookRDR2` or override the SDK-root MSBuild property.
 
-Open `Nightwalker.sln` and build `Debug | x64` or `Release | x64`. The target output is `Nightwalker.asi` under `bin/<Configuration>/`. The solution also contains `Nightwalker.Tests`, which tests pure config/timing/cleanup logic without launching RDR2.
+Open `Nightwalker.sln` and build `Debug | x64` or `Release | x64`. The target output is `Nightwalker.asi` under `bin/<Configuration>/`. The solution also contains `Nightwalker.Tests` for pure runtime/model-streaming logic.
 
-See `docs/BUILDING.md` for the local dependency layout and `docs/SOURCE_LAYOUT.md` for code ownership.
+See `docs/BUILDING.md` for the local dependency layout and verification checklist.
 
-## Configuration
+## Configuration and debug controls
 
-Copy `config/Nightwalker.example.ini` beside `Nightwalker.asi` as `Nightwalker.ini` to override defaults. Missing or malformed values fall back safely; unsafe numeric ranges are clamped and logged. Debug hotkeys are disabled unless `[Debug] Enabled=true`.
+Copy `config/Nightwalker.example.ini` beside `Nightwalker.asi` as `Nightwalker.ini`. Debug commands remain disabled unless `[Debug] Enabled=true` (or legacy `DebugMode=true`).
 
-Default debug keys are F10 to reload configuration and F11 to force Nightwalker-owned cleanup. They do not enable any gameplay mechanic.
+Phase 2 debug keys:
 
-## Runtime layout
+- **F8** — request the existing `cs_vampire` model and create one Nightwalker-owned test ped near the player when a safe point is available.
+- **F9** — remove only the Nightwalker-owned test vampire.
+- **F10** — reload configuration.
+- **F11** — cancel systems and restore/clean Nightwalker-owned temporary state.
 
-For runtime setup, follow the official Script Hook RDR2 documentation. `Nightwalker.log` is written beside the plugin when the location is writable; logging failure does not terminate the plugin.
+Repeated F8 presses do not create unlimited duplicates. Model requests time out instead of blocking forever, and mission/player-state transitions or plugin shutdown cancel the request and remove the owned debug ped.
+
+## Native boundary
+
+`GameApi` is the only Phase 2 wrapper for the new model/entity/spawn natives. Controllers do not scatter raw native calls through gameplay code. The debug spawner owns the handle it creates and never attempts to delete arbitrary vanilla entities.
 
 ## Design authority
 
 `docs/DESIGN_LOCKS.md` overrides older planning text when there is a conflict. Nightwalker must not add player power meters or boss ability reveals. The only planned custom combat HUD is the temporary red Saint Denis vampire boss-health bar described in `docs/BOSS_HEALTH_BAR.md`.
-
-## Phase 1 foundation
-
-- `Runtime` — controlled lifecycle and future controller update seam.
-- `Config` — typed INI defaults, validation, clamping, feature flags, legacy aliases.
-- `Logger` — debug/info/warn/error diagnostics.
-- `SafetyWatchdog` — idempotent ownership/restoration bookkeeping.
-- `DebugInput` — debug-only edge-triggered hotkeys.
-- `GameContext` — plugin paths plus conservative player/mission safety state.
-- `Timing` — monotonic clocks/deadlines independent of frame rate.
-- `ILifecycleSystem` — explicit initialize/update/cancel/shutdown contract for later controllers.
 
