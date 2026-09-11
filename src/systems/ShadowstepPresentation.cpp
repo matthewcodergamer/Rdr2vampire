@@ -31,6 +31,7 @@ void ShadowstepController::ReloadPresentationSettings(const std::filesystem::pat
         std::min(config_.shadowstep.maxVerticalDelta, 0.75);
 
     if (presentationSettings_.smokeFx) presentationApi_.RequestShadowSmoke();
+    else presentationApi_.ReleaseShadowSmoke();
 }
 
 void ShadowstepController::RestorePresentation() noexcept {
