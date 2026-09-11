@@ -2,7 +2,7 @@
 
 > **Story Mode only.** Nightwalker does not target RDR Online.
 
-Nightwalker is a native C++ Red Dead Redemption 2 vampire mod project. The repository uses RDR2 content by runtime reference where appropriate and does not redistribute commercial game assets.
+Nightwalker is a native C++ Red Dead Redemption 2 vampire mod project. The repository uses RDR2 content by runtime reference 
 
 ## Status
 
@@ -34,8 +34,3 @@ For runtime setup, follow the official Script Hook RDR2 documentation. Nightwalk
 - `src/util/Logger.cpp` — diagnostics.
 - `include/nightwalker/ArchitectureSeams.h` — future module declarations without fake implementations.
 
-## Asset policy
-
-Do not commit RDR2 game files, extracted commercial assets, copied assets from other games, or third-party binaries without redistribution permission.
-
-Fan-made, non-commercial project. Not affiliated with Rockstar Games, Take-Two Interactive, Rebel Wolves, or Bandai Namco Entertainment.
