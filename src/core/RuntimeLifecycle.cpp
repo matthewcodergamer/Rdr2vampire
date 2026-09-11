@@ -22,12 +22,14 @@ bool Runtime::Initialize(HMODULE module){
  bool fileLog=logger_.Initialize(gameContext_.PluginDirectory()/L"Nightwalker.log");
  logger_.Write(util::LogLevel::Info,std::string("Starting ")+version::kProjectName+" "+version::kString+" (Story Mode only).");
  if(!fileLog)logger_.Write(util::LogLevel::Warning,"Nightwalker.log unavailable; debugger logging remains active.");
- config_=Config::Load(gameContext_.PluginDirectory()/L"Nightwalker.ini",[this](std::string_view m){logger_.Write(util::LogLevel::Warning,m);});
+ const auto iniPath=gameContext_.PluginDirectory()/L"Nightwalker.ini";
+ config_=Config::Load(iniPath,[this](std::string_view m){logger_.Write(util::LogLevel::Warning,m);});
  logger_.SetMinimumLevel(config_.debug.enabled?util::LogLevel::Debug:util::LogLevel::Info);debugInput_.Configure(config_.debug);
+ shadowstepController_.ReloadPresentationSettings(iniPath);
  systems_.clear();systems_.push_back(&debugVampireSpawner_);systems_.push_back(&shadowstepController_);
  for(auto* system:systems_)if(system&&!system->Initialize()){logger_.Write(util::LogLevel::Error,std::string("System initialization failed: ")+std::string(system->Name()));for(auto* s:systems_)if(s)s->Shutdown();systems_.clear();gameContext_.Reset();logger_.Shutdown();return false;}
  lastTickMs_=util::MonotonicClock::NowMilliseconds();tickCount_=0;unsafeState_=false;initialized_=true;
- logger_.Write(util::LogLevel::Info,"Phase 3 runtime initialized; Shadowstep V1 is debug-only and geometry-gated.");return true;
+ logger_.Write(util::LogLevel::Info,"Phase 4 runtime initialized; Shadowstep presentation remains debug-only and geometry-gated.");return true;
 }
 
 void Runtime::Shutdown()noexcept{
