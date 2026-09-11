@@ -7,8 +7,23 @@ namespace nightwalker::core {
 
 enum class Feature { Shadowstep, Movement, Feeding, Encounter, BossHud };
 
-struct DebugSettings { bool enabled{false}; int restoreHotkey{0x7A}; int reloadHotkey{0x79}; };
-struct ShadowstepSettings { bool enabled{true}; double quickDistance{6.5}; double aimDistance{9.0}; int cooldownMs{550}; };
+struct DebugSettings {
+    bool enabled{false};
+    int shadowstepHotkey{0x76}; // F7
+    int restoreHotkey{0x7A};    // F11
+    int reloadHotkey{0x79};     // F10
+};
+
+struct ShadowstepSettings {
+    bool enabled{true};
+    double quickDistance{6.5};
+    double aimDistance{9.0};
+    int cooldownMs{550};
+    double maxVerticalDelta{1.5};
+    int validationTimeoutMs{250};
+    double wallClearance{0.65};
+};
+
 struct MovementSettings { bool enabled{true}; double sprintMoveRate{1.20}; };
 struct FeedingSettings { bool enabled{true}; bool allowNonLethal{true}; bool allowAnimalFeeding{true}; };
 struct EncounterSettings { bool enabled{true}; int startHour{0}; int endHour{4}; int respawnCooldownHours{24}; };
