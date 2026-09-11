@@ -21,6 +21,7 @@ public:
     virtual PedHandle PlayerPed() const noexcept = 0;
     virtual bool EntityExists(EntityHandle entity) const noexcept = 0;
     virtual bool PedAlive(PedHandle ped) const noexcept = 0;
+    virtual ModelHash EntityModel(EntityHandle entity) const noexcept = 0;
     virtual Vec3 EntityCoords(EntityHandle entity) const noexcept = 0;
     virtual float EntityHeading(EntityHandle entity) const noexcept = 0;
     virtual Vec3 OffsetFromEntity(EntityHandle entity, float x, float y, float z) const noexcept = 0;
@@ -41,6 +42,7 @@ public:
     PedHandle PlayerPed() const noexcept override;
     bool EntityExists(EntityHandle entity) const noexcept override;
     bool PedAlive(PedHandle ped) const noexcept override;
+    ModelHash EntityModel(EntityHandle entity) const noexcept override;
     Vec3 EntityCoords(EntityHandle entity) const noexcept override;
     float EntityHeading(EntityHandle entity) const noexcept override;
     Vec3 OffsetFromEntity(EntityHandle entity, float x, float y, float z) const noexcept override;
