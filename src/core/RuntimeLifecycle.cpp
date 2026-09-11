@@ -11,7 +11,9 @@ namespace {
 bool ModulePath(HMODULE module,std::filesystem::path& out){if(!module)return false;std::array<wchar_t,32768> b{};DWORD n=::GetModuleFileNameW(module,b.data(),(DWORD)b.size());if(!n||n>=b.size())return false;out=std::filesystem::path(std::wstring_view(b.data(),n));return true;}
 }
 
-Runtime::Runtime():debugVampireSpawner_(gameApi_,logger_,config_){}
+Runtime::Runtime()
+    : debugVampireSpawner_(gameApi_, logger_, config_),
+      shadowstepController_(gameApi_, logger_, config_) {}
 Runtime::~Runtime()noexcept{Shutdown();}
 
 bool Runtime::Initialize(HMODULE module){
@@ -22,10 +24,10 @@ bool Runtime::Initialize(HMODULE module){
  if(!fileLog)logger_.Write(util::LogLevel::Warning,"Nightwalker.log unavailable; debugger logging remains active.");
  config_=Config::Load(gameContext_.PluginDirectory()/L"Nightwalker.ini",[this](std::string_view m){logger_.Write(util::LogLevel::Warning,m);});
  logger_.SetMinimumLevel(config_.debug.enabled?util::LogLevel::Debug:util::LogLevel::Info);debugInput_.Configure(config_.debug);
- systems_.clear();systems_.push_back(&debugVampireSpawner_);
+ systems_.clear();systems_.push_back(&debugVampireSpawner_);systems_.push_back(&shadowstepController_);
  for(auto* system:systems_)if(system&&!system->Initialize()){logger_.Write(util::LogLevel::Error,std::string("System initialization failed: ")+std::string(system->Name()));for(auto* s:systems_)if(s)s->Shutdown();systems_.clear();gameContext_.Reset();logger_.Shutdown();return false;}
  lastTickMs_=util::MonotonicClock::NowMilliseconds();tickCount_=0;unsafeState_=false;initialized_=true;
- logger_.Write(util::LogLevel::Info,"Phase 2 runtime initialized; debug vampire spawn is gated by DebugMode.");return true;
+ logger_.Write(util::LogLevel::Info,"Phase 3 runtime initialized; Shadowstep V1 is debug-only and geometry-gated.");return true;
 }
 
 void Runtime::Shutdown()noexcept{
