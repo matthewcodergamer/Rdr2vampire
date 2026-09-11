@@ -14,6 +14,14 @@ struct Vec3 final {
     float z{0.0F};
 };
 
+struct RaycastResult final {
+    bool conclusive{false};
+    bool hit{false};
+    Vec3 endCoords{};
+    Vec3 surfaceNormal{};
+    EntityHandle entityHit{0};
+};
+
 class IGameApi {
 public:
     virtual ~IGameApi() = default;
@@ -24,9 +32,14 @@ public:
     virtual ModelHash EntityModel(EntityHandle entity) const noexcept = 0;
     virtual Vec3 EntityCoords(EntityHandle entity) const noexcept = 0;
     virtual float EntityHeading(EntityHandle entity) const noexcept = 0;
+    virtual Vec3 EntityForward(EntityHandle entity) const noexcept = 0;
     virtual Vec3 OffsetFromEntity(EntityHandle entity, float x, float y, float z) const noexcept = 0;
     virtual bool FindSafeCoordForPed(const Vec3& nearPosition, Vec3& safePosition) const noexcept = 0;
+    virtual bool TryGroundZ(const Vec3& position, float probeHeight, float& groundZ) const noexcept = 0;
     virtual bool HasWaterAt(const Vec3& position, float& waterHeight) const noexcept = 0;
+    virtual RaycastResult RaycastWorld(const Vec3& start, const Vec3& end,
+                                       EntityHandle entityToIgnore) const noexcept = 0;
+    virtual bool SetEntityCoordsNoOffset(EntityHandle entity, const Vec3& position) noexcept = 0;
 
     virtual bool IsPedModelAvailable(ModelHash model) const noexcept = 0;
     virtual void RequestModel(ModelHash model) noexcept = 0;
@@ -45,9 +58,14 @@ public:
     ModelHash EntityModel(EntityHandle entity) const noexcept override;
     Vec3 EntityCoords(EntityHandle entity) const noexcept override;
     float EntityHeading(EntityHandle entity) const noexcept override;
+    Vec3 EntityForward(EntityHandle entity) const noexcept override;
     Vec3 OffsetFromEntity(EntityHandle entity, float x, float y, float z) const noexcept override;
     bool FindSafeCoordForPed(const Vec3& nearPosition, Vec3& safePosition) const noexcept override;
+    bool TryGroundZ(const Vec3& position, float probeHeight, float& groundZ) const noexcept override;
     bool HasWaterAt(const Vec3& position, float& waterHeight) const noexcept override;
+    RaycastResult RaycastWorld(const Vec3& start, const Vec3& end,
+                               EntityHandle entityToIgnore) const noexcept override;
+    bool SetEntityCoordsNoOffset(EntityHandle entity, const Vec3& position) noexcept override;
 
     bool IsPedModelAvailable(ModelHash model) const noexcept override;
     void RequestModel(ModelHash model) noexcept override;
