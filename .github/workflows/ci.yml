@@ -1,0 +1,80 @@
+name: Nightwalker CI
+
+on:
+  push:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  windows-pure-tests:
+    name: Windows pure C++ tests
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Build foundation tests
+        run: msbuild Nightwalker.Tests.vcxproj /m /p:Configuration=Release /p:Platform=x64
+
+      - name: Build Shadowstep safety tests
+        run: msbuild Nightwalker.Shadowstep.Tests.vcxproj /m /p:Configuration=Release /p:Platform=x64
+
+      - name: Build Shadowstep presentation tests
+        run: msbuild Nightwalker.Presentation.Tests.vcxproj /m /p:Configuration=Release /p:Platform=x64
+
+      - name: Run pure tests
+        shell: pwsh
+        run: |
+          & .\bin\tests\Release\Nightwalker.Tests.exe
+          & .\bin\tests\Release\Nightwalker.Shadowstep.Tests.exe
+          & .\bin\tests\Release\Nightwalker.Presentation.Tests.exe
+
+  linux-pure-tests:
+    name: Linux compiler regression tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build and run foundation tests
+        run: |
+          mkdir -p build/ci
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core \
+            tests/RuntimeFoundationTests.cpp \
+            src/core/Config.cpp src/core/ConfigParse.cpp src/core/ConfigValidation.cpp \
+            src/core/SafetyWatchdog.cpp src/game/ModelStreamRequest.cpp \
+            -o build/ci/nightwalker-foundation-tests
+          ./build/ci/nightwalker-foundation-tests
+
+      - name: Build and run Shadowstep safety tests
+        run: |
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core \
+            tests/ShadowstepV1Tests.cpp \
+            src/core/Config.cpp src/core/ConfigParse.cpp src/core/ConfigValidation.cpp \
+            src/systems/ShadowstepMath.cpp src/systems/ShadowstepResolver.cpp \
+            -o build/ci/nightwalker-shadowstep-tests
+          ./build/ci/nightwalker-shadowstep-tests
+
+      - name: Build and run presentation settings tests
+        run: |
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude \
+            tests/ShadowstepPresentationTests.cpp src/systems/ShadowstepPresentationSettings.cpp \
+            -o build/ci/nightwalker-presentation-tests
+          ./build/ci/nightwalker-presentation-tests
+
+  sdk-boundary-note:
+    name: Native plugin SDK boundary
+    runs-on: ubuntu-latest
+    steps:
+      - name: Explain native build boundary
+        run: |
+          echo "Nightwalker.asi is intentionally not linked in public CI."
+          echo "The native plugin requires the developer-local Script Hook RDR2 SDK and Windows/MSVC."
+          echo "CI validates only SDK-independent deterministic code; the full x64 plugin is built locally."
