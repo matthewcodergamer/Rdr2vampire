@@ -215,19 +215,19 @@ void ShadowstepController::Update(const core::FrameContext& frame) {
             return;
 
         case ShadowstepState::MeleeWindow:
-            SampleMelee(frame.nowMs);
-            if (meleeBuffered_ && frame.nowMs <= meleeBufferUntilMs_) {
-                if (presentationApi_.PulseMeleeInput()) {
+            if (meleeBuffered_) {
+                if (presentationApi_.MeleeInputPressed()) {
+                    logger_.Write(util::LogLevel::Debug,
+                        "Buffered melee remains physically held; normal RDR2 input stays live.");
+                } else if (frame.nowMs <= meleeBufferUntilMs_ && presentationApi_.PulseMeleeInput()) {
                     logger_.Write(util::LogLevel::Debug, "Buffered melee input handed back to RDR2.");
-                    meleeBuffered_ = false;
-                    Transition(ShadowstepState::Recovery, frame.nowMs);
-                    return;
+                } else {
+                    logger_.Write(util::LogLevel::Debug,
+                        "Buffered melee tap expired without synthetic replay; normal controls remain live.");
                 }
-            }
-            if (!meleeBuffered_ || frame.nowMs > meleeBufferUntilMs_) {
                 meleeBuffered_ = false;
-                Transition(ShadowstepState::Recovery, frame.nowMs);
             }
+            Transition(ShadowstepState::Recovery, frame.nowMs);
             return;
 
         case ShadowstepState::Recovery:
