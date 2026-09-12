@@ -19,8 +19,8 @@ bool ProgressionController::Initialize() {
     return true;
 }
 
-void ProgressionController::LoadBeforeSystems(const std::filesystem::path& path) {
-    path_ = path;
+void ProgressionController::LoadBeforeSystems(const std::filesystem::path& directory) {
+    path_ = directory / L"Nightwalker.state";
     const auto result = core::LoadSaveData(path_, [this](std::string_view message) {
         logger_.Write(util::LogLevel::Warning, message);
     });
@@ -36,7 +36,7 @@ void ProgressionController::LoadBeforeSystems(const std::filesystem::path& path)
     RefreshEncounterGate();
     lastSnapshot_ = core::SerializeSaveData(data_);
     logger_.Write(util::LogLevel::Info,
-        "Progression/save state loaded; no custom progression HUD is enabled.");
+        "Progression state loaded; no custom progression HUD is enabled.");
 }
 
 void ProgressionController::ApplyAfterConfigReload() noexcept {
@@ -59,7 +59,7 @@ void ProgressionController::RefreshEncounterGate() noexcept {
     }
     if (encounterGateActive_) {
         logger_.Write(util::LogLevel::Info,
-            "Saved Saint Denis cooldown expired; encounter eligibility restored.");
+            "Stored Saint Denis cooldown expired; encounter eligibility restored.");
     }
     encounterGateActive_ = false;
     data_.saintDenisCooldownUntilGameSeconds = 0;
@@ -93,17 +93,21 @@ void ProgressionController::Checkpoint(bool force) noexcept {
 
 void ProgressionController::Update(const core::FrameContext& frame) {
     RefreshEncounterGate();
+    if (nextCheckMs_ == 0) {
+        nextCheckMs_ = frame.nowMs + 2000;
+        return;
+    }
     if (frame.nowMs < nextCheckMs_) return;
     nextCheckMs_ = frame.nowMs + 2000;
     Checkpoint(false);
 }
 
 void ProgressionController::Cancel() noexcept {
-    Checkpoint(true);
+    if (nextCheckMs_ != 0) Checkpoint(true);
 }
 
 void ProgressionController::Shutdown() noexcept {
-    Checkpoint(true);
+    if (nextCheckMs_ != 0) Checkpoint(true);
 }
 
 } // namespace nightwalker::systems
