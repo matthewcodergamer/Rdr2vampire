@@ -50,7 +50,7 @@ bool VampireCombatController::RequestBoss(
 }
 
 bool VampireCombatController::RequestGrabFollowup(CombatMove move) noexcept {
-    if (state_ != CombatState::Hold || move_ != CombatMove::GrabControl) return false;
+    if (role_ != CombatRole::PlayerDebug || state_ != CombatState::Hold || move_ != CombatMove::GrabControl) return false;
     if (move != CombatMove::GrabThrow && move != CombatMove::CombatFeed) return false;
     move_ = move;
     if (config_.debug.enabled) {
