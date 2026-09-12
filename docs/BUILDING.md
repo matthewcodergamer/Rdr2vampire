@@ -13,7 +13,8 @@ SDK-independent test targets:
 - `Nightwalker.Presentation.Tests` — disappearance/carry setting logic.
 - `Nightwalker.Targeting.Tests` — intercept/flank/behind planning and Vampire AI tuning.
 - `Nightwalker.Movement.Tests` — continuous-movement ramp math and config bounds.
-- `Nightwalker.Feeding.Tests` — hidden-resource clamping, feed geometry math and feeding config/backwards-compatibility rules.
+- `Nightwalker.Feeding.Tests` — hidden-resource, feed geometry and backwards-compatible feeding config.
+- `Nightwalker.Combat.Tests` — bounded physical-release vector math plus Phase 8 combat config/alias clamping.
 
 Run test executables from `bin/tests/<Configuration>/`. They do not require RDR2 or Script Hook.
 
@@ -21,39 +22,45 @@ Run test executables from `bin/tests/<Configuration>/`. They do not require RDR2
 
 `.github/workflows/ci.yml` runs on pushes and pull requests targeting `main`:
 
-- Windows/MSBuild Release x64 builds and runs all six SDK-independent tests.
+- Windows/MSBuild Release x64 builds and runs all seven SDK-independent tests.
 - Linux/g++ C++20 builds and runs the same deterministic logic.
-- Linux syntax-compiles Shadowstep, Vampire AI, Movement and Feeding controllers.
-- Test-only native signature fixtures compile `GamePresentationApi.cpp`, `GameCombatApi.cpp`, `GameMovementApi.cpp`, and `GameFeedingApi.cpp` without redistributing Script Hook files.
+- Linux syntax-compiles Shadowstep, Vampire AI, Movement, Feeding and Phase 8 combat controllers.
+- Test-only native signature fixtures compile presentation/combat/movement/feeding/physical native boundaries without redistributing Script Hook files.
 
 CI intentionally does **not** link `Nightwalker.asi`. The final plugin still requires the developer-local Script Hook RDR2 SDK and a Windows/RDR2 environment.
 
-## Phase 7 in-game verification
+## Phase 8 in-game verification
 
 1. Build `Release | x64` with the Script Hook RDR2 developer SDK available locally.
-2. Install `Nightwalker.asi`, copy `config/Nightwalker.example.ini` beside it as `Nightwalker.ini`, and set `[Debug] Enabled=true`, `[Feeding] Enabled=true`.
-3. Launch **Story Mode only**. Confirm `Nightwalker.log` reports the Phase 7 runtime initialization line and no custom blood/hunger HUD appears.
-4. Approach a normal ambient human NPC, free-aim at that ped from within about `MaxDistance`, and press **F5**. Sip should align/hold the pair, complete non-lethally, restore configured player health, then release/clear Nightwalker-owned tasks.
-5. Confirm the Sip target remains alive and can resume normal AI after cleanup.
-6. Repeat on another ambient human and press **F6**. Drain may enter the verified RDR2 generic grapple approximation; if the grapple cannot start, the stationary fallback should still complete safely. The completed Drain should kill the target and restore the configured player health/resource amount.
-7. Press F5 or F6 again during **Align**, **Grab**, **FeedLoop**, and **ReleaseDrain** in separate tests. Every cancellation must return to Idle and clear only Nightwalker-owned participant tasks.
-8. Press **F11** during each active feeding stage. Neither participant may remain frozen or task-locked afterward.
-9. Press **F10** during an active feed. Feeding must cancel before configuration is replaced; the next attempt should use the reloaded safe/clamped values.
-10. Move the target/player beyond the allowed range during a feed. The interaction should abort and clean up.
-11. Break line of sight with a wall/large obstruction during a feed. The interaction should abort and clean up.
-12. Test targets on stairs/uneven terrain where vertical separation exceeds the V1 limit. Unsafe alignment should reject rather than forcing bad positioning.
-13. Aim at a mission-owned/script-owned ped where RDR2 reports mission ownership. Feeding must reject that target and leave its tasks untouched.
-14. Aim at peds using ambient scenarios, mounted peds, vehicle occupants, swimmers, falling/ragdolled peds. V1 should reject them rather than interrupting incompatible game state.
-15. With `AllowAnimalFeeding=false`, verify non-human peds reject. If temporarily enabled for testing, animal feeding should use the conservative stationary path rather than the human grapple approximation.
-16. Test player death during a feed and a mission/player-control transition during a feed. Runtime cancellation must clear owned participant tasks.
-17. Verify F7 Shadowstep does not start while a feed is active. After cleanup, F7 must work normally again.
-18. Spawn the debug vampire with F8 and verify Phase 5/6 enemy Shadowstep/movement still function after multiple player feeding attempts; Phase 7 does not yet make the enemy vampire feed autonomously.
-19. Disable `[Feeding] Enabled=false` and reload. F5/F6 should not start feeding.
-20. Set extreme feeding values, reload, and verify clamping/warnings in `Nightwalker.log`.
-21. Perform at least **20 varied ambient human feed attempts**, mixing Sip, Drain, successful completions, cancels, walls, stairs and different NPC archetypes. No victim may remain floating, attached, invisible, frozen, permanently task-locked, or stuck in a Nightwalker state.
-22. Confirm no player blood meter, hunger meter, feed meter, ability card, cooldown bar, or other new custom HUD appears at any point.
-23. Exit/unload normally and confirm orderly shutdown logs `Nightwalker shutdown complete.` when Script Hook supplies a normal unload path.
+2. Install `Nightwalker.asi`, copy `config/Nightwalker.example.ini` beside it as `Nightwalker.ini`, and set `[Debug] Enabled=true`, `[Combat] Enabled=true`, `[VampireAI] Enabled=true`.
+3. Launch **Story Mode only**. Confirm `Nightwalker.log` reports the Phase 8 runtime initialization line and no move/cooldown/resource HUD appears.
+4. Free-aim a normal close ambient human and press **F1**. The player debug harness should enter the heavy-strike flow. A whiff must not receive the scripted strike bonus; the bonus is allowed only after RDR2 reports actual actor-to-target contact.
+5. Press **F2** on another valid close human. Confirm the target aligns into a short grab/control approximation and is released after the short configured hold. No victim may remain task-locked.
+6. Repeat F2, then press **F3 while the controller is in Hold**. Nightwalker must clear its participant tasks before ragdoll. The target should receive only a bounded physical release.
+7. Test **F3 directly** from Idle. It should perform the same align -> short hold -> release sequence.
+8. Put a solid wall/large prop directly behind the target and repeat the release. The projected segment should reject/suppress the launch impulse when blocked; ragdoll without a through-wall launch is acceptable.
+9. Repeat the wall test where geometry tracing cannot return a conclusive answer. Nightwalker should conservatively suppress the impulse rather than guessing the path is clear.
+10. Test release on stairs, slopes, alleys and tighter interiors. The impulse must remain modest and must not fling peds at absurd speed or distance.
+11. Repeat F2, then press **F4 during Hold**. Confirm the short grab transitions into combat feed and then clears participant tasks.
+12. For the direct player-debug combat-feed path, first ragdoll/stagger an ambient human through normal gameplay, free-aim the target, and press **F4**. A standing compatible target should not satisfy this direct stagger requirement.
+13. Confirm player-debug combat feed transfers only the configured bounded health/resource amount and the internal resource remains invisible as HUD.
+14. Spawn the owned `cs_vampire` with **F8** and enter combat. At Shadowstep range, confirm the existing vanish -> safe relocation -> reappear/carry -> telegraph sequence still occurs. Only after the readable tell may the Phase 8 follow-up strike begin; there must be no damage on the teleport frame.
+15. Stay close to the boss long enough to exercise several close-range special opportunities. The sequence should rotate deterministically through heavy strike, grab/release and grab/feed with `BossSpecialCooldownMs` between opportunities instead of firing every frame.
+16. Confirm the boss's scripted combat-feed health reduction cannot itself reduce the player below 1 health. Ordinary RDR2 combat may still produce normal lethal outcomes.
+17. Mix normal RDR2 melee, Shadowsteps, special grabs, releases and feeds for at least **five uninterrupted minutes**. No task ownership, movement-rate override or player controls may remain corrupted between moves.
+18. Press **F9** during Telegraph, Align, Hold, Strike, Release and Feed in separate tests. The boss/debug entity should despawn only after transient Phase 8 state is cancelled.
+19. Press **F10** during each active Phase 8 state. Combat must cancel before configuration replacement; the next request should use reloaded/clamped values.
+20. Press **F11** during every active state. All Nightwalker-owned tasks/motion overrides must restore, while vanilla world state not owned by Nightwalker remains untouched.
+21. Test player death, boss death and mission/cutscene/player-control transitions during active Phase 8 moves. Runtime cancellation must return all mod-owned systems to safe idle state.
+22. Set `[Combat] Enabled=false` and reload. F1-F4 combat requests and boss close specials should stop while older independent systems remain governed by their own feature flags.
+23. Test extreme Combat values in the INI and reload. Verify clamping warnings rather than unsafe force/timing values.
+24. Confirm throughout that there is no player blood meter, Shadowstep cooldown meter, move list, skill wheel, combo counter, boss power name or phase label.
+25. Exit/unload normally and confirm orderly shutdown logs `Nightwalker shutdown complete.` when Script Hook supplies a normal unload path.
 
-## Phase 7 boundaries
+## Phase 8 boundaries
 
-Phase 7 does not persist the internal resource yet; persistence belongs to the later separate Nightwalker save-data system. It does not add enemy-vampire autonomous feeding, combat-feed executions, regeneration, progression, boss-health UI, or encounter scripting. It also does not ship a guessed neck-blood particle or unverified vampire feeding animation. `TASK_GRAPPLE` is used only as a best-effort Drain approximation because its exact style parameters are under-documented; Sip deliberately uses the safer hold path.
+Phase 8 deliberately does not invent claw animation dictionaries, custom melee-style hashes, a perfect throat-lift animation or a custom neck-bite animation. The short grapple is a verified Rockstar-task approximation and is intentionally bounded because the generic grapple can become lethal if left running.
+
+The physical release uses verified ragdoll and center-of-mass force natives behind `GamePhysicalApi`, plus the existing world raycast before any launch impulse. No attachment is created in Phase 8, so there is no attachment state to leak.
+
+Fear behavior and passive regeneration are optional ideas from the phase brief and are deferred until their own civilian-query and resource/damage ownership policies can be implemented and tested without broadening this combat slice.
