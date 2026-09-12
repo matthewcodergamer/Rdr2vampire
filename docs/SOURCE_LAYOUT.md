@@ -5,8 +5,8 @@ Nightwalker separates native calls, lifecycle ownership, pure math, presentation
 - `src/Plugin.cpp` — Script Hook registration boundary and shutdown signal only.
 - `src/core` — runtime composition, config parsing/validation, debug input, lifecycle and safety infrastructure.
 - `src/game` — narrow RDR2-native boundaries, game context, and model streaming helpers.
-- `src/systems` — owned gameplay/debug controllers plus reusable Shadowstep and movement logic.
-- `src/ui` — reserved for the later temporary red boss-health bar. Phase 6 adds no combat HUD.
+- `src/systems` — owned gameplay/debug controllers plus reusable Shadowstep, movement and feeding logic.
+- `src/ui` — reserved for the later temporary red boss-health bar. Phase 7 adds no combat HUD.
 - `src/util` — logging and shared utilities.
 - `include/nightwalker` — public project headers matching those ownership areas.
 - `tests` — SDK-independent deterministic tests and test-only native signature fixtures.
@@ -16,41 +16,45 @@ Nightwalker separates native calls, lifecycle ownership, pure math, presentation
 - `GameApi` owns entity validity, coordinates, forward vectors, ground/water/shape tests, relocation, model streaming and local ped creation/deletion.
 - `GamePresentationApi` owns generic ped visibility/alpha restoration, melee-input observation and compact best-effort smoke PTFX.
 - `GameCombatApi` owns aimed-ped lookup, entity velocity, combat-state queries, telegraph tasks, ordinary combat handoff and owned task cleanup.
-- `GameMovementApi` owns Phase 6 movement-facing calls: move-rate override plus swimming, falling, ragdoll and mount-state checks.
+- `GameMovementApi` owns continuous movement-rate plus swimming, falling, ragdoll and mount-state checks.
+- `GameFeedingApi` owns Phase 7 feed-facing native calls: human/mission checks, incompatible locomotion/scenario checks, LOS, health access, face/hold tasks, generic grapple attempt and participant task cleanup.
 
-Controllers do not scatter these native calls or embed unverified native hashes.
+Controllers do not scatter these native calls or embed unverified native hashes, animation dictionary names or particle names.
 
-## Shadowstep ownership
+## Existing vampire combat ownership
 
-`ShadowstepResolver` remains the single teleport landing-safety authority. `TargetedShadowstepPlanner` generates intercept, flank and behind candidates. `VampireAIController` is the primary autonomous Shadowstep combat owner for the Nightwalker-owned `cs_vampire`; the player F7 controller remains a secondary debug/safety harness.
+`ShadowstepResolver` remains the single teleport landing-safety authority. `TargetedShadowstepPlanner` generates intercept/flank/behind candidates. `VampireAIController` is the primary autonomous Shadowstep combat owner for the Nightwalker-owned `cs_vampire`; F7 remains a secondary player debug/safety harness.
 
-## Phase 6 continuous movement
+`MovementController` is separate continuous locomotion ownership for that same Nightwalker-owned vampire during its AI `Approach` state. It never replaces Shadowstep with raw speed.
 
-`MovementController` is deliberately separate from Shadowstep. It controls only the Nightwalker-owned `cs_vampire` during the AI `Approach` state and never teleports the actor.
+## Phase 7 feeding ownership
 
-Active flow:
+`FeedingController` owns one debug player feed interaction at a time:
 
-`Idle -> RampUp -> Boost -> Recovery -> Idle`
+`Candidate -> Align -> Grab -> FeedLoop -> ReleaseDrain -> Cleanup -> Idle`
 
-Restrictions can divert to `Restricted`, which always restores the move-rate ownership first.
+Target acquisition uses the existing RDR2 free-aim context rather than a broad ped-pool scan. This keeps V1 deterministic and avoids expensive every-frame world searching.
 
-Ownership rules:
+Safety rules:
 
-- before applying a multiplier above 1.0, the controller registers an idempotent `OwnedState::Motion` restore callback;
-- the restore callback revalidates that the captured handle still belongs to `cs_vampire` before writing 1.0, protecting against stale/recycled handles;
-- the move-rate native is applied every active frame because it is a per-update locomotion override;
-- only `VampireAIState::Approach` is eligible, so Shadowstep departure/transit/arrival, telegraph and attack phases run at normal movement rate;
-- a short acceleration ramp precedes the boost and a recovery window follows every completed burst;
-- mounting, a detected dismount edge, swimming, falling or ragdoll immediately suppress movement ownership;
-- player death, mission/cutscene transition, F11 cleanup and script shutdown are handled by Runtime's reverse-order lifecycle cancellation;
-- no player movement modifier is applied in Phase 6.
+- player and target handles are revalidated while active;
+- mission-owned peds reject before Nightwalker starts participant tasks;
+- incompatible scenario/mount/vehicle/swim/fall/ragdoll states reject;
+- LOS, maximum range and vertical alignment are rechecked;
+- Sip deliberately avoids the generic grapple task so the non-lethal mode cannot accidentally become a combat kill;
+- Drain may attempt RDR2's verified generic `TASK_GRAPPLE`; failure falls back to conservative stationary tasks;
+- no attachment, collision disable, invincibility, camera lock, or guessed paired-animation dictionary is introduced;
+- cancellation clears only participant task state that FeedingController marked as Nightwalker-owned;
+- reverse lifecycle order places FeedingController last in `systems_`, so it cleans its participant state before movement/AI/spawner teardown;
+- F10 cancels active feeding before replacing config state;
+- player death, mission/player-control transition, F11 and script unload converge on the same cancellation path.
 
-`MovementMath` contains pure smooth-ramp and horizontal-speed helpers so timing/math can be tested without RDR2.
+`FeedingMath` contains pure range/vertical helpers. `HiddenResource` stores an optional session-only clamped `0–100` internal value. It is never drawn as HUD and is not persisted until the later save-data system exists.
 
 ## Presentation boundary
 
-Phase 6 can emit a small low-frequency dark smoke/dust puff through the already verified `GamePresentationApi` effect. Particle failure is non-fatal. Global camera/FOV manipulation is intentionally omitted because the supernatural sprint actor is the enemy vampire, not the player. Custom wind/footstep audio is deferred until an appropriate verified or licensed/original cue exists.
+Phase 7 does not ship a neck blood particle. The particle API is available but no suitable RDR2 asset/effect name was verified strongly enough to commit without guessing. Likewise, no custom feeding animation dictionary is invented. `docs/FEEDING.md` records the current Rockstar-task approximation and the known presentation gap.
 
 ## Verification boundary
 
-Public CI verifies pure movement math/configuration and compiles `MovementController` plus `GameMovementApi` against test-only native declarations. The final animation stability, steering feel, obstacle behavior and exact maximum comfortable multiplier require the documented Story Mode test matrix on a real RDR2/Script Hook setup.
+Public CI verifies feeding config/resource/math and syntax-compiles `FeedingController` plus `GameFeedingApi` against test-only native declarations. Actual grapple appearance, victim animation recovery, mission-script interaction and the required 20-NPC soak must be tested in RDR2 Story Mode with the local Script Hook SDK build.

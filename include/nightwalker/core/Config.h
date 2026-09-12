@@ -37,7 +37,25 @@ struct MovementSettings {
     int trailIntervalMs{180};
 };
 
-struct FeedingSettings { bool enabled{true}; bool allowNonLethal{true}; bool allowAnimalFeeding{true}; };
+struct FeedingSettings {
+    bool enabled{true};
+    bool allowNonLethal{true};
+    bool allowAnimalFeeding{false};
+    bool hiddenBloodEnabled{true};
+    double initialBlood{50.0};
+    double sipBloodGain{20.0};
+    double drainBloodGain{55.0};
+    int healthRestoreSip{15};
+    int healthRestoreDrain{45};
+    double maxDistance{1.70};
+    int alignMs{350};
+    int grabMs{450};
+    int sipDurationMs{1200};
+    int drainDurationMs{1800};
+    int releaseMs{250};
+    int stateTimeoutMs{3500};
+};
+
 struct EncounterSettings { bool enabled{true}; int startHour{0}; int endHour{4}; int respawnCooldownHours{24}; };
 
 struct VampireAiSettings {
