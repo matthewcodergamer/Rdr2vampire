@@ -10,6 +10,10 @@ struct DebugActions {
  bool shadowstepForward{false};
  bool feedSip{false};
  bool feedDrain{false};
+ bool heavyStrike{false};
+ bool grabControl{false};
+ bool grabThrow{false};
+ bool combatFeed{false};
 };
 class DebugInput final {
 public:
@@ -20,6 +24,10 @@ public:
 private:
  bool PressedOnce(int key) noexcept;
  bool enabled_{false};
+ int heavyStrikeKey_{0x70};   // F1
+ int grabControlKey_{0x71};   // F2
+ int grabThrowKey_{0x72};     // F3
+ int combatFeedKey_{0x73};    // F4
  int feedSipKey_{0x74};       // F5
  int feedDrainKey_{0x75};     // F6
  int shadowstepKey_{0x76};    // F7
