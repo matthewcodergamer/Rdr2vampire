@@ -1,5 +1,7 @@
 #include "nightwalker/systems/SaintDenisDirector.h"
 
+#include <algorithm>
+#include "nightwalker/narrative/NarrativeScript.h"
 #include "nightwalker/systems/EncounterMath.h"
 
 namespace nightwalker::systems {
@@ -11,6 +13,7 @@ void SaintDenisDirector::UpdateActive(const core::FrameContext& frame) {
             if (!api_.PedAlive(actor_)) {
                 resolvedThisSession_ = true; cleanupResolved_ = true;
                 registry_.SetCombatEnabled(actor_, BossOwner::Encounter, false);
+                narrative_.StartSequence(narrative::ids::kSaintDenisPostDefeat, frame.nowMs);
                 Transition(SaintDenisState::Resolution, frame.nowMs); return;
             }
             if (!PreCombatStillSafe()) { BeginAbort("stalking became unsafe", frame.nowMs); return; }
@@ -19,16 +22,28 @@ void SaintDenisDirector::UpdateActive(const core::FrameContext& frame) {
             const float distance = encounter_math::Distance2D(api_.EntityCoords(player), api_.EntityCoords(actor_));
             if (aimed || distance <= static_cast<float>(config_.encounter.confrontationDistance) ||
                 frame.nowMs - stateStartedMs_ >= static_cast<std::uint64_t>(config_.encounter.stalkingMs)) {
-                combatApi_.TaskStandStill(actor_, config_.encounter.confrontationMs + 200);
+                narrative_.StartSequence(narrative::ids::kSaintDenisPreFight, frame.nowMs);
+                const int holdMs = narrative_.Active()
+                    ? std::max(config_.encounter.confrontationMs + 200, config_.narrative.maxConfrontationHoldMs + 200)
+                    : config_.encounter.confrontationMs + 200;
+                combatApi_.TaskStandStill(actor_, holdMs);
                 presentationApi_.PlayShadowSmoke(api_.EntityCoords(actor_), 0.42F);
                 Transition(SaintDenisState::Confrontation, frame.nowMs);
             }
             return;
         }
-        case SaintDenisState::Confrontation:
+        case SaintDenisState::Confrontation: {
             if (!ActorValid()) { BeginAbort("confrontation actor invalid", frame.nowMs); return; }
             if (!PreCombatStillSafe()) { BeginAbort("confrontation became unsafe", frame.nowMs); return; }
-            if (frame.nowMs - stateStartedMs_ >= static_cast<std::uint64_t>(config_.encounter.confrontationMs)) {
+            const auto elapsed = frame.nowMs - stateStartedMs_;
+            const bool minimumTellDone = elapsed >= static_cast<std::uint64_t>(config_.encounter.confrontationMs);
+            const bool dialogueDone = !narrative_.IsPlaying(narrative::ids::kSaintDenisPreFight);
+            const bool dialogueWatchdog = elapsed >= static_cast<std::uint64_t>(config_.narrative.maxConfrontationHoldMs);
+            if (minimumTellDone && (dialogueDone || dialogueWatchdog)) {
+                if (dialogueWatchdog && !dialogueDone) {
+                    narrative_.Cancel();
+                    logger_.Write(util::LogLevel::Warning, "Pre-fight narrative watchdog expired; combat continued safely.");
+                }
                 if (!registry_.SetCombatEnabled(actor_, BossOwner::Encounter, true)) {
                     BeginAbort("could not arm encounter combat ownership", frame.nowMs); return;
                 }
@@ -38,11 +53,13 @@ void SaintDenisDirector::UpdateActive(const core::FrameContext& frame) {
                 Transition(SaintDenisState::Combat, frame.nowMs);
             }
             return;
+        }
         case SaintDenisState::Combat: {
             if (!ActorValid(false)) { bossHud_.ForceHide(); BeginAbort("combat actor became invalid", frame.nowMs); return; }
             if (!api_.PedAlive(actor_)) {
                 registry_.SetCombatEnabled(actor_, BossOwner::Encounter, false);
                 bossHud_.EndBoss(true, frame.nowMs);
+                narrative_.StartSequence(narrative::ids::kSaintDenisPostDefeat, frame.nowMs);
                 resolvedThisSession_ = true; cleanupResolved_ = true;
                 logger_.Write(util::LogLevel::Info, "Saint Denis vampire encounter resolved by boss death.");
                 Transition(SaintDenisState::Resolution, frame.nowMs); return;
