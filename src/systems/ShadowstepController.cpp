@@ -10,16 +10,20 @@ namespace {
 constexpr float kMaximumPlayerDriftBeforeRelocate = 1.25F;
 constexpr float kRelocateVerificationTolerance = 1.0F;
 constexpr std::uint32_t kStressTarget = 100;
+constexpr float kTargetedStrikeRange = 1.65F;
 }
 
 ShadowstepController::ShadowstepController(
     game::IGameApi& api,
+    game::IGameCombatApi& combatApi,
     util::Logger& logger,
     const core::Config& config) noexcept
     : api_(api),
+      combatApi_(combatApi),
       logger_(logger),
       config_(config),
       resolver_(api, config.shadowstep),
+      targetedPlanner_(resolver_),
       carryResolverSettings_(config.shadowstep),
       carryResolver_(api, carryResolverSettings_) {}
 
@@ -75,6 +79,10 @@ void ShadowstepController::Update(const core::FrameContext& frame) {
                 return;
             }
             startPosition_ = api_.EntityCoords(player_);
+            targetPed_ = combatApi_.PlayerAimedPed(player_);
+            targetedMode_ = targetPed_ != 0 && api_.PedAlive(targetPed_) &&
+                combatApi_.IsPedInCombatWith(targetPed_, player_);
+
             forwardDirection_ = api_.EntityForward(player_);
             game::Vec3 normalized{};
             if (!shadowstep_math::NormalizeHorizontal(forwardDirection_, normalized)) {
@@ -82,13 +90,19 @@ void ShadowstepController::Update(const core::FrameContext& frame) {
                 return;
             }
             forwardDirection_ = normalized;
-            const game::Vec3 requested = shadowstep_math::AddScaled(
-                startPosition_, forwardDirection_, static_cast<float>(config_.shadowstep.quickDistance));
-            logger_.Write(util::LogLevel::Debug,
-                "Shadowstep requested from (" + std::to_string(startPosition_.x) + "," +
-                std::to_string(startPosition_.y) + "," + std::to_string(startPosition_.z) +
-                ") to (" + std::to_string(requested.x) + "," + std::to_string(requested.y) +
-                "," + std::to_string(requested.z) + ").");
+
+            if (targetedMode_) {
+                logger_.Write(util::LogLevel::Debug,
+                    "F7 Shadowstep detected an explicitly aimed hostile ped; using target-relative planning.");
+            } else {
+                const game::Vec3 requested = shadowstep_math::AddScaled(
+                    startPosition_, forwardDirection_, static_cast<float>(config_.shadowstep.quickDistance));
+                logger_.Write(util::LogLevel::Debug,
+                    "Shadowstep requested from (" + std::to_string(startPosition_.x) + "," +
+                    std::to_string(startPosition_.y) + "," + std::to_string(startPosition_.z) +
+                    ") to (" + std::to_string(requested.x) + "," + std::to_string(requested.y) +
+                    "," + std::to_string(requested.z) + ").");
+            }
             Transition(ShadowstepState::ValidateDestination, frame.nowMs);
             return;
         }
@@ -98,7 +112,61 @@ void ShadowstepController::Update(const core::FrameContext& frame) {
                 Fail("destination validation timeout", frame.nowMs);
                 return;
             }
-            resolution_ = resolver_.Resolve(player_, startPosition_, forwardDirection_);
+
+            if (targetedMode_) {
+                if (!api_.PedAlive(targetPed_) || !combatApi_.IsPedInCombatWith(targetPed_, player_)) {
+                    Fail("targeted hostile became invalid", frame.nowMs);
+                    return;
+                }
+                TargetedShadowstepRequest request{};
+                request.actor = player_;
+                request.target = targetPed_;
+                request.actorPosition = startPosition_;
+                request.targetPosition = api_.EntityCoords(targetPed_);
+                request.targetForward = api_.EntityForward(targetPed_);
+                request.targetVelocity = combatApi_.EntityVelocity(targetPed_);
+                request.strikingRange = kTargetedStrikeRange + presentationSettings_.carryMeters;
+                request.predictionSeconds = 0.18F;
+                request.maxPredictionMeters = 1.0F;
+                targetedPlan_ = targetedPlanner_.Plan(request);
+                for (const auto& candidate : targetedPlan_.candidates) {
+                    if (candidate.resolution.valid) {
+                        logger_.Write(util::LogLevel::Debug,
+                            std::string("Player targeted candidate ") +
+                            TargetedShadowstepPlanner::CandidateName(candidate.type) +
+                            " score=" + std::to_string(candidate.score));
+                    } else {
+                        logger_.Write(util::LogLevel::Debug,
+                            std::string("Player targeted candidate ") +
+                            TargetedShadowstepPlanner::CandidateName(candidate.type) +
+                            " rejected=" + ShadowstepResolver::ReasonText(candidate.resolution.reason));
+                    }
+                }
+                if (!targetedPlan_.valid) {
+                    stressSuccessCount_ = 0;
+                    logger_.Write(util::LogLevel::Debug,
+                        "Targeted Shadowstep had no safe candidate; request rejected instead of forcing a landing.");
+                    Transition(ShadowstepState::Error, frame.nowMs);
+                    return;
+                }
+                resolution_ = resolver_.ResolveToPoint(
+                    player_, startPosition_, targetedPlan_.destination, false);
+                game::Vec3 approach{
+                    resolution_.finalPosition.x - startPosition_.x,
+                    resolution_.finalPosition.y - startPosition_.y,
+                    0.0F,
+                };
+                if (!shadowstep_math::NormalizeHorizontal(approach, forwardDirection_)) {
+                    Fail("targeted approach direction invalid", frame.nowMs);
+                    return;
+                }
+                logger_.Write(util::LogLevel::Debug,
+                    std::string("Player targeted Shadowstep chose ") +
+                    TargetedShadowstepPlanner::CandidateName(targetedPlan_.chosenType));
+            } else {
+                resolution_ = resolver_.Resolve(player_, startPosition_, forwardDirection_);
+            }
+
             if (!resolution_.valid) {
                 stressSuccessCount_ = 0;
                 logger_.Write(util::LogLevel::Debug,
@@ -289,11 +357,14 @@ void ShadowstepController::Fail(const char* reason, std::uint64_t nowMs) noexcep
 
 void ShadowstepController::ClearTransient() noexcept {
     player_ = 0;
+    targetPed_ = 0;
+    targetedMode_ = false;
     startPosition_ = {};
     forwardDirection_ = {};
     carryStart_ = {};
     resolution_ = {};
     carryResolution_ = {};
+    targetedPlan_ = {};
     hiddenUntilMs_ = 0;
     meleeBufferUntilMs_ = 0;
     meleeBuffered_ = false;
