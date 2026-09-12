@@ -22,41 +22,66 @@ ShadowstepResolver::ShadowstepResolver(game::IGameApi& api, const core::Shadowst
     : api_(api), settings_(settings) {}
 
 ShadowstepResolveResult ShadowstepResolver::Resolve(
-    game::PedHandle player,
+    game::PedHandle actor,
     const game::Vec3& start,
     const game::Vec3& desiredDirection) const noexcept {
-    ShadowstepResolveResult result{};
-    result.requestedDistance = static_cast<float>(settings_.quickDistance);
+    game::Vec3 direction{};
+    ShadowstepResolveResult invalid{};
+    invalid.requestedDistance = static_cast<float>(settings_.quickDistance);
+    if (!shadowstep_math::NormalizeHorizontal(desiredDirection, direction)) {
+        invalid.reason = ShadowstepRejectReason::InvalidDirection;
+        return invalid;
+    }
 
-    if (!api_.PedAlive(player)) {
+    const game::Vec3 requested = shadowstep_math::AddScaled(
+        start, direction, static_cast<float>(settings_.quickDistance));
+    return ResolveToPoint(actor, start, requested, true);
+}
+
+ShadowstepResolveResult ShadowstepResolver::ResolveToPoint(
+    game::PedHandle actor,
+    const game::Vec3& start,
+    const game::Vec3& desiredPoint,
+    bool allowShorten) const noexcept {
+    ShadowstepResolveResult result{};
+    result.requested = desiredPoint;
+    result.requestedDistance = shadowstep_math::Distance3D(start, desiredPoint);
+
+    if (!api_.PedAlive(actor)) {
         result.reason = ShadowstepRejectReason::InvalidPlayer;
         return result;
     }
 
     game::Vec3 direction{};
-    if (!shadowstep_math::NormalizeHorizontal(desiredDirection, direction)) {
+    const game::Vec3 delta{
+        desiredPoint.x - start.x,
+        desiredPoint.y - start.y,
+        desiredPoint.z - start.z,
+    };
+    if (!shadowstep_math::NormalizeHorizontal(delta, direction)) {
         result.reason = ShadowstepRejectReason::InvalidDirection;
         return result;
     }
 
-    result.requested = shadowstep_math::AddScaled(start, direction, result.requestedDistance);
-    game::Vec3 candidate = result.requested;
-
+    game::Vec3 candidate = desiredPoint;
     const game::Vec3 traceStart{start.x, start.y, start.z + kChestHeight};
-    const game::Vec3 traceEnd{result.requested.x, result.requested.y, result.requested.z + kChestHeight};
-    const game::RaycastResult pathTrace = api_.RaycastWorld(traceStart, traceEnd, player);
+    const game::Vec3 traceEnd{desiredPoint.x, desiredPoint.y, desiredPoint.z + kChestHeight};
+    const game::RaycastResult pathTrace = api_.RaycastWorld(traceStart, traceEnd, actor);
     if (!pathTrace.conclusive) {
         result.reason = ShadowstepRejectReason::TraceInconclusive;
         return result;
     }
 
     if (pathTrace.hit) {
+        if (!allowShorten) {
+            result.reason = ShadowstepRejectReason::ObstructedTooClose;
+            return result;
+        }
         result.shortened = true;
         candidate = shadowstep_math::PullBackFromHit(
             {pathTrace.endCoords.x, pathTrace.endCoords.y, start.z},
             direction,
             static_cast<float>(settings_.wallClearance));
-
         if (shadowstep_math::Distance2D(start, candidate) < kMinimumStepDistance) {
             result.reason = ShadowstepRejectReason::ObstructedTooClose;
             return result;
@@ -68,7 +93,6 @@ ShadowstepResolveResult ShadowstepResolver::Resolve(
         result.reason = ShadowstepRejectReason::UnsafeNavmesh;
         return result;
     }
-
     if (shadowstep_math::Distance2D(candidate, safePoint) > kMaximumSafePointSnap) {
         result.reason = ShadowstepRejectReason::SafePointTooFar;
         return result;
@@ -95,7 +119,7 @@ ShadowstepResolveResult ShadowstepResolver::Resolve(
     }
 
     ShadowstepRejectReason clearanceReason = ShadowstepRejectReason::None;
-    if (!HasClearance(player, finalPosition, clearanceReason)) {
+    if (!HasClearance(actor, finalPosition, clearanceReason)) {
         result.reason = clearanceReason;
         return result;
     }
@@ -108,7 +132,7 @@ ShadowstepResolveResult ShadowstepResolver::Resolve(
 }
 
 bool ShadowstepResolver::HasClearance(
-    game::PedHandle player,
+    game::PedHandle actor,
     const game::Vec3& position,
     ShadowstepRejectReason& rejection) const noexcept {
     const float clearance = static_cast<float>(settings_.wallClearance);
@@ -120,7 +144,7 @@ bool ShadowstepResolver::HasClearance(
 
     for (const auto& direction : directions) {
         const game::Vec3 end = shadowstep_math::AddScaled(chest, direction, clearance);
-        const game::RaycastResult trace = api_.RaycastWorld(chest, end, player);
+        const game::RaycastResult trace = api_.RaycastWorld(chest, end, actor);
         if (!trace.conclusive) {
             rejection = ShadowstepRejectReason::TraceInconclusive;
             return false;
@@ -133,7 +157,7 @@ bool ShadowstepResolver::HasClearance(
 
     const game::Vec3 headStart{position.x, position.y, position.z + kHeadStartHeight};
     const game::Vec3 headEnd{position.x, position.y, position.z + kHeadEndHeight};
-    const game::RaycastResult headTrace = api_.RaycastWorld(headStart, headEnd, player);
+    const game::RaycastResult headTrace = api_.RaycastWorld(headStart, headEnd, actor);
     if (!headTrace.conclusive) {
         rejection = ShadowstepRejectReason::TraceInconclusive;
         return false;
@@ -150,8 +174,8 @@ bool ShadowstepResolver::HasClearance(
 const char* ShadowstepResolver::ReasonText(ShadowstepRejectReason reason) noexcept {
     switch (reason) {
         case ShadowstepRejectReason::None: return "none";
-        case ShadowstepRejectReason::InvalidPlayer: return "invalid player";
-        case ShadowstepRejectReason::InvalidDirection: return "invalid forward direction";
+        case ShadowstepRejectReason::InvalidPlayer: return "invalid actor";
+        case ShadowstepRejectReason::InvalidDirection: return "invalid direction";
         case ShadowstepRejectReason::TraceInconclusive: return "geometry trace inconclusive";
         case ShadowstepRejectReason::ObstructedTooClose: return "obstruction too close";
         case ShadowstepRejectReason::UnsafeNavmesh: return "no safe navmesh point";
