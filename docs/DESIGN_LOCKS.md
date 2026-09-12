@@ -64,13 +64,35 @@ Known useful anchor:
 
 Investigate available RDR2 animations, particles, sounds, props and animal archetypes at runtime. Do not package extracted copyrighted game assets unless redistribution is clearly permitted.
 
-## 5. Dawnwalker inspiration boundary
+## 5. Boss-first actor ownership rule
+
+The signature Shadowstep combat fantasy belongs first and foremost to the **Saint Denis vampire enemy/boss**, not to the player.
+
+The intended combat read is:
+
+- the player backs away or changes position;
+- the vampire evaluates a safe intercept/flank/behind position;
+- the vampire briefly disappears;
+- the vampire instantly repositions;
+- the vampire reappears close to the player with compact dark smoke;
+- the vampire carries/glides forward slightly;
+- the vampire begins a readable melee attack after arrival.
+
+The existing player-side Shadowstep implementation is a **debug/safety harness** used to prove geometry validation, disappearance timing, relocation, cleanup and arrival-carry behavior. It must not be interpreted as changing Nightwalker's primary fantasy into a player-vampire ability game.
+
+Future Shadowstep work should reuse the safe resolver/presentation core for `cs_vampire` and move actor-specific decisions into vampire AI/controller code. Do not duplicate the geometry-safety implementation for the boss.
+
+The vampire must never deal unavoidable damage on the exact teleport frame. Reappearance must preserve a short readable attack startup/telegraph.
+
+Player-facing vampire powers may only be expanded later if the project owner explicitly asks for them. They are not the current priority.
+
+## 6. Dawnwalker inspiration boundary
 
 We may study the *feel and combat grammar* of modern vampire games: rapid vanish/reposition, predatory speed, threatening close-range reappearance, feeding, dark smoke and cinematic boss presentation.
 
 Do **not** ship copied Dawnwalker code, dialogue recordings, music, character models, proprietary animations or ripped assets. Original dialogue and properly licensed/original audio only.
 
-## 6. Story Mode only
+## 7. Story Mode only
 
 Nightwalker is a single-player Story Mode project.
 
@@ -78,7 +100,7 @@ Nightwalker is a single-player Story Mode project.
 - Do not add network hooks, matchmaking or online gameplay support.
 - Every feature must fail safely if Story Mode state is not valid.
 
-## 7. Safety/cleanup rule
+## 8. Safety/cleanup rule
 
 Any feature that changes visibility, collision, invulnerability, movement rate, controls, camera, entity attachments or AI state must have a guaranteed cleanup path.
 
@@ -95,7 +117,7 @@ Cleanup must run on at least:
 
 No feature is considered complete until it cannot strand the player invisible, collisionless, frozen, attached to another ped or permanently speed-modified.
 
-## 8. Build-order rule
+## 9. Build-order rule
 
 Do not build the whole dream in one giant change. Progress in verified slices:
 
