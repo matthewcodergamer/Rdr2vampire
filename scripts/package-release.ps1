@@ -29,6 +29,7 @@ New-Item -ItemType Directory -Path $package -Force | Out-Null
 $files=@{
   "config/Nightwalker.example.ini"="Nightwalker.ini";
   "content/Nightwalker.dialogue"="Nightwalker.dialogue";
+  "packaging/README.txt"="README.txt";
   "README.md"="README.md";
   "CHANGELOG.md"="CHANGELOG.md";
   "THIRD_PARTY_NOTICES.md"="THIRD_PARTY_NOTICES.md"
@@ -40,7 +41,7 @@ foreach ($source in $files.Keys) {
   Copy-Item $full (Join-Path $package $files[$source])
 }
 
-$expected=@("CHANGELOG.md","Nightwalker.asi","Nightwalker.dialogue","Nightwalker.ini","README.md","THIRD_PARTY_NOTICES.md") | Sort-Object
+$expected=@("CHANGELOG.md","Nightwalker.asi","Nightwalker.dialogue","Nightwalker.ini","README.md","README.txt","THIRD_PARTY_NOTICES.md") | Sort-Object
 $actual=Get-ChildItem $package -File | ForEach-Object Name | Sort-Object
 if (($expected -join "|") -ne ($actual -join "|")) { throw "Release package allowlist mismatch." }
 
