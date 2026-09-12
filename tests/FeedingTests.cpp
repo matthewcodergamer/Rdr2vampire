@@ -1,6 +1,7 @@
 #include "nightwalker/core/Config.h"
 #include "nightwalker/systems/FeedingMath.h"
 #include "nightwalker/systems/HiddenResource.h"
+#include "nightwalker/systems/VampireFeedPresentation.h"
 #include <cstdlib>
 #include <iostream>
 #include <string>
@@ -25,6 +26,15 @@ int main(){
  Check(systems::feeding_math::VerticalAligned(a,b,0.5),"vertical boundary accepted");
  Check(!systems::feeding_math::VerticalAligned(a,b,0.49),"vertical excess rejected");
 
+ const game::Vec3 target{0.0F,0.0F,0.0F};
+ const game::Vec3 facing{0.0F,1.0F,0.0F};
+ Check(systems::VampireFeedPresentation::PreferRearStyle({0.0F,-1.0F,0.0F},target,facing),
+       "feed presentation prefers rear style from behind");
+ Check(!systems::VampireFeedPresentation::PreferRearStyle({0.0F,1.0F,0.0F},target,facing),
+       "feed presentation keeps front style from front");
+ Check(!systems::VampireFeedPresentation::PreferRearStyle({0.0F,-1.0F,0.0F},target,{}),
+       "feed presentation falls back when heading vector unavailable");
+
  std::string diagnostics;
  const auto cfg=core::Config::Parse(
   "[Feeding]\nEnabled=true\nAllowNonLethal=true\nAllowAnimalFeeding=false\nHiddenBloodEnabled=true\nInitialBlood=125\nHungerRestoreSip=30\nHungerRestoreDrain=150\nHealthRestoreSip=15\nHealthRestoreDrain=999\nMaxDistance=9\nAlignMs=1\nGrabMs=500\nSipDurationMs=100\nDrainDurationMs=4300\nReleaseMs=1200\nStateTimeoutMs=500\n",
@@ -43,5 +53,5 @@ int main(){
  Check(!diagnostics.empty(),"feeding clamp diagnostics");
 
  if(failures){std::cerr<<failures<<" test(s) failed\n";return EXIT_FAILURE;}
- std::cout<<"Nightwalker Phase 7 feeding tests passed\n";return EXIT_SUCCESS;
+ std::cout<<"Nightwalker feeding tests passed\n";return EXIT_SUCCESS;
 }

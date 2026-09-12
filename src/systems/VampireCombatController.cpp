@@ -23,7 +23,7 @@ VampireCombatController::VampireCombatController(
     core::Config& config) noexcept
     : api_(api), combatApi_(combatApi), feedingApi_(feedingApi), movementApi_(movementApi),
       physicalApi_(physicalApi), spawner_(spawner), feedingController_(feedingController),
-      logger_(logger), config_(config) {}
+      logger_(logger), config_(config), feedPresentation_(api, feedingApi) {}
 
 bool VampireCombatController::Initialize() {
     Reset();
@@ -245,12 +245,28 @@ void VampireCombatController::BeginStrike(std::uint64_t nowMs) noexcept {
 
 void VampireCombatController::BeginAlignment(std::uint64_t nowMs) noexcept {
     actorTaskOwned_ = feedingApi_.FacePedToward(actor_, target_) || actorTaskOwned_;
-    targetTaskOwned_ = feedingApi_.FacePedToward(target_, actor_) || targetTaskOwned_;
+    if (move_ != CombatMove::CombatFeed) {
+        targetTaskOwned_ = feedingApi_.FacePedToward(target_, actor_) || targetTaskOwned_;
+    }
     Enter(CombatState::Align, nowMs);
 }
 
 void VampireCombatController::BeginHold(std::uint64_t nowMs) noexcept {
-    if (feedingApi_.StartGrapple(actor_, target_)) {
+    if (move_ == CombatMove::CombatFeed) {
+        const auto presentation = feedPresentation_.BeginPaired(actor_, target_, config_.combat.feedHoldMs);
+        if (presentation.Started()) {
+            actorTaskOwned_ = actorTaskOwned_ || presentation.actorTaskOwned;
+            targetTaskOwned_ = targetTaskOwned_ || presentation.targetTaskOwned;
+            if (config_.debug.enabled) {
+                logger_.Write(util::LogLevel::Debug,
+                    std::string("Combat feed presentation path=") +
+                    VampireFeedPresentation::PathName(presentation.path));
+            }
+        } else {
+            Abort("feed presentation could not take ownership");
+            return;
+        }
+    } else if (feedingApi_.StartGrapple(actor_, target_)) {
         actorTaskOwned_ = true;
         targetTaskOwned_ = true;
     } else {
@@ -300,19 +316,12 @@ void VampireCombatController::BeginRelease(std::uint64_t nowMs) noexcept {
 }
 
 void VampireCombatController::BeginFeed(std::uint64_t nowMs, bool fromOwnedHold) noexcept {
-    if (fromOwnedHold) {
-        if (actorTaskOwned_ && api_.EntityExists(actor_)) feedingApi_.ClearTasks(actor_);
-        if (targetTaskOwned_ && api_.EntityExists(target_)) feedingApi_.ClearTasks(target_);
-        actorTaskOwned_ = false;
-        targetTaskOwned_ = false;
-    }
-
-    feedingApi_.FacePedToward(actor_, target_);
-    feedingApi_.StandStill(actor_, config_.combat.feedHoldMs);
-    actorTaskOwned_ = true;
-    if (!movementApi_.IsRagdoll(target_)) {
-        feedingApi_.StandStill(target_, config_.combat.feedHoldMs);
-        targetTaskOwned_ = true;
+    if (!fromOwnedHold) {
+        feedingApi_.FacePedToward(actor_, target_);
+        const auto fallback = feedPresentation_.BeginStationary(
+            actor_, target_, config_.combat.feedHoldMs, !movementApi_.IsRagdoll(target_));
+        actorTaskOwned_ = actorTaskOwned_ || fallback.actorTaskOwned;
+        targetTaskOwned_ = targetTaskOwned_ || fallback.targetTaskOwned;
     }
     Enter(CombatState::Feed, nowMs);
 }

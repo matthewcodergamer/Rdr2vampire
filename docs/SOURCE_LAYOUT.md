@@ -1,10 +1,11 @@
 # Source layout
 
-Nightwalker separates native calls, lifecycle ownership, pure math, persistence, presentation, gameplay AI, encounter direction, and the single approved combat HUD.
+Nightwalker separates native calls, lifecycle ownership, pure math, persistence, narrative, presentation, gameplay AI, encounter direction, and the single approved combat HUD.
 
 - `src/core` — runtime composition, INI config/reload, debug input, lifecycle infrastructure, and the pure `SaveData` codec/file replacement layer.
 - `src/game` — narrow RDR2-native boundaries.
-- `src/systems` — Shadowstep, movement, feeding, combat, boss registry, Saint Denis encounter direction, and `ProgressionController` runtime state ownership.
+- `src/narrative` — original dialogue parsing/playback, subtitle sequencing, settings, and the optional audio seam.
+- `src/systems` — Shadowstep, movement, feeding, feeding presentation, combat, boss registry, Saint Denis encounter direction, and `ProgressionController` runtime state ownership.
 - `src/ui` — the Phase 10 boss-health model/controller only. No player power/progression HUD exists.
 - `src/util` — logging/shared utilities.
 - `tests` — deterministic SDK-independent suites plus test-only native signatures.
@@ -38,12 +39,18 @@ F10 is explicit: gameplay owners clean, progression checkpoints, a fresh INI is 
 - `GamePresentationApi` — visibility/alpha and compact smoke.
 - `GameCombatApi` — combat queries/tasks.
 - `GameMovementApi` — move-rate and locomotion restrictions.
-- `GameFeedingApi` — human/health/feed/grapple state.
+- `GameFeedingApi` — human/health/feed state plus the verified generic Rockstar grapple task. A styled-grapple seam exists but deliberately remains unavailable until the direct native contract is target-verified.
 - `GamePhysicalApi` — damage-source/contact, ragdoll and bounded impulse.
 - `GameEncounterApi` — clock/game-time/camera visibility.
 - `GameBossBarApi` — screen resolution plus normalized rectangle/text drawing only.
 
 No controller embeds raw native hashes or guessed animation/audio/effect names.
+
+## Feeding presentation split
+
+`VampireFeedPresentation` owns the policy for paired standing feed presentation without owning game entities. It can select a future front/rear styled path from actor/target orientation, but the current production backend falls back to the already-established `TASK_GRAPPLE` call and then to a bounded stationary hold if the paired task cannot start.
+
+The Saint Denis boss combat-feed keeps the paired Rockstar grapple alive through the feed hold and clears it through the existing task-ownership cleanup path. The verified vanilla vampire corpse AnimScene is documented in `docs/research/VAMPIRE_FEED_REUSE.md`; it is not forced onto arbitrary live standing peds.
 
 ## Encounter and boss ownership
 
@@ -72,4 +79,4 @@ Unsafe Story Mode transitions, player death, F10/F11, encounter abort, feature d
 
 Dormant/cooldown `SaintDenisDirector::Cancel()` already returns without manufacturing a new abort cooldown when no actor exists.
 
-Public CI includes deterministic save/migration/replacement/recovery tests, syntax-compiles `ProgressionController` and Runtime composition, and retains all prior gameplay/native-boundary regressions. Actual restart persistence remains a Story Mode target-environment check.
+Public CI includes deterministic save/migration/replacement/recovery tests, feeding-orientation tests, syntax-compiles the feeding presentation, `ProgressionController` and Runtime composition, and retains all prior gameplay/native-boundary regressions. Actual paired-grapple presentation remains a Story Mode target-environment check.

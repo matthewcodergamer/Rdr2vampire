@@ -8,6 +8,7 @@
 #include "nightwalker/game/GameCombatApi.h"
 #include "nightwalker/game/GameFeedingApi.h"
 #include "nightwalker/systems/HiddenResource.h"
+#include "nightwalker/systems/VampireFeedPresentation.h"
 #include "nightwalker/util/Logger.h"
 
 namespace nightwalker::systems {
@@ -56,6 +57,7 @@ private:
     game::IGameFeedingApi& feedingApi_;
     util::Logger& logger_;
     core::Config& config_;
+    VampireFeedPresentation feedPresentation_;
     HiddenResource resource_{};
 
     FeedingState state_{FeedingState::Idle};

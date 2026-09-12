@@ -13,6 +13,7 @@
 #include "nightwalker/game/GamePhysicalApi.h"
 #include "nightwalker/systems/DebugVampireSpawner.h"
 #include "nightwalker/systems/FeedingController.h"
+#include "nightwalker/systems/VampireFeedPresentation.h"
 #include "nightwalker/util/Logger.h"
 
 namespace nightwalker::systems {
@@ -102,6 +103,7 @@ private:
     FeedingController& feedingController_;
     util::Logger& logger_;
     core::Config& config_;
+    VampireFeedPresentation feedPresentation_;
     core::SafetyWatchdog watchdog_{};
 
     CombatState state_{CombatState::Idle};
