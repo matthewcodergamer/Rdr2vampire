@@ -6,8 +6,8 @@ void Runtime::Tick(){
  if(!initialized_)return;++tickCount_;auto now=util::MonotonicClock::NowMilliseconds();double dt=std::clamp((double)(now-lastTickMs_)/1000.0,0.0,0.25);lastTickMs_=now;
  auto state=gameContext_.QueryRuntimeState();if(state.Unsafe()){if(!unsafeState_){logger_.Write(util::LogLevel::Info,"Game transition detected; cancelling systems and restoring owned state.");CancelSystems();RestoreOwnedState("game transition");}unsafeState_=true;return;}unsafeState_=false;
  if(!debugDebounce_.IsArmed()||debugDebounce_.HasElapsed(now)){auto a=debugInput_.Poll();
-  if(a.feedSip){if(feedingController_.IsActive())feedingController_.Cancel();else feedingController_.Request(systems::FeedMode::Sip,now);debugDebounce_.Arm(now,250);}
-  else if(a.feedDrain){if(feedingController_.IsActive())feedingController_.Cancel();else feedingController_.Request(systems::FeedMode::Drain,now);debugDebounce_.Arm(now,250);}
+  if(a.feedSip){if(feedingController_.IsActive())feedingController_.Cancel();else{shadowstepController_.Cancel();feedingController_.Request(systems::FeedMode::Sip,now);}debugDebounce_.Arm(now,250);}
+  else if(a.feedDrain){if(feedingController_.IsActive())feedingController_.Cancel();else{shadowstepController_.Cancel();feedingController_.Request(systems::FeedMode::Drain,now);}debugDebounce_.Arm(now,250);}
   else if(a.shadowstepForward){if(!feedingController_.IsActive())shadowstepController_.RequestForward(now);debugDebounce_.Arm(now,250);}
   else if(a.spawnTestPed){debugVampireSpawner_.RequestSpawn(now);debugDebounce_.Arm(now,250);}
   else if(a.despawnTestPed){feedingController_.Cancel();movementController_.Cancel();vampireAiController_.Cancel();debugVampireSpawner_.RequestDespawn();debugDebounce_.Arm(now,250);}
