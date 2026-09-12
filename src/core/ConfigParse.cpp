@@ -128,6 +128,19 @@ Config Config::Parse(std::string_view text, DiagnosticSink diagnostics) {
             else if (key == "endhour") parsed = ParseNumber(value, config.encounter.endHour);
             else if (key == "respawncooldownhours") parsed = ParseNumber(value, config.encounter.respawnCooldownHours);
             else handled = false;
+        } else if (section == "vampireai") {
+            if (key == "enabled") parsed = ParseBool(value, config.vampireAi.enabled);
+            else if (key == "shadowstepmindistance") parsed = ParseNumber(value, config.vampireAi.shadowstepMinDistance);
+            else if (key == "shadowstepmaxdistance") parsed = ParseNumber(value, config.vampireAi.shadowstepMaxDistance);
+            else if (key == "strikingrange") parsed = ParseNumber(value, config.vampireAi.strikingRange);
+            else if (key == "predictionms") parsed = ParseNumber(value, config.vampireAi.predictionMs);
+            else if (key == "decisionintervalms") parsed = ParseNumber(value, config.vampireAi.decisionIntervalMs);
+            else if (key == "shadowstepcooldownms") parsed = ParseNumber(value, config.vampireAi.shadowstepCooldownMs);
+            else if (key == "telegraphms") parsed = ParseNumber(value, config.vampireAi.telegraphMs);
+            else if (key == "recoveryms") parsed = ParseNumber(value, config.vampireAi.recoveryMs);
+            else if (key == "evadecooldownms") parsed = ParseNumber(value, config.vampireAi.evadeCooldownMs);
+            else if (key == "retreatspeedthreshold") parsed = ParseNumber(value, config.vampireAi.retreatSpeedThreshold);
+            else handled = false;
         } else if (section == "bosshud") {
             if (key == "enabled") parsed = ParseBool(value, config.bossHud.enabled);
             else if (key == "idleseconds") parsed = ParseNumber(value, config.bossHud.idleSeconds);
