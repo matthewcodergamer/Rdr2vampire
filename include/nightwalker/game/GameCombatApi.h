@@ -14,6 +14,7 @@ public:
     virtual bool IsPedInMeleeCombat(PedHandle ped) const noexcept = 0;
 
     virtual void TaskStandStill(PedHandle ped, int durationMs) noexcept = 0;
+    virtual void TaskFaceEntity(PedHandle ped, EntityHandle target, int durationMs) noexcept = 0;
     virtual void TaskCombatPed(PedHandle ped, PedHandle target) noexcept = 0;
     virtual void ClearPedTasks(PedHandle ped) noexcept = 0;
 };
@@ -26,6 +27,7 @@ public:
     bool IsPedInMeleeCombat(PedHandle ped) const noexcept override;
 
     void TaskStandStill(PedHandle ped, int durationMs) noexcept override;
+    void TaskFaceEntity(PedHandle ped, EntityHandle target, int durationMs) noexcept override;
     void TaskCombatPed(PedHandle ped, PedHandle target) noexcept override;
     void ClearPedTasks(PedHandle ped) noexcept override;
 };
