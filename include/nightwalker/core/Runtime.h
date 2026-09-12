@@ -1,11 +1,14 @@
 #pragma once
 #include <Windows.h>
 #include <cstdint>
+#include <filesystem>
+#include <string>
 #include <string_view>
 #include <vector>
 #include "nightwalker/core/Config.h"
 #include "nightwalker/core/DebugInput.h"
 #include "nightwalker/core/ILifecycleSystem.h"
+#include "nightwalker/core/SaveData.h"
 #include "nightwalker/core/SafetyWatchdog.h"
 #include "nightwalker/util/Timing.h"
 #include "nightwalker/game/GameApi.h"
@@ -34,6 +37,7 @@ public:
  bool Initialize(HMODULE moduleHandle);void Tick();void Shutdown()noexcept;bool IsInitialized()const noexcept{return initialized_;}
 private:
  void ReloadConfig();void CancelSystems()noexcept;void RestoreOwnedState(std::string_view reason)noexcept;
+ void LoadSaveState(const std::filesystem::path& path);void CaptureSaveState()noexcept;void SaveState(bool force)noexcept;void ApplySaveToConfig()noexcept;void RefreshSavedEncounterGate()noexcept;
  game::GameContext gameContext_{};util::Logger logger_{};Config config_{};SafetyWatchdog watchdog_{};DebugInput debugInput_{};
  game::GameApi gameApi_{};game::GameBossBarApi gameBossBarApi_{};game::GameCombatApi gameCombatApi_{};game::GameEncounterApi gameEncounterApi_{};game::GameFeedingApi gameFeedingApi_{};game::GameMovementApi gameMovementApi_{};game::GamePhysicalApi gamePhysicalApi_{};game::GamePresentationApi gamePresentationApi_{};
  systems::BossActorRegistry bossRegistry_{};
@@ -45,6 +49,7 @@ private:
  systems::SaintDenisDirector saintDenisDirector_;
  systems::VampireAIController vampireAiController_;
  systems::MovementController movementController_;
+ NightwalkerSaveData saveData_{};std::filesystem::path savePath_{};std::string lastSavedSnapshot_{};std::uint64_t nextSaveCheckMs_{0};bool saveWriteAllowed_{true};bool savedEncounterGateActive_{false};bool baseEncounterEnabled_{true};
  std::vector<ILifecycleSystem*> systems_{};util::Deadline debugDebounce_{};std::uint64_t tickCount_{0};std::uint64_t lastTickMs_{0};bool unsafeState_{false};bool initialized_{false};
 };
 }
