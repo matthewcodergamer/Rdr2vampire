@@ -253,7 +253,8 @@ void VampireCombatController::BeginAlignment(std::uint64_t nowMs) noexcept {
 
 void VampireCombatController::BeginHold(std::uint64_t nowMs) noexcept {
     if (move_ == CombatMove::CombatFeed) {
-        const auto presentation = feedPresentation_.BeginPaired(actor_, target_, config_.combat.feedHoldMs);
+        const int presentationHoldMs = config_.combat.grabHoldMs + config_.combat.feedHoldMs;
+        const auto presentation = feedPresentation_.BeginPaired(actor_, target_, presentationHoldMs);
         if (presentation.Started()) {
             actorTaskOwned_ = actorTaskOwned_ || presentation.actorTaskOwned;
             targetTaskOwned_ = targetTaskOwned_ || presentation.targetTaskOwned;
