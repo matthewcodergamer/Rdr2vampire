@@ -34,9 +34,11 @@ public:
     void Cancel() noexcept override;
     void Shutdown() noexcept override;
 
+    void ApplySavedState(bool completed, std::int64_t cooldownUntilGameSeconds) noexcept;
     [[nodiscard]] SaintDenisState State() const noexcept { return state_; }
     [[nodiscard]] game::PedHandle ActivePed() const noexcept { return actor_; }
     [[nodiscard]] bool ResolvedThisSession() const noexcept { return resolvedThisSession_; }
+    [[nodiscard]] bool SaveCompleted() const noexcept { return resolvedThisSession_; }
     [[nodiscard]] std::int64_t CooldownUntilGameSeconds() const noexcept { return cooldownUntilGameSeconds_; }
 
 private:
