@@ -42,21 +42,33 @@ bool DebugHotkeysCollide(const DebugSettings& debug) noexcept {
 } // namespace
 
 void Validate(Config& config, const Config::DiagnosticSink& diagnostics) {
-    // Preserve the Phase 1/2 ranges for backwards-compatible existing configs.
     Clamp(config.shadowstep.quickDistance, 1.0, 15.0, "Shadowstep.QuickDistance", diagnostics);
     Clamp(config.shadowstep.aimDistance, 1.0, 25.0, "Shadowstep.AimDistance", diagnostics);
     Clamp(config.shadowstep.cooldownMs, 100, 10000, "Shadowstep.CooldownMs", diagnostics);
-
-    // Phase 3 safety settings.
     Clamp(config.shadowstep.maxVerticalDelta, 0.25, 3.0, "Shadowstep.MaxVerticalDelta", diagnostics);
     Clamp(config.shadowstep.validationTimeoutMs, 50, 2000, "Shadowstep.ValidationTimeoutMs", diagnostics);
     Clamp(config.shadowstep.wallClearance, 0.40, 1.50, "Shadowstep.WallClearance", diagnostics);
 
-    // Existing ranges from the runtime foundation.
     Clamp(config.movement.sprintMoveRate, 1.0, 2.0, "Movement.SprintMoveRate", diagnostics);
     Clamp(config.encounter.startHour, 0, 23, "Encounter.StartHour", diagnostics);
     Clamp(config.encounter.endHour, 0, 23, "Encounter.EndHour", diagnostics);
     Clamp(config.encounter.respawnCooldownHours, 1, 720, "Encounter.RespawnCooldownHours", diagnostics);
+
+    Clamp(config.vampireAi.shadowstepMinDistance, 2.5, 8.0, "VampireAI.ShadowstepMinDistance", diagnostics);
+    Clamp(config.vampireAi.shadowstepMaxDistance, 5.0, 15.0, "VampireAI.ShadowstepMaxDistance", diagnostics);
+    Clamp(config.vampireAi.strikingRange, 1.2, 2.5, "VampireAI.StrikingRange", diagnostics);
+    Clamp(config.vampireAi.predictionMs, 50, 600, "VampireAI.PredictionMs", diagnostics);
+    Clamp(config.vampireAi.decisionIntervalMs, 80, 1000, "VampireAI.DecisionIntervalMs", diagnostics);
+    Clamp(config.vampireAi.shadowstepCooldownMs, 1200, 10000, "VampireAI.ShadowstepCooldownMs", diagnostics);
+    Clamp(config.vampireAi.telegraphMs, 180, 900, "VampireAI.TelegraphMs", diagnostics);
+    Clamp(config.vampireAi.recoveryMs, 300, 3000, "VampireAI.RecoveryMs", diagnostics);
+    Clamp(config.vampireAi.evadeCooldownMs, 2500, 15000, "VampireAI.EvadeCooldownMs", diagnostics);
+    Clamp(config.vampireAi.retreatSpeedThreshold, 0.2, 3.0, "VampireAI.RetreatSpeedThreshold", diagnostics);
+    if (config.vampireAi.shadowstepMaxDistance < config.vampireAi.shadowstepMinDistance + 0.5) {
+        config.vampireAi.shadowstepMaxDistance = config.vampireAi.shadowstepMinDistance + 0.5;
+        if (diagnostics) diagnostics("VampireAI.ShadowstepMaxDistance was raised above the minimum distance.");
+    }
+
     Clamp(config.bossHud.idleSeconds, 1.0, 30.0, "BossHUD.IdleSeconds", diagnostics);
     Clamp(config.bossHud.fadeSeconds, 0.1, 3.0, "BossHUD.FadeSeconds", diagnostics);
     Clamp(config.bossHud.deathHoldSeconds, 0.0, 5.0, "BossHUD.DeathHoldSeconds", diagnostics);
