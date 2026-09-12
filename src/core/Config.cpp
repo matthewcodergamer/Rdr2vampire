@@ -15,6 +15,7 @@ bool Config::IsFeatureEnabled(Feature feature) const noexcept {
         case Feature::Combat: return combat.enabled;
         case Feature::Encounter: return encounter.enabled;
         case Feature::VampireAi: return vampireAi.enabled;
+        case Feature::Narrative: return narrative.enabled;
         case Feature::BossHud: return bossHud.enabled;
         default: return false;
     }
