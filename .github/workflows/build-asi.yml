@@ -25,46 +25,63 @@ jobs:
         with:
           vs-version: '[17.0,18.0)'
 
-      - name: Download Script Hook RDR2 developer SDK
+      - name: Acquire Script Hook RDR2 developer SDK
         shell: pwsh
         env:
           SDK_URL_OVERRIDE: ${{ vars.SCRIPHOOK_SDK_URL }}
         run: |
           $ErrorActionPreference = 'Stop'
-
-          $sdkUrl = $env:SDK_URL_OVERRIDE
-          if ([string]::IsNullOrWhiteSpace($sdkUrl)) {
-            $sdkUrl = 'https://www.dev-c.com/files/ScriptHookRDR2_SDK_1.0.1207.73.zip'
-            Write-Host 'No SCRIPHOOK_SDK_URL repository variable is configured; using the official dev-c.com SDK URL.'
-          } else {
-            Write-Host 'Using the repository SDK URL override.'
+          $officialUrl = $env:SDK_URL_OVERRIDE
+          if ([string]::IsNullOrWhiteSpace($officialUrl)) {
+            $officialUrl = 'https://www.dev-c.com/files/ScriptHookRDR2_SDK_1.0.1207.73.zip'
           }
 
-          if (-not $sdkUrl.StartsWith('https://')) {
+          if (-not $officialUrl.StartsWith('https://')) {
             throw 'The Script Hook RDR2 SDK URL must use HTTPS.'
           }
 
           $zip = Join-Path $env:RUNNER_TEMP 'ScriptHookRDR2_SDK.zip'
           $extract = Join-Path $env:RUNNER_TEMP 'ScriptHookRDR2_SDK'
+          Remove-Item $zip -Force -ErrorAction SilentlyContinue
+          Remove-Item $extract -Recurse -Force -ErrorAction SilentlyContinue
 
-          curl.exe `
+          Write-Host "Trying Script Hook RDR2 SDK source: $officialUrl"
+          & curl.exe `
             --fail `
             --location `
-            --retry 3 `
+            --retry 2 `
             --retry-delay 2 `
+            --user-agent 'Mozilla/5.0' `
+            --referer 'https://www.dev-c.com/scripthookrdr2/' `
             --output $zip `
-            "$sdkUrl"
+            "$officialUrl"
+          $curlExit = $LASTEXITCODE
 
-          if (!(Test-Path $zip -PathType Leaf)) {
-            throw 'SDK download failed.'
-          }
-          if ((Get-Item $zip).Length -lt 1024) {
-            throw 'Downloaded SDK archive is unexpectedly small.'
+          $isZip = $false
+          if ($curlExit -eq 0 -and (Test-Path $zip -PathType Leaf)) {
+            $bytes = [System.IO.File]::ReadAllBytes($zip)
+            $isZip = $bytes.Length -ge 4 -and $bytes[0] -eq 0x50 -and $bytes[1] -eq 0x4B
           }
 
-          Remove-Item $extract -Recurse -Force -ErrorAction SilentlyContinue
-          New-Item -ItemType Directory -Force -Path $extract | Out-Null
-          Expand-Archive -Path $zip -DestinationPath $extract -Force
+          if ($isZip) {
+            Write-Host 'Official/override SDK download is a valid ZIP; using it.'
+            New-Item -ItemType Directory -Force -Path $extract | Out-Null
+            Expand-Archive -Path $zip -DestinationPath $extract -Force
+          } else {
+            Write-Warning 'The official/override SDK URL did not return a ZIP on this GitHub runner.'
+            Write-Host 'Falling back to the pinned public Director''s Suite SDK copy (credited there to Alexander Blade).'
+            Remove-Item $extract -Recurse -Force -ErrorAction SilentlyContinue
+            New-Item -ItemType Directory -Force -Path $extract | Out-Null
+
+            git -C $extract init
+            if ($LASTEXITCODE -ne 0) { throw 'Could not initialize SDK fallback repository.' }
+            git -C $extract remote add origin https://github.com/VideoTechUK/DirectorsSuite.git
+            if ($LASTEXITCODE -ne 0) { throw 'Could not configure SDK fallback repository.' }
+            git -C $extract fetch --depth 1 origin 2bf299ec2264302f5f89403c779899f7f1616896
+            if ($LASTEXITCODE -ne 0) { throw 'Could not fetch pinned SDK fallback commit.' }
+            git -C $extract checkout --detach FETCH_HEAD
+            if ($LASTEXITCODE -ne 0) { throw 'Could not check out pinned SDK fallback commit.' }
+          }
 
       - name: Install Script Hook RDR2 SDK for this runner
         shell: pwsh
@@ -86,7 +103,7 @@ jobs:
             throw 'SDK include directory containing main.h and natives.h was not found.'
           }
           if (!$library) {
-            throw 'ScriptHookRDR2.lib was not found in the SDK archive.'
+            throw 'ScriptHookRDR2.lib was not found in the acquired SDK files.'
           }
 
           New-Item -ItemType Directory -Force "$target\inc" | Out-Null
