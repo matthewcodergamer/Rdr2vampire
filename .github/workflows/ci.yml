@@ -28,6 +28,8 @@ jobs:
         run: msbuild Nightwalker.Movement.Tests.vcxproj /m /p:Configuration=Release /p:Platform=x64
       - name: Build feeding tests
         run: msbuild Nightwalker.Feeding.Tests.vcxproj /m /p:Configuration=Release /p:Platform=x64
+      - name: Build combat tests
+        run: msbuild Nightwalker.Combat.Tests.vcxproj /m /p:Configuration=Release /p:Platform=x64
       - name: Run pure tests
         shell: pwsh
         run: |
@@ -37,6 +39,7 @@ jobs:
           & .\bin\tests\Release\Nightwalker.Targeting.Tests.exe
           & .\bin\tests\Release\Nightwalker.Movement.Tests.exe
           & .\bin\tests\Release\Nightwalker.Feeding.Tests.exe
+          & .\bin\tests\Release\Nightwalker.Combat.Tests.exe
 
   linux-pure-tests:
     name: Linux compiler regression tests
@@ -68,19 +71,25 @@ jobs:
         run: |
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core tests/FeedingTests.cpp src/core/Config.cpp src/core/ConfigParse.cpp src/core/ConfigValidation.cpp src/systems/FeedingMath.cpp src/systems/HiddenResource.cpp -o build/ci/feeding
           ./build/ci/feeding
-      - name: Compile Phase 7 controllers
+      - name: Build and run combat tests
+        run: |
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core tests/CombatTests.cpp src/core/Config.cpp src/core/ConfigParse.cpp src/core/ConfigValidation.cpp src/systems/VectorMotionMath.cpp -o build/ci/combat
+          ./build/ci/combat
+      - name: Compile Phase 8 controllers
         run: |
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/ShadowstepController.cpp -o build/ci/ShadowstepController.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/ShadowstepPresentation.cpp -o build/ci/ShadowstepPresentation.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/VampireAIController.cpp -o build/ci/VampireAIController.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/MovementController.cpp -o build/ci/MovementController.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/FeedingController.cpp -o build/ci/FeedingController.o
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/VampireCombatController.cpp -o build/ci/VampireCombatController.o
       - name: Compile native boundaries
         run: |
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -c src/game/GamePresentationApi.cpp -o build/ci/GamePresentationApi.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -c src/game/GameCombatApi.cpp -o build/ci/GameCombatApi.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -c src/game/GameMovementApi.cpp -o build/ci/GameMovementApi.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -c src/game/GameFeedingApi.cpp -o build/ci/GameFeedingApi.o
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -c src/game/GamePhysicalApi.cpp -o build/ci/GamePhysicalApi.o
 
   sdk-boundary-note:
     name: Native plugin SDK boundary
@@ -89,4 +98,4 @@ jobs:
       - run: |
           echo "Nightwalker.asi is intentionally not linked in public CI."
           echo "The plugin requires the local Script Hook RDR2 SDK and Windows/MSVC."
-          echo "CI validates pure logic plus Phase 7 controller/native-boundary compilation."
+          echo "CI validates pure logic plus Phase 8 controller/native-boundary compilation."
