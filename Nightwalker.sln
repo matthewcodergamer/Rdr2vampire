@@ -24,6 +24,8 @@ Project("{BC8A1FFA-BEE3-4634-8014-F334798102B3}") = "Nightwalker.BossHud.Tests",
 EndProject
 Project("{BC8A1FFA-BEE3-4634-8014-F334798102B3}") = "Nightwalker.SaveData.Tests", "Nightwalker.SaveData.Tests.vcxproj", "{B7C4E11E-9E5A-4A0C-A9CE-91A2F39A4D11}"
 EndProject
+Project("{BC8A1FFA-BEE3-4634-8014-F334798102B3}") = "Nightwalker.Narrative.Tests", "Nightwalker.Narrative.Tests.vcxproj", "{6C3D128A-C8A1-4F8E-9A27-4B6CB2E73112}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
@@ -74,6 +76,10 @@ Global
 		{B7C4E11E-9E5A-4A0C-A9CE-91A2F39A4D11}.Debug|x64.Build.0 = Debug|x64
 		{B7C4E11E-9E5A-4A0C-A9CE-91A2F39A4D11}.Release|x64.ActiveCfg = Release|x64
 		{B7C4E11E-9E5A-4A0C-A9CE-91A2F39A4D11}.Release|x64.Build.0 = Release|x64
+		{6C3D128A-C8A1-4F8E-9A27-4B6CB2E73112}.Debug|x64.ActiveCfg = Debug|x64
+		{6C3D128A-C8A1-4F8E-9A27-4B6CB2E73112}.Debug|x64.Build.0 = Debug|x64
+		{6C3D128A-C8A1-4F8E-9A27-4B6CB2E73112}.Release|x64.ActiveCfg = Release|x64
+		{6C3D128A-C8A1-4F8E-9A27-4B6CB2E73112}.Release|x64.Build.0 = Release|x64
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

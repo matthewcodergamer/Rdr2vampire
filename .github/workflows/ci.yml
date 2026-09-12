@@ -36,6 +36,8 @@ jobs:
         run: msbuild Nightwalker.BossHud.Tests.vcxproj /m /p:Configuration=Release /p:Platform=x64
       - name: Build save data tests
         run: msbuild Nightwalker.SaveData.Tests.vcxproj /m /p:Configuration=Release /p:Platform=x64
+      - name: Build narrative tests
+        run: msbuild Nightwalker.Narrative.Tests.vcxproj /m /p:Configuration=Release /p:Platform=x64
       - name: Run pure tests
         shell: pwsh
         run: |
@@ -49,6 +51,7 @@ jobs:
           & .\bin\tests\Release\Nightwalker.Encounter.Tests.exe
           & .\bin\tests\Release\Nightwalker.BossHud.Tests.exe
           & .\bin\tests\Release\Nightwalker.SaveData.Tests.exe
+          & .\bin\tests\Release\Nightwalker.Narrative.Tests.exe
 
   linux-pure-tests:
     name: Linux compiler regression tests
@@ -96,7 +99,11 @@ jobs:
         run: |
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude tests/SaveDataTests.cpp src/core/SaveData.cpp -o build/ci/savedata
           ./build/ci/savedata
-      - name: Compile Phase 11 controllers
+      - name: Build and run narrative tests
+        run: |
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude tests/NarrativeTests.cpp src/narrative/NarrativeScript.cpp src/narrative/NarrativePlayback.cpp src/narrative/NarrativeSettingsLoader.cpp -o build/ci/narrative
+          ./build/ci/narrative
+      - name: Compile Phase 12 controllers
         run: |
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/ShadowstepController.cpp -o build/ci/ShadowstepController.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/ShadowstepPresentation.cpp -o build/ci/ShadowstepPresentation.o
@@ -116,8 +123,9 @@ jobs:
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/SaintDenisDirectorFinish.cpp -o build/ci/SaintDenisDirectorFinish.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/SaintDenisDirectorLifecycle.cpp -o build/ci/SaintDenisDirectorLifecycle.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/ProgressionController.cpp -o build/ci/ProgressionController.o
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -Isrc/core -c src/narrative/NarrativeController.cpp -o build/ci/NarrativeController.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/ui/BossHudController.cpp -o build/ci/BossHudController.o
-      - name: Compile Phase 11 runtime composition
+      - name: Compile Phase 12 runtime composition
         run: |
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -Isrc/core -c src/core/RuntimeLifecycle.cpp -o build/ci/RuntimeLifecycle.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -Isrc/core -c src/core/RuntimeTick.cpp -o build/ci/RuntimeTick.o
@@ -138,4 +146,4 @@ jobs:
       - run: |
           echo "Nightwalker.asi is intentionally not linked in public CI."
           echo "The plugin requires the local Script Hook RDR2 SDK and Windows/MSVC."
-          echo "CI validates pure logic plus Phase 11 save/progression/runtime/controller/native-boundary compilation."
+          echo "CI validates pure logic plus Phase 12 narrative/runtime/controller/native-boundary compilation."
