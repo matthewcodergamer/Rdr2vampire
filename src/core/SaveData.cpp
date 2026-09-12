@@ -95,7 +95,6 @@ bool ParseKnownFields(std::string_view text, int sourceVersion, NightwalkerSaveD
     std::istringstream stream{std::string(text)};
     std::string line;
     std::size_t lineNumber = 0;
-    bool invalidKnownValue = false;
 
     while (std::getline(stream, line)) {
         ++lineNumber;
@@ -143,7 +142,6 @@ bool ParseKnownFields(std::string_view text, int sourceVersion, NightwalkerSaveD
         }
 
         if (recognized && !parsed) {
-            invalidKnownValue = true;
             Diagnostic(diagnostics, "Invalid save value at line " + std::to_string(lineNumber) +
                                     " for " + key + "; using default value.");
         }
@@ -151,8 +149,9 @@ bool ParseKnownFields(std::string_view text, int sourceVersion, NightwalkerSaveD
 
     NormalizeSaveData(data, diagnostics);
     out = data;
-    // Individual corrupt fields recover to defaults. A file with a valid schema remains loadable.
-    return !invalidKnownValue || sourceVersion <= kNightwalkerSaveSchemaVersion;
+    // A recognized bad field recovers independently to its default. Schema validity
+    // is the file-level gate, so a valid supported schema remains loadable here.
+    return true;
 }
 
 bool TryLoadOne(const std::filesystem::path& path, NightwalkerSaveData& out,
@@ -193,8 +192,8 @@ std::string SerializeSaveData(const NightwalkerSaveData& input) {
     std::ostringstream out;
     out << "# Nightwalker-owned save data. Do not copy this into an RDR2 save file.\n";
     out << "schemaVersion=" << kNightwalkerSaveSchemaVersion << '\n';
-    out << "encounter.saintDenis.completed=" << (data.saintDenisCompleted ? "true" : "false") << '\n';
-    out << "encounter.saintDenis.cooldownUntilGameSeconds=" << data.saintDenisCooldownUntilGameSeconds << '\n';
+    out << "encounter.saintdenis.completed=" << (data.saintDenisCompleted ? "true" : "false") << '\n';
+    out << "encounter.saintdenis.cooldownUntilGameSeconds=" << data.saintDenisCooldownUntilGameSeconds << '\n';
     out << std::fixed << std::setprecision(4);
     out << "resource.blood=" << data.hiddenBlood << '\n';
     out << "progression.points=" << data.progressionPoints << '\n';

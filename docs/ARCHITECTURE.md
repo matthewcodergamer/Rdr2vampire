@@ -1,285 +1,172 @@
 # Runtime Architecture
 
+`docs/DESIGN_LOCKS.md` is the design authority. `docs/SOURCE_LAYOUT.md` is the current source-tree map. This document describes the runtime architecture that exists now; older planning layouts and superseded player-HUD/hunger concepts are intentionally not repeated here.
+
 ## Production target
 
 **Windows x64, Red Dead Redemption 2 Story Mode, native `.asi` plugin.**
 
-Primary runtime dependency: **Script Hook RDR2**.
+Primary runtime dependency: **Script Hook RDR2**. Optional LML content is only appropriate later if Nightwalker needs original content that cannot be delivered cleanly by the ASI. Nightwalker does not target RDR Online.
 
-Optional content dependency later: **Lenny's Mod Loader (LML)** only if we begin streaming original textures, audio, map additions or other content that cannot be delivered cleanly through the script plugin.
-
----
-
-## Repository layout
-
-Planned structure:
+## Current repository layout
 
 ```text
 /
-├─ README.md
-├─ docs/
-│  ├─ ROADMAP.md
-│  ├─ ARCHITECTURE.md
-│  └─ SHADOWSTEP.md
-├─ config/
-│  └─ Nightwalker.example.ini
+├─ include/nightwalker/
+│  ├─ core/
+│  ├─ game/
+│  ├─ narrative/
+│  ├─ systems/
+│  ├─ ui/
+│  └─ util/
 ├─ src/
-│  ├─ Main.cpp
-│  ├─ Core/
-│  │  ├─ Config.*
-│  │  ├─ Logger.*
-│  │  ├─ SaveData.*
-│  │  └─ GameClock.*
-│  ├─ Player/
-│  │  ├─ VampireState.*
-│  │  ├─ ShadowstepController.*
-│  │  ├─ MovementController.*
-│  │  └─ FeedingController.*
-│  ├─ AI/
-│  │  ├─ VampireAIController.*
-│  │  └─ EncounterDirector.*
-│  ├─ Presentation/
-│  │  ├─ VfxController.*
-│  │  ├─ AudioController.*
-│  │  └─ HudController.*
-│  └─ World/
-│     └─ SaintDenisEncounter.*
-└─ third_party/
-   └─ README.md
+│  ├─ core/
+│  ├─ game/
+│  ├─ narrative/
+│  ├─ systems/
+│  ├─ ui/
+│  └─ util/
+├─ tests/
+├─ config/
+├─ content/
+├─ docs/
+├─ scripts/
+└─ third_party/ScriptHookRDR2/   # local SDK only; binaries/headers are not committed
 ```
 
-Do not commit Rockstar game assets or third-party binaries simply because they are installed locally.
+The concrete file-by-file responsibilities live in `docs/SOURCE_LAYOUT.md`.
 
----
+## Runtime composition
 
-## Main update loop
+The Script Hook callback remains thin. `Runtime` owns controller lifetime and exposes one controlled tick. Game-facing natives are isolated behind narrow `src/game` APIs; state machines and pure math live under `src/systems` where possible.
 
-The main Script Hook fiber/tick should be thin:
+Current lifecycle composition includes:
 
 ```text
-Poll game state
-→ update safety watchdog
-→ update clock/form
-→ update input
-→ update active player ability state machine
-→ update encounter director at throttled frequency
-→ update active vampire AI
-→ draw minimal HUD/debug info
-→ yield
+ProgressionController
+DebugVampireSpawner
+ShadowstepController
+FeedingController
+NarrativeController
+SaintDenisDirector
+VampireAIController
+MovementController
+VampireCombatController
+BossHudController
 ```
 
-### Tick frequencies
+Initialization is forward; cancellation/shutdown is reverse. This lets combat, AI, encounter, feeding and presentation release owned transient state before progression checkpoints Nightwalker-owned persistence.
 
-**Every frame**
-- active input;
-- active Shadowstep transition;
-- immediate combat state;
-- HUD marker while aiming.
+## Story Mode safety and recovery
 
-**~10–20 Hz**
-- nearby feed-target refresh;
-- boss decision updates;
-- VFX cleanup.
+`RuntimeTick` observes player/control/world continuity and delegates discontinuity policy to the long-session guard. Recovery can be triggered by player death, unsafe mission/control transitions, long frame gaps, large world jumps, player-handle changes, clock rollback, config reload, global cleanup, or shutdown.
 
-**~1–2 Hz**
-- encounter spawn checks;
-- broad nearby-ped queries;
-- hunger passive decay;
-- save dirty-state checks.
+The governing rule is ownership: a controller restores only temporary state it explicitly owns. Cleanup methods are idempotent.
 
-This keeps the mod responsive without doing expensive world work 60+ times per second.
+Nightwalker does not perform a full ped-pool ownership scan every frame. Boss identity is explicit through `BossActorRegistry`, with cached/throttled validation.
 
----
+## Game/native boundaries
 
-## Player vampire state
+- `GameApi` — entity/model/geometry/ground/water/relocation.
+- `GamePresentationApi` — visibility/alpha and compact Shadowstep smoke.
+- `GameCombatApi` — combat queries/tasks and player target context.
+- `GameMovementApi` — movement-rate override and locomotion restrictions.
+- `GameFeedingApi` — human/health/feed checks and the verified generic Rockstar grapple task.
+- `GamePhysicalApi` — damage-source/contact, ragdoll and bounded impulse.
+- `GameEncounterApi` — clock/game-time/camera visibility.
+- `GameBossBarApi` — normalized boss-bar rectangle/text drawing only.
+- `GameNarrativeAudioApi` — optional narrative-audio seam; current release remains subtitle-safe.
+
+Unverified native hashes, animation dictionaries, particle names or audio calls must not leak into controllers. Research gaps stay documented until verified.
+
+## Shadowstep
+
+Shadowstep is teleport/reposition, not extreme running speed. One resolver validates candidate destinations before relocation. Both the player debug harness and vampire AI use the same safety core.
+
+High-level flow:
 
 ```text
-Human / Disabled
-  ↓ enable or night rule
-VampireIdle
-  ├─ Sprinting
-  ├─ Shadowstep
-  ├─ Feeding
-  ├─ CombatAbility
-  ├─ Stunned/Ragdoll
-  └─ Mounted / Restricted
+resolve intent
+-> validate full destination
+-> compact departure effect
+-> brief hide
+-> instant relocation
+-> restore visibility
+-> compact arrival effect
+-> short validated arrival carry
+-> readable attack opportunity/telegraph
+-> recovery/cooldown
 ```
 
-Only one high-priority action owns the player at a time.
+No teleport-frame damage is applied. Every transient presentation state has a timeout and restoration path. See `docs/SHADOWSTEP.md`.
 
-Priority example:
+## Vampire AI and combat
 
-1. death/cutscene cleanup;
-2. mission restriction;
-3. ragdoll;
-4. feeding paired animation;
-5. Shadowstep;
-6. combat ability;
-7. supernatural sprint;
-8. idle.
+The Saint Denis vampire is the primary production owner of the supernatural combat grammar. `VampireAIController` selects safe intercept/flank/evade Shadowstep candidates and hands physical attacks to `VampireCombatController`.
 
----
+`VampireCombatController` owns short strikes, grapple/control, throw/release and combat-feed state. Movement-rate changes use watchdog restoration. Physical releases clear owned tasks before ragdoll/impulse and suppress impulse when the obstruction trace is blocked or inconclusive.
 
-## Hunger data
+### Feeding presentation
 
-Suggested structure:
+`VampireFeedPresentation` is a policy layer, not another entity owner. Current production behavior prefers the already-established Rockstar `TASK_GRAPPLE` paired interaction, keeps it alive through the boss feed hold, and falls back to a bounded stationary hold when pairing cannot start.
 
-```cpp
-struct VampireStats {
-    float hunger = 100.0f;
-    float maxHunger = 100.0f;
-    float shadowstepCooldownMultiplier = 1.0f;
-    float shadowstepRangeMultiplier = 1.0f;
-    float sprintMultiplier = 1.0f;
-    int progressionPoints = 0;
-};
-```
+The vanilla Saint Denis vampire corpse AnimScene is verified and documented in `docs/research/VAMPIRE_FEED_REUSE.md`, but it is not forced onto arbitrary standing live peds. Front/rear direct-grapple style names are documented research only until the remaining native contract is target-verified.
 
-All values should be clamped and save-file versioned.
+## Encounter ownership
 
----
+`SaintDenisDirector` owns the real encounter lifecycle and its explicit `cs_vampire` actor. `BossActorRegistry` is the cross-system reference source. The F8 debug spawner may claim the registry only when it is free; it is not a second production boss implementation.
 
-## Shadowstep state
-
-```cpp
-enum class ShadowstepState {
-    Idle,
-    Targeting,
-    Validating,
-    Departure,
-    Transit,
-    Arrival,
-    Recovery,
-    Cooldown
-};
-```
-
-Data carried by one cast:
-
-```cpp
-struct ShadowstepCast {
-    Vector3 origin;
-    Vector3 requestedDestination;
-    Vector3 safeDestination;
-    Entity target;
-    bool combatTargeted;
-    bool collisionWasEnabled;
-    int startedAtMs;
-};
-```
-
-Never store raw entity handles forever; revalidate entities before using them.
-
----
-
-## Encounter director
-
-Each encounter has:
+Conceptual encounter flow:
 
 ```text
-Inactive
-→ Eligible
-→ Omen
-→ Spawn
-→ Stalking
-→ Conversation / Aggro
-→ Combat
-→ Resolved
-→ Cooldown
+Dormant/Eligibility
+-> Omen/Stalking
+-> Confrontation
+-> Combat
+-> Resolution
+-> Cooldown
 ```
 
-Eligibility combines:
+Abort and resolution paths cancel owned AI/combat/narrative/HUD state and release the encounter actor safely. Duplicate boss creation is not permitted.
 
-- world time;
-- player distance;
-- story/mission safety;
-- encounter cooldown;
-- whether the player is already in combat;
-- whether the spawn point is off-camera and unoccupied.
+## Boss HUD boundary
 
-The first major encounter uses RDR2's `cs_vampire` model at runtime rather than bundling that model in the mod.
+The temporary cinematic red boss-health bar is the **only custom combat HUD**. It is supplied the explicit encounter boss; it never scans for a boss. It fades after inactivity, returns on renewed combat activity, and has a bounded death hold.
 
----
+No player blood/hunger meter, cooldown meter, ability icon/card, skill wheel, boss phase label, power name, weakness panel, floating damage number or combo counter is part of the architecture.
 
-## Save format
+## Persistence
 
-Use a separate file, for example:
+Nightwalker uses its own versioned `Nightwalker.state`; it never patches RDR2 save structures. `SaveData` is SDK-independent and owns parsing, migration, clamping, backup recovery and replacement. `ProgressionController` owns runtime checkpoint policy.
 
-```text
-Nightwalker.save.json
-```
+A supported schema can recover an invalid individual known field to that field's default while preserving other valid fields. Unsupported future schemas are rejected and writes are disabled to avoid destructive downgrade.
 
-Version it:
+## Performance policy
 
-```json
-{
-  "version": 1,
-  "vampireEnabled": true,
-  "hunger": 84.2,
-  "progressionPoints": 3,
-  "unlocks": ["shadowstep", "feed"],
-  "encounters": {
-    "saintDenisVampire": {
-      "completed": false,
-      "cooldownUntil": 0
-    }
-  }
-}
-```
-
-Never patch the game's own save structure.
-
----
+- active per-frame state machines do only work required for the current transient action;
+- broad encounter checks are throttled;
+- boss-handle validation is cached/throttled;
+- model/VFX requests are bounded and released;
+- optional profiling uses fixed slots and debug logging rather than another HUD;
+- no expensive full-world scan is added to solve local ownership or Shadowstep safety.
 
 ## Content boundaries
 
-### Safe for repository
+Allowed in the repository:
 
-- original source code;
-- configs;
-- documentation;
-- original textures/audio/models we own or have permission to redistribute;
-- hashes/names used to reference assets already installed in RDR2.
+- original Nightwalker source/config/docs/dialogue;
+- original or properly licensed assets;
+- names/hashes used to reference assets already installed in the user's legitimate RDR2 copy.
 
-### Do not put in repository
+Not shipped:
 
-- RDR2 game files;
-- ripped Dawnwalker assets;
-- extracted commercial voice acting/music;
-- third-party mod binaries without permission.
+- Rockstar game files;
+- Script Hook RDR2 redistributables not permitted by their terms;
+- ripped Dawnwalker or other commercial assets/code/audio;
+- third-party binaries without redistribution permission.
 
----
+## Build and release boundary
 
-## Crash/soft-lock watchdog
+Public CI builds/runs SDK-independent deterministic tests and syntax-compiles gameplay/native boundaries with test signatures. It intentionally does not fake a releasable `Nightwalker.asi`.
 
-Create a global cleanup routine callable from every subsystem:
-
-```text
-Restore player visibility
-Restore alpha
-Restore collision
-Restore movement speed
-Release input locks
-Stop mod-owned looping FX
-Detach temporary entities
-Clear mod-owned paired animation state
-Delete mod-spawned temporary bats/peds
-Return state machines to Idle
-```
-
-Run it on script shutdown and whenever the game enters an unexpected state.
-
----
-
-## Why native C++ first
-
-A C++ `.asi` build gives us direct access to Script Hook RDR2 and the native function set, which matters for:
-
-- precise per-frame movement;
-- shape tests;
-- animation and entity state;
-- AI control;
-- low-overhead VFX;
-- future low-level compatibility work.
-
-A managed/C# prototype could be useful for experiments, but the long-term target should remain the native plugin so the core mechanic is not constrained by a wrapper API.
+A genuine plugin is linked locally with the Script Hook RDR2 developer SDK using `Release | x64`. See `docs/BUILDING.md` and `docs/RELEASE_TEST_MATRIX.md`.
