@@ -10,7 +10,7 @@
 #include "nightwalker/game/GameApi.h"
 #include "nightwalker/game/GameCombatApi.h"
 #include "nightwalker/game/GamePresentationApi.h"
-#include "nightwalker/systems/BossActorRegistry.h"
+#include "nightwalker/systems/DebugVampireSpawner.h"
 #include "nightwalker/systems/ShadowstepPresentationSettings.h"
 #include "nightwalker/systems/ShadowstepResolver.h"
 #include "nightwalker/systems/TargetedShadowstepPlanner.h"
@@ -43,7 +43,7 @@ public:
         game::IGameApi& api,
         game::IGameCombatApi& combatApi,
         game::IGamePresentationApi& presentationApi,
-        BossActorRegistry& registry,
+        DebugVampireSpawner& spawner,
         VampireCombatController& combatController,
         util::Logger& logger,
         const core::Config& config) noexcept;
@@ -76,7 +76,7 @@ private:
     game::IGameApi& api_;
     game::IGameCombatApi& combatApi_;
     game::IGamePresentationApi& presentationApi_;
-    BossActorRegistry& registry_;
+    DebugVampireSpawner& spawner_;
     VampireCombatController& combatController_;
     util::Logger& logger_;
     const core::Config& config_;
