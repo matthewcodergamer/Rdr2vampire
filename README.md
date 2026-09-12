@@ -6,29 +6,38 @@ Nightwalker is a native C++ Red Dead Redemption 2 vampire mod project. It refere
 
 ## Status
 
-**Phase 10: temporary Saint Denis boss-health bar.** Phase 9's nighttime encounter now explicitly owns the one approved custom combat HUD element: a restrained red health meter for its `cs_vampire` boss. No world scan guesses which ped is a boss; `SaintDenisDirector` passes its owned handle directly to `BossHudController` only when Confrontation becomes Combat.
+**Phase 11: Nightwalker-owned progression and persistence.** The Phase 9 Saint Denis encounter, Phase 10 temporary red boss-health bar, boss-first Shadowstep AI, movement, feeding and physical combat remain intact. Phase 11 adds a separate versioned `Nightwalker.state` file for mod-owned state without touching RDR2's proprietary saves and without adding any progression HUD.
 
-The encounter flow remains:
+Persisted state includes:
 
-`Dormant -> Eligible -> Omen -> SpawnPending -> Stalking -> Confrontation -> Combat -> Resolution -> Cleanup -> Cooldown`
+- Saint Denis encounter completion and absolute game-time cooldown;
+- the hidden blood/hunger value;
+- progression points;
+- optional unlock flags;
+- bounded progression tuning multipliers.
 
-with `Abort -> Cleanup` for unsafe exits. Existing Shadowstep, vampire AI, supernatural sprint, feeding, grab/throw and physical melee systems remain the boss combat implementation.
+The file uses schema version `1`. Missing files use safe defaults. Schema-0 development aliases migrate forward. A corrupt primary attempts `.bak` recovery before defaults. A newer unsupported schema disables writes for that session rather than downgrading the file.
 
-The HUD flow is:
+Writes use a conservative temp/replace path: serialize to `Nightwalker.state.tmp`, rotate the previous primary to `.bak`, promote the temp file, and restore the backup if promotion fails. Runtime checkpoints are throttled and skipped when serialized state has not changed.
 
-`Hidden -> FadeIn -> Visible -> FadeOut -> Hidden`
+`ProgressionController` runs first and therefore cancels last. On player death, mission/cutscene transition, F11 cleanup, or shutdown, encounter/combat systems clean first; progression then captures the resulting cooldown/resource state. F10 checkpoints after safe encounter cleanup, reloads the clean INI, and reapplies saved tuning so multipliers do not compound.
 
-and boss death uses:
+The previously identified Dormant-cancel edge case is already fixed in the Phase 9/10 baseline: cancelling `EncounterDirector` with no actor in `Dormant` or an existing `Cooldown` does not create a new abort cooldown.
 
-`Visible/FadeIn/FadeOut -> DeathHold -> FadeOut -> Hidden`.
+### Progression boundary
 
-Starting/stalking the encounter does not pin a bar onscreen. Entering combat creates the explicit boss HUD ownership and registers activity. Boss damage, boss-caused player damage, or confirmed close combat refreshes the idle timer. After the configured quiet period the bar fades out; re-engagement fades it back in with the current authoritative health ratio.
+Phase 11 immediately consumes only progression that belongs to currently player/debug-owned gameplay:
 
-Health is read from RDR2 through the existing health native boundary and clamped to `0..1`. The displayed fill eases toward the authoritative value for presentation while the internal actual ratio remains exact. Boss death drives the authoritative ratio to zero, holds the empty bar briefly, then fades away. Encounter abort, invalid/despawned boss, player death/unsafe Story Mode transition, F10/F11 cleanup, configuration disable, and plugin shutdown hide it immediately.
+- player Shadowstep debug-harness range;
+- player Shadowstep debug-harness cooldown;
+- feeding blood gain;
+- feeding health restoration.
 
-Presentation deliberately stays narrow: thin lower-screen meter, deep blood-red fill, dark translucent backing, warm-gray title, normalized coordinates and aspect-aware width compensation. The default title is `THE VAMPIRE`. Numeric health is **off by default** and appears only if `ShowNumericHealth=true` is explicitly configured.
+The schema also stores sprint, enhanced-flank, regeneration and throw-strength progression, but those are not globally applied yet. Current continuous sprint is boss-owned and the physical throw controller is shared with the boss; silently applying player progression there would strengthen the enemy. Those fields are reserved for later explicitly approved player gameplay.
 
-There is still **no** player blood/hunger meter, custom player-health replacement, stamina replacement, Shadowstep cooldown bar, skill wheel, ability card, move list, boss phase text, power name, weakness panel, floating damage number, combo counter, or status-icon row.
+Development tuning is file/config driven. Edit `Nightwalker.state` only while RDR2 is closed, then restart. F10 reloads `Nightwalker.ini` and reapplies the already loaded state; it does not re-read an externally edited state file. No F12 hotkey, skill tree, radial menu, or progression overlay is shipped.
+
+There is still **no** player blood/hunger meter, player-health replacement, stamina replacement, Shadowstep cooldown bar, skill wheel, ability card, move list, boss phase text, power name, weakness panel, floating damage number, combo counter, or status-icon row. The temporary red Saint Denis boss-health bar remains the only approved custom combat HUD.
 
 ## Build
 
@@ -36,7 +45,7 @@ Use Visual Studio 2022 with the Desktop C++ workload, a Windows SDK, and the ext
 
 Open `Nightwalker.sln` and build `Debug | x64` or `Release | x64`. The target output is `Nightwalker.asi` under `bin/<Configuration>/`.
 
-SDK-independent test executables now include nine suites:
+SDK-independent test executables now include ten suites:
 
 - `Nightwalker.Tests` — runtime/config/timing/watchdog/model-streaming regressions.
 - `Nightwalker.Shadowstep.Tests` — Shadowstep destination safety.
@@ -45,28 +54,17 @@ SDK-independent test executables now include nine suites:
 - `Nightwalker.Movement.Tests` — controlled supernatural movement.
 - `Nightwalker.Feeding.Tests` — feeding/resource rules.
 - `Nightwalker.Combat.Tests` — physical-combat math/config.
-- `Nightwalker.Encounter.Tests` — Phase 9 encounter math/registry/settings.
-- `Nightwalker.BossHud.Tests` — Phase 10 fade/re-engage/death/smoothing/layout/config behavior.
+- `Nightwalker.Encounter.Tests` — encounter math/registry/settings.
+- `Nightwalker.BossHud.Tests` — boss-bar fade/re-engage/death/layout behavior.
+- `Nightwalker.SaveData.Tests` — schema round trip/migration, clamps, tuning, replacement and corrupt-primary recovery.
 
-GitHub Actions builds/runs the deterministic tests on Windows/MSBuild and Linux/g++. Linux also syntax-compiles the gameplay/runtime controllers and test-only native signature fixtures, including the Phase 10 drawing boundary. Public CI intentionally does not link `Nightwalker.asi`; the final plugin requires the developer-local Script Hook RDR2 SDK and a Windows/RDR2 Story Mode environment.
+GitHub Actions builds/runs deterministic tests on Windows/MSBuild and Linux/g++. Linux additionally syntax-compiles gameplay controllers, `ProgressionController`, Runtime composition and test-only native signature fixtures. Public CI intentionally does not link `Nightwalker.asi`; the final plugin requires the developer-local Script Hook RDR2 SDK and Windows/RDR2 Story Mode.
 
-See `docs/BUILDING.md`, `docs/ENCOUNTER.md`, and `docs/BOSS_HEALTH_BAR.md` for target-environment checks and ownership rules.
-
-## Boss HUD defaults
-
-```ini
-[BossHUD]
-Enabled=true
-DisplayName=THE VAMPIRE
-IdleSeconds=6.0
-FadeSeconds=0.35
-DeathHoldSeconds=1.25
-ShowNumericHealth=false
-```
+See `docs/PERSISTENCE.md`, `docs/BUILDING.md`, `docs/ENCOUNTER.md`, and `docs/BOSS_HEALTH_BAR.md`.
 
 ## Debug controls
 
-Set `[Debug] Enabled=true` only for development harness actions. The production encounter and boss bar do not require Debug mode.
+Set `[Debug] Enabled=true` only for development harness actions. The production encounter, boss bar and persistence layer do not require Debug mode.
 
 - **F1** — heavy strike debug harness.
 - **F2** — short grab/control debug harness.
@@ -76,20 +74,20 @@ Set `[Debug] Enabled=true` only for development harness actions. The production 
 - **F7** — player-side Shadowstep safety harness.
 - **F8** — spawn a debug `cs_vampire` only when the authoritative boss registry is free.
 - **F9** — despawn only a debug-owned vampire; ignored during the real encounter.
-- **F10** — clean encounter/HUD/transient state then reload config.
-- **F11** — global cleanup; active encounter and boss HUD are removed safely.
+- **F10** — clean encounter/HUD/transient state, checkpoint progression, reload INI and reapply saved tuning.
+- **F11** — global cleanup; progression checkpoints after gameplay cleanup through reverse lifecycle ordering.
 
-## Native boundaries
+## Native and ownership boundaries
 
 - `GameApi` — entity/geometry/model operations.
 - `GameCombatApi` — combat state and ordinary combat tasks.
 - `GameEncounterApi` — clock/game-time/camera-visibility queries.
 - `GamePresentationApi` — compact smoke and visibility.
-- `GameMovementApi`, `GameFeedingApi`, `GamePhysicalApi` — existing movement/feed/physics boundaries.
-- `GameBossBarApi` — Phase 10 normalized rectangle/text drawing and screen-resolution query only.
-
-`BossHudModel` contains the testable state/timing/layout logic. `BossHudController` owns only the explicitly supplied encounter boss handle; it never scans the ped pool.
+- `GameMovementApi`, `GameFeedingApi`, `GamePhysicalApi` — movement/feed/physics boundaries.
+- `GameBossBarApi` — normalized boss-bar rectangle/text drawing.
+- `SaveData` — pure Nightwalker state codec, migration/clamps and file replacement.
+- `ProgressionController` — runtime ownership of persisted resource/encounter/progression state.
 
 ## Design authority
 
-`docs/DESIGN_LOCKS.md` overrides older planning text. The temporary red Saint Denis boss-health bar implemented in Phase 10 is the **only custom combat HUD element** approved for Nightwalker.
+`docs/DESIGN_LOCKS.md` overrides older planning text. Internal progression/resource state is allowed; it does not authorize a player power HUD. The temporary red Saint Denis boss-health bar remains Nightwalker's **only** custom combat HUD element.

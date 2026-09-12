@@ -21,6 +21,7 @@
 #include "nightwalker/systems/DebugVampireSpawner.h"
 #include "nightwalker/systems/FeedingController.h"
 #include "nightwalker/systems/MovementController.h"
+#include "nightwalker/systems/ProgressionController.h"
 #include "nightwalker/systems/SaintDenisDirector.h"
 #include "nightwalker/systems/ShadowstepController.h"
 #include "nightwalker/systems/VampireAIController.h"
@@ -45,6 +46,7 @@ private:
  systems::SaintDenisDirector saintDenisDirector_;
  systems::VampireAIController vampireAiController_;
  systems::MovementController movementController_;
+ systems::ProgressionController progressionController_;
  std::vector<ILifecycleSystem*> systems_{};util::Deadline debugDebounce_{};std::uint64_t tickCount_{0};std::uint64_t lastTickMs_{0};bool unsafeState_{false};bool initialized_{false};
 };
 }
