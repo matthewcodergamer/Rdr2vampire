@@ -144,7 +144,7 @@ if sorted(set(hud_hits)) != ["src/game/GameBossBarApi.cpp"]:
 
 packager = read("scripts/package-release.ps1")
 for marker in (
-    "Nightwalker.asi", "Nightwalker.ini", "Nightwalker.dialogue", "README.md", "README.txt",
+    "Nightwalker.asi", "Nightwalker.ini", "Nightwalker.dialogue", "README.md",
     "CHANGELOG.md", "THIRD_PARTY_NOTICES.md", "Compress-Archive",
 ):
     if marker not in packager:
