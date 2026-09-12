@@ -55,6 +55,15 @@ BOOL TASK_GRAPPLE(Ped attacker, Ped target, Hash p2, BOOL p3, float speed, BOOL 
 void CLEAR_PED_TASKS(Ped ped, BOOL p1, BOOL p2);
 }
 
+namespace CLOCK {
+int GET_CLOCK_HOURS();
+int _GET_SECONDS_SINCE_BASE_YEAR();
+}
+
+namespace CAM {
+BOOL IS_SPHERE_VISIBLE(float x, float y, float z, float radius);
+}
+
 namespace PAD { BOOL IS_CONTROL_PRESSED(int padIndex, Hash control); }
 namespace MISC { Hash GET_HASH_KEY(const char* text); }
 namespace STREAMING { void REQUEST_NAMED_PTFX_ASSET(Hash asset); BOOL HAS_NAMED_PTFX_ASSET_LOADED(Hash asset); void REMOVE_NAMED_PTFX_ASSET(Hash asset); }
