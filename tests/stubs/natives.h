@@ -14,7 +14,7 @@ namespace ENTITY {
 bool DOES_ENTITY_EXIST(Entity entity);
 BOOL IS_ENTITY_A_MISSION_ENTITY(Entity entity);
 int GET_ENTITY_HEALTH(Entity entity);
-void _SET_ENTITY_HEALTH(Entity entity, int health, int p2);
+void SET_ENTITY_HEALTH(Entity entity, int health, Entity entityKilledBy);
 BOOL HAS_ENTITY_CLEAR_LOS_TO_ENTITY(Entity entity1, Entity entity2, int traceType);
 void SET_ENTITY_ALPHA(Entity entity, int alphaLevel, BOOL skin);
 void SET_ENTITY_VISIBLE(Entity entity, BOOL visible);
