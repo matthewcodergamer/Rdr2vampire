@@ -41,13 +41,6 @@ void GameCombatApi::TaskStandStill(PedHandle ped, int durationMs) noexcept {
     TASK::TASK_STAND_STILL(static_cast<Ped>(ped), durationMs);
 }
 
-void GameCombatApi::TaskFaceEntity(PedHandle ped, EntityHandle target, int durationMs) noexcept {
-    if (ped == 0 || target == 0) return;
-    TASK::TASK_TURN_PED_TO_FACE_ENTITY(
-        static_cast<Ped>(ped), static_cast<Entity>(target), durationMs,
-        0.0F, 0.0F, 0.0F);
-}
-
 void GameCombatApi::TaskCombatPed(PedHandle ped, PedHandle target) noexcept {
     if (ped == 0 || target == 0) return;
     TASK::TASK_COMBAT_PED(static_cast<Ped>(ped), static_cast<Ped>(target), 0, 0);
