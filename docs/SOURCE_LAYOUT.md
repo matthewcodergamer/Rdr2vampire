@@ -1,87 +1,92 @@
 # Source layout
 
-Nightwalker separates native calls, lifecycle ownership, pure math, presentation, and gameplay AI.
+Nightwalker separates native calls, lifecycle ownership, pure math, presentation, gameplay AI, and encounter direction.
 
 - `src/Plugin.cpp` — Script Hook registration boundary and shutdown signal only.
-- `src/core` — runtime composition, config parsing/validation, debug input, lifecycle and safety infrastructure.
-- `src/game` — narrow RDR2-native boundaries, game context, and model streaming helpers.
-- `src/systems` — owned gameplay/debug controllers plus reusable Shadowstep, movement, feeding and physical-combat logic.
-- `src/ui` — reserved for the later temporary red boss-health bar. Phase 8 adds no ability HUD.
+- `src/core` — runtime composition, config parsing/reload, debug input, lifecycle and safety infrastructure.
+- `src/game` — narrow RDR2-native boundaries, game context, model streaming, and Phase 9 clock/camera queries.
+- `src/systems` — Shadowstep, movement, feeding, physical combat, authoritative boss ownership, and Saint Denis encounter direction.
+- `src/ui` — reserved for the later temporary red boss-health bar. Phase 9 draws no combat HUD.
 - `src/util` — logging and shared utilities.
-- `include/nightwalker` — public project headers matching those ownership areas.
 - `tests` — SDK-independent deterministic tests and test-only native signature fixtures.
 
 ## Native boundaries
 
-- `GameApi` owns entity validity, coordinates, forward vectors, ground/water/shape tests, relocation, model streaming, local ped creation/deletion and the world trace used before a release impulse.
-- `GamePresentationApi` owns generic ped visibility/alpha restoration, melee-input observation and compact best-effort smoke PTFX.
-- `GameCombatApi` owns aimed-ped lookup, entity velocity, combat-state queries, telegraph tasks, ordinary combat handoff and owned task cleanup.
-- `GameMovementApi` owns continuous movement-rate plus swimming, falling, ragdoll and mount-state checks.
-- `GameFeedingApi` owns human/mission checks, incompatible locomotion/scenario checks, LOS, health access, face/hold tasks, generic grapple attempt and participant task cleanup.
-- `GamePhysicalApi` owns Phase 8 actor-to-target contact confirmation, damage-source clearing, ragdoll entry and center-of-mass impulse application.
+- `GameApi` — entity/model/coordinates, ground/water/shape tests, relocation, local ped creation/deletion, world traces.
+- `GamePresentationApi` — visibility/alpha restoration, melee-input observation, compact smoke.
+- `GameCombatApi` — aimed-ped lookup, velocity, combat queries/tasks, owned task cleanup.
+- `GameMovementApi` — move-rate and locomotion restrictions.
+- `GameFeedingApi` — feed/grapple-facing ped state, LOS, health and participant tasks.
+- `GamePhysicalApi` — contact confirmation, ragdoll and bounded impulse boundary.
+- `GameEncounterApi` — Phase 9 clock hour, in-game seconds, and camera sphere-visibility queries.
 
-Controllers do not scatter these native calls or embed unverified native hashes, animation dictionary names, melee-style hashes or particle names.
+No controller embeds guessed animation/audio/effect hashes.
 
-## Shadowstep ownership
+## Boss ownership registry
 
-`ShadowstepResolver` remains the single teleport landing-safety authority. `TargetedShadowstepPlanner` generates intercept/flank/behind candidates. `VampireAIController` is the primary autonomous Shadowstep combat owner for the Nightwalker-owned `cs_vampire`; F7 remains a secondary player debug/safety harness.
+`BossActorRegistry` is the single cross-system source of the current Nightwalker boss ped. It records one actor, one owner, and whether autonomous combat is armed.
 
-Phase 8 does not create another teleport implementation. The boss completes its existing disappearance/relocation/carry/telegraph grammar and only then asks `VampireCombatController` for the follow-up strike.
+Owners are:
 
-## Continuous movement ownership
+- `Debug` — F8/F9 development actor;
+- `Encounter` — the real Saint Denis Phase 9 actor.
 
-`MovementController` remains separate from Shadowstep and physical combat. It controls only the Nightwalker-owned `cs_vampire` during the AI `Approach` state.
+A second owner cannot claim the registry while it is occupied. This prevents duplicate Nightwalker bosses without broad ped-pool scanning.
 
-Runtime update order intentionally places `MovementController` before `VampireCombatController`. If the combat controller temporarily owns the modest strike move-rate override, MovementController first restores/suppresses the continuous sprint and the combat controller reapplies only its short strike override. Reverse-order cancellation therefore cleans combat motion before the broader AI/spawner teardown.
+`DebugVampireSpawner` remains the legacy boss-source dependency used by the mature AI/movement/combat controllers, but its `OwnedPed()` accessor now proxies the registry. Its private local handle is used only so F9 can delete a ped that the debug spawner itself created. F9 cannot delete an encounter-owned boss.
 
-## Feeding ownership
+## Phase 9 encounter ownership
 
-`FeedingController` retains the Phase 7 ambient feed state machine and the optional session-only `HiddenResource`. Phase 8 exposes one narrow resource-gain method so a completed player-debug combat feed can replenish the same internal value rather than creating a second resource system. That value remains invisible as HUD and is not persisted yet.
+`SaintDenisDirector` fulfills the architecture's `EncounterDirector` responsibility. It owns the actual encounter actor handle and exposes `Name() == "EncounterDirector"` to the runtime lifecycle.
 
-## Phase 8 combat ownership
+State flow:
 
-`VampireCombatController` owns one physical special interaction at a time:
+`Dormant -> Eligible -> Omen -> SpawnPending -> Stalking -> Confrontation -> Combat -> Resolution -> Cleanup -> Cooldown`
 
-`Idle -> Telegraph -> Align/Hold or Strike -> Release/Feed -> Recover -> Idle`
+Unsafe flow:
 
-Implemented move requests:
+`active -> Abort -> Cleanup -> Cooldown`
 
-- `ShadowstepStrike`
-- `HeavyStrike`
-- `GrabControl`
-- `GrabThrow`
-- `CombatFeed`
+`EncounterMath` contains SDK-independent time-window, horizontal-radius, and cooldown calculations. `SaintDenisSettingsLoader` reads/clamps the expanded `[Encounter.SaintDenis]` settings without destabilizing the older core parser.
 
-The controller can be used by the Nightwalker-owned boss or the explicit player debug harness, but the actor/target handles are always explicit and revalidated.
+### Spawn ownership
 
-### Strike path
+The director requests `cs_vampire` through the existing `ModelStreamRequest`, validates safe pedestrian/ground/water placement, prefers camera-hidden candidates, then claims `BossActorRegistry` as `Encounter`. A failed registry claim removes the just-created ped immediately.
 
-The heavy/claw-like V1 path deliberately uses RDR2 ordinary combat. Before the strike, Nightwalker clears the target's previous damage-source marker. A configured small strike bonus is allowed only after `GamePhysicalApi` confirms the intended actor actually damaged the intended target, and the bonus is applied once.
+### AI handoff
 
-The owned boss may receive a small bounded strike move-rate override; its restore callback returns the value to `1.0`.
+During Omen, SpawnPending, Stalking and Confrontation the registry actor exists but `CombatEnabled=false`. `VampireAIController` therefore remains idle.
 
-### Grab path
+Confrontation completion sets `CombatEnabled=true`. The existing AI then consumes the exact same registered ped; no second Shadowstep/melee implementation exists.
 
-Nightwalker aligns the two peds, attempts a short verified generic grapple, and uses a stationary fallback if that task does not start. The hold window is deliberately short because the generic grapple can become lethal if left running. Phase 8 creates no ped attachment and changes no collision, invincibility, camera or input state.
+`VampireAIController`, `MovementController`, and `VampireCombatController` still use the existing `DebugVampireSpawner` constructor seam, whose registry-backed `OwnedPed()` accessor makes the handoff transparent.
 
-### Physical release path
+### Runtime order
 
-Before release, all Nightwalker-owned participant tasks are cleared. `MotionImpulseMath` builds a bounded direction/impulse and projected endpoint. The existing world trace checks that short segment. The target is allowed to ragdoll, but the launch impulse is applied only when tracing is conclusive and clear; obstruction or uncertainty suppresses the impulse.
+Forward update order is:
 
-### Combat feed path
+1. debug spawner;
+2. player Shadowstep harness;
+3. feeding;
+4. EncounterDirector;
+5. vampire AI;
+6. continuous movement;
+7. physical combat.
 
-A combat feed can follow the owned short grab. The player debug path also allows a direct feed on an explicitly aimed ragdolled human target. Completion applies a bounded health transfer and player-debug completion can reward the existing hidden resource. Boss scripted feed damage is clamped so this scripted effect alone cannot reduce the player below 1 health.
+This lets the director arm combat before AI runs on that frame.
 
-## Vampire AI ownership
+Reverse cancellation restores physical combat/movement/AI first, then EncounterDirector removes its ped. This is required for death, mission/cutscene/world transitions, F10/F11, feature disable, and shutdown.
 
-At close range, `VampireAIController` decides whether to request a special; it does not implement the special's native/task details itself. For repeatable testing the current close-range sequence rotates:
+## Existing combat ownership
 
-`HeavyStrike -> GrabThrow -> CombatFeed`
+`ShadowstepResolver` remains the single teleport landing-safety authority and `TargetedShadowstepPlanner` still generates intercept/flank/behind points. `VampireCombatController` still owns physical specials. `MovementController` remains continuous speed ownership. `FeedingController` retains ambient feeding and the hidden session resource.
 
-An internal special cooldown prevents frame-by-frame reuse. During a delegated move, ordinary-combat handoff is suppressed until `VampireCombatController` returns to Idle.
+Phase 9 only stages and owns the encounter actor around those existing systems.
 
-## Cleanup boundary
+## Cleanup and persistence boundary
 
-Global Runtime cancellation runs systems in reverse update order. Phase 8 cleanup therefore restores combat-owned tasks/motion before the owned vampire can be deleted. F9/F10/F11, death, mission/control transitions, feature disable and shutdown converge on these lifecycle paths.
+Encounter cleanup disables autonomous combat before clearing tasks/restoring appearance/deleting the encounter-owned ped. Registry ownership is released only after successful deletion; deletion failure remains in Cleanup and retries.
 
-Public CI tests the pure release math/configuration and syntax-compiles `VampireCombatController` plus `GamePhysicalApi` against test-only native declarations. Actual RDR2 task choreography, ragdoll appearance and five-minute mixed-combat soak remain target-environment checks documented in `docs/BUILDING.md`.
+Successful resolution starts the longer configured game-time cooldown. Abort starts a shorter cooldown. These values are session-owned in Phase 9 and do not patch RDR2's save structure. Persistent Nightwalker save data remains later work.
+
+Public CI now tests encounter time/radius/cooldown math, registry exclusivity, and settings clamps; syntax-compiles the split encounter director, Runtime composition, and `GameEncounterApi` native fixture. Actual Saint Denis staging/camera placement and full abort/restart soak remain Story Mode tests documented in `docs/ENCOUNTER.md`.
