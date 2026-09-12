@@ -49,7 +49,15 @@ void Validate(Config& config, const Config::DiagnosticSink& diagnostics) {
     Clamp(config.shadowstep.validationTimeoutMs, 50, 2000, "Shadowstep.ValidationTimeoutMs", diagnostics);
     Clamp(config.shadowstep.wallClearance, 0.40, 1.50, "Shadowstep.WallClearance", diagnostics);
 
-    Clamp(config.movement.sprintMoveRate, 1.0, 2.0, "Movement.SprintMoveRate", diagnostics);
+    Clamp(config.movement.sprintMoveRate, 1.0, 1.20, "Movement.SprintMoveRate", diagnostics);
+    Clamp(config.movement.accelerationMs, 100, 1200, "Movement.AccelerationMs", diagnostics);
+    Clamp(config.movement.burstDurationMs, 300, 4000, "Movement.BurstDurationMs", diagnostics);
+    Clamp(config.movement.recoveryMs, 250, 5000, "Movement.RecoveryMs", diagnostics);
+    Clamp(config.movement.dismountRecoveryMs, 150, 2000, "Movement.DismountRecoveryMs", diagnostics);
+    Clamp(config.movement.activationDistance, 2.5, 15.0, "Movement.ActivationDistance", diagnostics);
+    Clamp(config.movement.minVelocity, 0.05, 3.0, "Movement.MinVelocity", diagnostics);
+    Clamp(config.movement.trailIntervalMs, 100, 1000, "Movement.TrailIntervalMs", diagnostics);
+
     Clamp(config.encounter.startHour, 0, 23, "Encounter.StartHour", diagnostics);
     Clamp(config.encounter.endHour, 0, 23, "Encounter.EndHour", diagnostics);
     Clamp(config.encounter.respawnCooldownHours, 1, 720, "Encounter.RespawnCooldownHours", diagnostics);

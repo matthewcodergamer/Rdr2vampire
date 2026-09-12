@@ -24,7 +24,19 @@ struct ShadowstepSettings {
     double wallClearance{0.65};
 };
 
-struct MovementSettings { bool enabled{true}; double sprintMoveRate{1.20}; };
+struct MovementSettings {
+    bool enabled{true};
+    double sprintMoveRate{1.15};
+    int accelerationMs{350};
+    int burstDurationMs{1800};
+    int recoveryMs{900};
+    int dismountRecoveryMs{500};
+    double activationDistance{4.5};
+    double minVelocity{0.30};
+    bool trailFx{true};
+    int trailIntervalMs{180};
+};
+
 struct FeedingSettings { bool enabled{true}; bool allowNonLethal{true}; bool allowAnimalFeeding{true}; };
 struct EncounterSettings { bool enabled{true}; int startHour{0}; int endHour{4}; int respawnCooldownHours{24}; };
 

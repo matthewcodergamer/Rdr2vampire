@@ -1,60 +1,56 @@
 # Source layout
 
-Nightwalker is organized so native calls, lifecycle ownership, pure targeting math, presentation, and gameplay AI remain separate.
+Nightwalker separates native calls, lifecycle ownership, pure math, presentation, and gameplay AI.
 
 - `src/Plugin.cpp` — Script Hook registration boundary and shutdown signal only.
 - `src/core` — runtime composition, config parsing/validation, debug input, lifecycle and safety infrastructure.
 - `src/game` — narrow RDR2-native boundaries, game context, and model streaming helpers.
-- `src/systems` — owned gameplay/debug controllers plus reusable Shadowstep planning/safety logic.
-- `src/ui` — reserved for the later temporary red boss-health bar. Phase 5 adds no combat HUD.
+- `src/systems` — owned gameplay/debug controllers plus reusable Shadowstep and movement logic.
+- `src/ui` — reserved for the later temporary red boss-health bar. Phase 6 adds no combat HUD.
 - `src/util` — logging and shared utilities.
 - `include/nightwalker` — public project headers matching those ownership areas.
 - `tests` — SDK-independent deterministic tests and test-only native signature fixtures.
 
 ## Native boundaries
 
-- `GameApi` owns entity validity, coordinates, forward vectors, safe pedestrian coordinates, ground/water checks, shape tests, relocation, model streaming and local ped creation/deletion.
-- `GamePresentationApi` owns generic ped visibility/alpha restoration, player melee-input observation, and compact best-effort smoke PTFX.
-- `GameCombatApi` owns Phase 5 combat-facing calls: player aimed-ped lookup, entity velocity, ped combat state, stand-still telegraph tasks, ordinary `TASK_COMBAT_PED` handoff, and owned task cleanup.
+- `GameApi` owns entity validity, coordinates, forward vectors, ground/water/shape tests, relocation, model streaming and local ped creation/deletion.
+- `GamePresentationApi` owns generic ped visibility/alpha restoration, melee-input observation and compact best-effort smoke PTFX.
+- `GameCombatApi` owns aimed-ped lookup, entity velocity, combat-state queries, telegraph tasks, ordinary combat handoff and owned task cleanup.
+- `GameMovementApi` owns Phase 6 movement-facing calls: move-rate override plus swimming, falling, ragdoll and mount-state checks.
 
 Controllers do not scatter these native calls or embed unverified native hashes.
 
-## Shared Shadowstep safety and targeting
+## Shadowstep ownership
 
-- `ShadowstepMath` contains game-independent vector/range helpers.
-- `ShadowstepResolver` remains the single landing-safety authority. Phase 5 adds `ResolveToPoint`, allowing target-relative AI candidates to reuse the same obstruction, navmesh, ground, vertical, water and clearance checks as the Phase 3 player harness.
-- `TargetedShadowstepPlanner` generates and scores four target-relative candidates: intercept, left flank, right flank and behind. It owns only deterministic selection/prediction logic; it does not mutate game entities.
-- `ShadowstepPresentationSettings` owns disappearance/carry timing loaded from `Nightwalker.ini`.
+`ShadowstepResolver` remains the single teleport landing-safety authority. `TargetedShadowstepPlanner` generates intercept, flank and behind candidates. `VampireAIController` is the primary autonomous Shadowstep combat owner for the Nightwalker-owned `cs_vampire`; the player F7 controller remains a secondary debug/safety harness.
 
-The planner never makes an unsafe point valid. If all candidate resolutions fail, callers must fall back to ordinary movement/combat.
+## Phase 6 continuous movement
 
-## Actor ownership in Phase 5
+`MovementController` is deliberately separate from Shadowstep. It controls only the Nightwalker-owned `cs_vampire` during the AI `Approach` state and never teleports the actor.
 
-`VampireAIController` is the primary Shadowstep combat owner. In Phase 5 it controls **only** the `cs_vampire` handle created and owned by `DebugVampireSpawner`; it does not scan for, take over, or delete arbitrary vanilla peds.
+Active flow:
 
-Its active flow is:
+`Idle -> RampUp -> Boost -> Recovery -> Idle`
 
-`Observe -> Approach -> Decide -> ShadowstepDepart -> HiddenTransit -> ShadowstepArrive -> Telegraph -> Attack -> Recover -> Cooldown`
+Restrictions can divert to `Restricted`, which always restores the move-rate ownership first.
 
-`Evade`, `Reposition`, `FeedAttempt`, and `Abort` remain explicit states. Evade has conservative Phase 5 behavior; Reposition and FeedAttempt are future seams only.
+Ownership rules:
 
-Important ownership rules:
+- before applying a multiplier above 1.0, the controller registers an idempotent `OwnedState::Motion` restore callback;
+- the restore callback revalidates that the captured handle still belongs to `cs_vampire` before writing 1.0, protecting against stale/recycled handles;
+- the move-rate native is applied every active frame because it is a per-update locomotion override;
+- only `VampireAIState::Approach` is eligible, so Shadowstep departure/transit/arrival, telegraph and attack phases run at normal movement rate;
+- a short acceleration ramp precedes the boost and a recovery window follows every completed burst;
+- mounting, a detected dismount edge, swimming, falling or ragdoll immediately suppress movement ownership;
+- player death, mission/cutscene transition, F11 cleanup and script shutdown are handled by Runtime's reverse-order lifecycle cancellation;
+- no player movement modifier is applied in Phase 6.
 
-- vampire visibility restoration is registered before hiding;
-- relocation must use a planner result already accepted by `ShadowstepResolver`;
-- arrival carry is short and revalidated;
-- the teleport itself does no damage;
-- `TASK_COMBAT_PED` is issued only after the readable post-arrival telegraph;
-- separate Shadowstep/evade cooldowns prevent spam;
-- cancellation restores the owned vampire before the spawner may delete it;
-- player death, ped invalidation, F9/F11, config reload, mission/cutscene transition and shutdown all converge on cleanup.
+`MovementMath` contains pure smooth-ramp and horizontal-speed helpers so timing/math can be tested without RDR2.
 
-## Player-side harness
+## Presentation boundary
 
-`ShadowstepController` remains a secondary debug/safety harness. F7 performs the forward blink by default. If the existing RDR2 free-aim context reports a living ped already in combat with the player, the same `TargetedShadowstepPlanner` can choose a target-relative debug landing.
+Phase 6 can emit a small low-frequency dark smoke/dust puff through the already verified `GamePresentationApi` effect. Particle failure is non-fatal. Global camera/FOV manipulation is intentionally omitted because the supernatural sprint actor is the enemy vampire, not the player. Custom wind/footstep audio is deferred until an appropriate verified or licensed/original cue exists.
 
-This is not a new player-targeting system and it adds no custom landing UI.
+## Verification boundary
 
-## Known Phase 5 verification boundary
-
-The geometry resolver checks world/object/vehicle obstruction and explicit separation from the combat target. Phase 5 deliberately avoids an expensive broad ambient-ped scan every frame. Dense crowd occupancy therefore remains an in-game verification item; any later nearby-ped occupancy helper must use a verified RDR2 native contract rather than guessed trace flags.
+Public CI verifies pure movement math/configuration and compiles `MovementController` plus `GameMovementApi` against test-only native declarations. The final animation stability, steering feel, obstacle behavior and exact maximum comfortable multiplier require the documented Story Mode test matrix on a real RDR2/Script Hook setup.

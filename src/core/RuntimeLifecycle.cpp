@@ -14,7 +14,8 @@ bool ModulePath(HMODULE module,std::filesystem::path& out){if(!module)return fal
 Runtime::Runtime()
     : debugVampireSpawner_(gameApi_, logger_, config_),
       shadowstepController_(gameApi_, gameCombatApi_, logger_, config_),
-      vampireAiController_(gameApi_, gameCombatApi_, gamePresentationApi_, debugVampireSpawner_, logger_, config_) {}
+      vampireAiController_(gameApi_, gameCombatApi_, gamePresentationApi_, debugVampireSpawner_, logger_, config_),
+      movementController_(gameApi_, gameCombatApi_, gameMovementApi_, gamePresentationApi_, debugVampireSpawner_, vampireAiController_, logger_, config_) {}
 Runtime::~Runtime()noexcept{Shutdown();}
 
 bool Runtime::Initialize(HMODULE module){
@@ -28,10 +29,10 @@ bool Runtime::Initialize(HMODULE module){
  logger_.SetMinimumLevel(config_.debug.enabled?util::LogLevel::Debug:util::LogLevel::Info);debugInput_.Configure(config_.debug);
  shadowstepController_.ReloadPresentationSettings(iniPath);
  vampireAiController_.ReloadPresentationSettings(iniPath);
- systems_.clear();systems_.push_back(&debugVampireSpawner_);systems_.push_back(&shadowstepController_);systems_.push_back(&vampireAiController_);
+ systems_.clear();systems_.push_back(&debugVampireSpawner_);systems_.push_back(&shadowstepController_);systems_.push_back(&vampireAiController_);systems_.push_back(&movementController_);
  for(auto* system:systems_)if(system&&!system->Initialize()){logger_.Write(util::LogLevel::Error,std::string("System initialization failed: ")+std::string(system->Name()));for(auto* s:systems_)if(s)s->Shutdown();systems_.clear();gameContext_.Reset();logger_.Shutdown();return false;}
  lastTickMs_=util::MonotonicClock::NowMilliseconds();tickCount_=0;unsafeState_=false;initialized_=true;
- logger_.Write(util::LogLevel::Info,"Phase 5 runtime initialized; owned cs_vampire is the primary Shadowstep combat actor in debug encounters.");return true;
+ logger_.Write(util::LogLevel::Info,"Phase 6 runtime initialized; owned cs_vampire has controlled continuous supernatural movement distinct from Shadowstep.");return true;
 }
 
 void Runtime::Shutdown()noexcept{
