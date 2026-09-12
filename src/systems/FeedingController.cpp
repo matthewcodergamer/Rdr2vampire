@@ -66,7 +66,8 @@ bool FeedingController::ValidateParticipants(const char*& reason) const noexcept
     const bool human=feedingApi_.IsHuman(target_);
     if(!human&&!config_.feeding.allowAnimalFeeding){reason="non-human target disabled";return false;}
     if(feedingApi_.IsMissionEntity(target_)){reason="mission-owned target";return false;}
-    if(combatApi_.IsPedInMeleeCombat(player_)||combatApi_.IsPedInMeleeCombat(target_)||combatApi_.IsPedInCombatWith(player_,target_)||combatApi_.IsPedInCombatWith(target_,player_)){reason="combat state reserved for later combat-feed hook";return false;}
+    const bool preGrab=state_==FeedingState::Candidate||state_==FeedingState::Align;
+    if(preGrab&&(combatApi_.IsPedInMeleeCombat(player_)||combatApi_.IsPedInMeleeCombat(target_)||combatApi_.IsPedInCombatWith(player_,target_)||combatApi_.IsPedInCombatWith(target_,player_))){reason="combat state reserved for later combat-feed hook";return false;}
     if(feedingApi_.IsPedRestricted(player_)){reason="player restricted";return false;}
     if(feedingApi_.IsPedRestricted(target_)){reason="target restricted";return false;}
     if(!WithinDistance(state_==FeedingState::FeedLoop?0.65:0.0)){reason="target out of range";return false;}
