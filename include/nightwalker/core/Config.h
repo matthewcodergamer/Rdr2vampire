@@ -1,6 +1,7 @@
 #pragma once
 #include <filesystem>
 #include <functional>
+#include <string>
 #include <string_view>
 
 namespace nightwalker::core {
@@ -118,7 +119,14 @@ struct VampireAiSettings {
     double retreatSpeedThreshold{0.55};
 };
 
-struct BossHudSettings { bool enabled{true}; double idleSeconds{6.0}; double fadeSeconds{0.35}; double deathHoldSeconds{1.25}; bool showNumericHealth{false}; };
+struct BossHudSettings {
+    bool enabled{true};
+    std::string displayName{"THE VAMPIRE"};
+    double idleSeconds{6.0};
+    double fadeSeconds{0.35};
+    double deathHoldSeconds{1.25};
+    bool showNumericHealth{false};
+};
 
 struct Config final {
     using DiagnosticSink = std::function<void(std::string_view)>;
