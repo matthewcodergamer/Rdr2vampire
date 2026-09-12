@@ -25,11 +25,11 @@ float NormalizeHeading(float heading) noexcept {
 SaintDenisDirector::SaintDenisDirector(
     game::IGameApi& api, game::IGameCombatApi& combatApi,
     game::IGameEncounterApi& encounterApi, game::IGamePresentationApi& presentationApi,
-    BossActorRegistry& registry, ui::BossHudController& bossHud,
-    util::Logger& logger, const core::Config& config) noexcept
+    BossActorRegistry& registry, narrative::NarrativeController& narrative,
+    ui::BossHudController& bossHud, util::Logger& logger, const core::Config& config) noexcept
     : api_(api), combatApi_(combatApi), encounterApi_(encounterApi),
-      presentationApi_(presentationApi), registry_(registry), bossHud_(bossHud),
-      logger_(logger), config_(config) {}
+      presentationApi_(presentationApi), registry_(registry), narrative_(narrative),
+      bossHud_(bossHud), logger_(logger), config_(config) {}
 
 bool SaintDenisDirector::Initialize() {
     modelRequest_.Release(api_);
