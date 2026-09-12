@@ -3,8 +3,10 @@
 
 using Entity = int;
 using Ped = int;
+using Player = int;
 using Hash = std::uint32_t;
 using BOOL = int;
+struct Vector3 { float x; float y; float z; };
 inline constexpr BOOL TRUE = 1;
 inline constexpr BOOL FALSE = 0;
 
@@ -13,6 +15,24 @@ bool DOES_ENTITY_EXIST(Entity entity);
 void SET_ENTITY_ALPHA(Entity entity, int alphaLevel, BOOL skin);
 void SET_ENTITY_VISIBLE(Entity entity, BOOL visible);
 void RESET_ENTITY_ALPHA(Entity entity);
+Vector3 GET_ENTITY_VELOCITY(Entity entity, int p1);
+Ped GET_PED_INDEX_FROM_ENTITY_INDEX(Entity entity);
+}
+
+namespace PLAYER {
+Player PLAYER_ID();
+BOOL GET_ENTITY_PLAYER_IS_FREE_AIMING_AT(Player player, Entity* entity);
+}
+
+namespace PED {
+BOOL IS_PED_IN_COMBAT(Ped ped, Ped target);
+BOOL IS_PED_IN_MELEE_COMBAT(Ped ped);
+}
+
+namespace TASK {
+void TASK_STAND_STILL(Ped ped, int time);
+void TASK_COMBAT_PED(Ped ped, Ped targetPed, int p2, int p3);
+void CLEAR_PED_TASKS(Ped ped, BOOL p1, BOOL p2);
 }
 
 namespace PAD {

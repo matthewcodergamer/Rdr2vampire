@@ -2,15 +2,19 @@
 
 > **Story Mode only.** Nightwalker does not target RDR Online.
 
-Nightwalker is a native C++ Red Dead Redemption 2 vampire mod project. The repository uses RDR2 content by runtime reference.
+Nightwalker is a native C++ Red Dead Redemption 2 vampire mod project. The repository references content already present in the player's legitimate RDR2 installation at runtime.
 
 ## Status
 
-**Phase 4: Shadowstep presentation.** The geometry-safe Phase 3 relocation is now wrapped in the signature Nightwalker presentation sequence: validate first, compact departure smoke, very short disappearance, instant relocation, guaranteed visibility restoration, slightly stronger arrival smoke, a short collision-aware forward carry, a brief melee-input buffer window, recovery, and internal cooldown.
+**Phase 5: targeted Shadowstep and enemy vampire teleport combat.** The existing Saint Denis vampire model (`cs_vampire`, hash `0xD95BCB7D`) is now the primary Shadowstep combat actor in the debug encounter.
 
-The base destination resolver remains the authority. Presentation is not allowed to make an unsafe destination valid. The arrival carry prevalidates a short endpoint and rechecks its moving segment every frame; blocked or inconclusive carry movement simply stops early rather than clipping.
+The intended combat read is now implemented in code: the vampire observes the player, approaches in ordinary RDR2 combat, evaluates safe intercept/flank/behind destinations, briefly vanishes with the Phase 4 smoke/visibility presentation, teleports to a validated point, reappears, performs a short collision-safe arrival carry, gives a readable telegraph, and only then receives a normal RDR2 combat task. Nightwalker does **not** apply damage on the teleport frame.
 
-There is still **no combat targeting, enemy/boss Shadowstep AI, feeding, boss fight, aimed landing HUD, cooldown meter, power HUD, or boss HUD implementation** in this phase. Bats and custom audio are also deferred until a suitable lightweight, verified asset/cue is selected.
+When the player retreats, the planner uses conservative recent velocity to prefer an intercept/flank point near the player's short predicted position. If all candidates are unsafe, the vampire stays in ordinary combat instead of forcing a teleport. Close-range evade Shadowsteps are rate-limited separately so the vampire cannot become continuously untouchable.
+
+The earlier player-side F7 Shadowstep remains available as a **debug/safety harness** and now supports target-relative candidate planning when the player explicitly aims at a hostile ped. It is not the primary fantasy. `docs/DESIGN_LOCKS.md` is authoritative: the enemy/boss vampire owns the signature mechanic first.
+
+There is still **no boss health bar implementation, feeding system, supernatural sprint, bespoke vampire attack animation set, boss phases, power-reveal UI, or player power HUD** in this phase.
 
 ## Build
 
@@ -18,46 +22,52 @@ Use Visual Studio 2022 with the Desktop C++ workload, a Windows SDK, and the ext
 
 Open `Nightwalker.sln` and build `Debug | x64` or `Release | x64`. The target output is `Nightwalker.asi` under `bin/<Configuration>/`.
 
-The solution contains three SDK-independent test executables:
+SDK-independent test executables include:
 
 - `Nightwalker.Tests` — runtime/config/timing/watchdog/model-streaming regression tests.
 - `Nightwalker.Shadowstep.Tests` — Shadowstep math and destination-safety tests.
-- `Nightwalker.Presentation.Tests` — Phase 4 presentation-setting parsing/default/clamping tests.
+- `Nightwalker.Presentation.Tests` — disappearance/carry presentation-setting tests.
+- `Nightwalker.Targeting.Tests` — target-relative candidate planning, unsafe fallback and Vampire AI config/clamping tests.
 
-GitHub Actions runs these pure tests on both Windows/MSBuild and Linux/g++. CI intentionally does not link `Nightwalker.asi` because Script Hook RDR2 is a developer-local external dependency and is not committed to the repository.
+GitHub Actions runs the deterministic tests on Windows/MSBuild and Linux/g++. Linux CI also syntax-compiles the Phase 5 controllers and the presentation/combat native boundaries against test-only signature fixtures. CI intentionally does not link `Nightwalker.asi` because Script Hook RDR2 is a developer-local dependency and is not committed to the repository.
 
-See `docs/BUILDING.md` for the local dependency layout and exact in-game verification checklist.
+See `docs/BUILDING.md` for local dependency layout and the Phase 5 Story Mode verification checklist.
 
-## Configuration and debug controls
+## Debug encounter controls
 
-Copy `config/Nightwalker.example.ini` beside `Nightwalker.asi` as `Nightwalker.ini`. Debug commands remain disabled unless `[Debug] Enabled=true` (or legacy `DebugMode=true`).
+Copy `config/Nightwalker.example.ini` beside `Nightwalker.asi` as `Nightwalker.ini` and set `[Debug] Enabled=true`.
 
-Current debug keys:
+- **F7** — player-side Shadowstep safety/targeting harness.
+- **F8** — spawn one Nightwalker-owned `cs_vampire` debug ped. With `[VampireAI] Enabled=true`, this ped becomes the Phase 5 vampire combat actor.
+- **F9** — despawn only the Nightwalker-owned debug vampire.
+- **F10** — reload configuration/presentation/AI tuning.
+- **F11** — cancel systems and restore Nightwalker-owned temporary state.
 
-- **F7** — request one forward Shadowstep.
-- **F8** — request the existing `cs_vampire` model and create one Nightwalker-owned test ped near the player when a safe point is available.
-- **F9** — remove only the Nightwalker-owned test vampire.
-- **F10** — reload configuration, including Phase 4 presentation tuning.
-- **F11** — cancel systems and restore/clean Nightwalker-owned temporary state.
+Default vampire AI tuning is conservative: 4–10 m Shadowstep decision band, ~1.65 m desired striking range, 250 ms prediction, 2.4 s Shadowstep cooldown, 320 ms post-arrival telegraph, 850 ms recovery, and a 5 s evade cooldown. These values are internal and never appear as player-facing HUD.
 
-Phase 4 presentation defaults are `DisappearMs=110`, `ArrivalCarryMeters=1.25`, `ArrivalCarryMs=140`, `MeleeBufferMs=220`, `StateTimeoutMs=1000`, and `SmokeFx=true`. These are internal timing/feel values and are never exposed as player HUD.
+## Vampire combat state ownership
 
-## Shadowstep safety and presentation
+`VampireAIController` owns the debug vampire combat sequence:
 
-`ShadowstepController` now owns:
+`Observe -> Approach -> Decide -> ShadowstepDepart -> HiddenTransit -> ShadowstepArrive -> Telegraph -> Attack -> Recover -> Cooldown`
 
-`Idle -> ResolveIntent -> ValidateDestination -> Depart -> Relocate -> HiddenTransit -> Arrive -> ArrivalCarry -> MeleeWindow -> Recovery -> Cooldown -> Idle`
+`Evade`, `Reposition`, `FeedAttempt`, and `Abort` are explicit states; only Evade has Phase 5 behavior, while Reposition/FeedAttempt are reserved seams for later phases.
 
-The player is hidden only after the main destination is fully validated. Visibility restoration is registered with an idempotent watchdog before the hide occurs. Phase 4 does **not** disable player collision, grant invincibility, lock input, or modify the camera.
+`TargetedShadowstepPlanner` generates intercept, left-flank, right-flank and behind candidates. `ShadowstepResolver` remains the single geometry-safety authority for player and vampire teleports, so AI does not duplicate collision/ground/water/headroom logic.
 
-Smoke is best-effort presentation. Nightwalker references the existing RDR2 `scr_fme_spawn_effects` / `scr_fme_smoke_puff_tint` particle at runtime; a missing/unloaded particle never blocks relocation or cleanup.
+`GameCombatApi` centralizes Phase 5 combat-facing native calls: aimed-ped lookup, velocity, combat-state queries, stand-still telegraph tasks, normal combat tasks and owned-task cleanup. `GamePresentationApi` remains responsible for visibility/alpha restoration and best-effort compact smoke.
 
-The melee buffer currently captures melee intent during the transition and owns the short post-arrival window. The production native boundary contains a dispatch seam, but synthetic control re-injection is intentionally disabled in this repository build until it can be written and verified safely in the target environment. Normal RDR2 melee input is never locked.
+## Safety and fairness
 
-## Native boundaries
-
-`GameApi` remains the geometry/entity/relocation boundary. `GamePresentationApi` contains only Phase 4 presentation-facing natives: visibility/alpha restoration, melee-input observation, and best-effort particle streaming/playback. Controllers do not embed raw native calls.
+- Vampire teleport destinations must pass the existing geometry/ground/water/clearance resolver.
+- The vampire never teleports inside the player capsule.
+- Teleport does not deal direct damage.
+- Arrival includes a readable telegraph before RDR2 combat resumes.
+- Shadowstep and evade have separate internal cooldowns.
+- Unsafe alleys/rooms fall back to ordinary movement/combat.
+- Player death, vampire death/despawn, cutscene/mission transition, F11 cleanup, config disable and script shutdown restore vampire appearance and clear Nightwalker-owned AI tasks.
+- No custom power/cooldown UI is added.
 
 ## Design authority
 
-`docs/DESIGN_LOCKS.md` overrides older planning text when there is a conflict. Nightwalker must not add player power meters or boss ability reveals. The only planned custom combat HUD is the temporary red Saint Denis vampire boss-health bar described in `docs/BOSS_HEALTH_BAR.md`.
+`docs/DESIGN_LOCKS.md` overrides older planning text when there is a conflict. The only planned custom combat HUD is the temporary red Saint Denis vampire boss-health bar described in `docs/BOSS_HEALTH_BAR.md`.
