@@ -30,6 +30,10 @@ jobs:
         run: msbuild Nightwalker.Feeding.Tests.vcxproj /m /p:Configuration=Release /p:Platform=x64
       - name: Build combat tests
         run: msbuild Nightwalker.Combat.Tests.vcxproj /m /p:Configuration=Release /p:Platform=x64
+      - name: Build encounter tests
+        run: msbuild Nightwalker.Encounter.Tests.vcxproj /m /p:Configuration=Release /p:Platform=x64
+      - name: Build boss HUD tests
+        run: msbuild Nightwalker.BossHud.Tests.vcxproj /m /p:Configuration=Release /p:Platform=x64
       - name: Run pure tests
         shell: pwsh
         run: |
@@ -40,6 +44,8 @@ jobs:
           & .\bin\tests\Release\Nightwalker.Movement.Tests.exe
           & .\bin\tests\Release\Nightwalker.Feeding.Tests.exe
           & .\bin\tests\Release\Nightwalker.Combat.Tests.exe
+          & .\bin\tests\Release\Nightwalker.Encounter.Tests.exe
+          & .\bin\tests\Release\Nightwalker.BossHud.Tests.exe
 
   linux-pure-tests:
     name: Linux compiler regression tests
@@ -75,15 +81,35 @@ jobs:
         run: |
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core tests/CombatTests.cpp src/core/Config.cpp src/core/ConfigParse.cpp src/core/ConfigValidation.cpp src/systems/VectorMotionMath.cpp -o build/ci/combat
           ./build/ci/combat
-      - name: Compile Phase 8 controllers
+      - name: Build and run encounter tests
+        run: |
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude tests/EncounterTests.cpp src/systems/EncounterMath.cpp src/systems/BossActorRegistry.cpp src/systems/SaintDenisSettingsLoader.cpp -o build/ci/encounter
+          ./build/ci/encounter
+      - name: Build and run boss HUD tests
+        run: |
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core tests/BossHudTests.cpp src/ui/BossHudModel.cpp src/core/Config.cpp src/core/ConfigParse.cpp src/core/ConfigValidation.cpp -o build/ci/bosshud
+          ./build/ci/bosshud
+      - name: Compile Phase 10 controllers
         run: |
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/ShadowstepController.cpp -o build/ci/ShadowstepController.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/ShadowstepPresentation.cpp -o build/ci/ShadowstepPresentation.o
-          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/VampireAIController.cpp -o build/ci/VampireAIController.o
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/VampireAIControllerMain.cpp -o build/ci/VampireAIControllerMain.o
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/VampireAIControllerShadowstep.cpp -o build/ci/VampireAIControllerShadowstep.o
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/VampireAIControllerLifecycle.cpp -o build/ci/VampireAIControllerLifecycle.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/MovementController.cpp -o build/ci/MovementController.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/FeedingController.cpp -o build/ci/FeedingController.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/VampireCombatController.cpp -o build/ci/VampireCombatController.o
-      - name: Compile Phase 8 runtime composition
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/DebugVampireSpawnerCore.cpp -o build/ci/DebugVampireSpawnerCore.o
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/DebugVampireSpawnerSpawn.cpp -o build/ci/DebugVampireSpawnerSpawn.o
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/DebugVampireSpawnerCleanup.cpp -o build/ci/DebugVampireSpawnerCleanup.o
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/SaintDenisDirectorCore.cpp -o build/ci/SaintDenisDirectorCore.o
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/SaintDenisDirectorUpdate.cpp -o build/ci/SaintDenisDirectorUpdate.o
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/SaintDenisDirectorSetup.cpp -o build/ci/SaintDenisDirectorSetup.o
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/SaintDenisDirectorActive.cpp -o build/ci/SaintDenisDirectorActive.o
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/SaintDenisDirectorFinish.cpp -o build/ci/SaintDenisDirectorFinish.o
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/SaintDenisDirectorLifecycle.cpp -o build/ci/SaintDenisDirectorLifecycle.o
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/ui/BossHudController.cpp -o build/ci/BossHudController.o
+      - name: Compile Phase 10 runtime composition
         run: |
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -Isrc/core -c src/core/RuntimeLifecycle.cpp -o build/ci/RuntimeLifecycle.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -Isrc/core -c src/core/RuntimeTick.cpp -o build/ci/RuntimeTick.o
@@ -94,6 +120,8 @@ jobs:
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -c src/game/GameMovementApi.cpp -o build/ci/GameMovementApi.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -c src/game/GameFeedingApi.cpp -o build/ci/GameFeedingApi.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -c src/game/GamePhysicalApi.cpp -o build/ci/GamePhysicalApi.o
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -c src/game/GameEncounterApi.cpp -o build/ci/GameEncounterApi.o
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -c src/game/GameBossBarApi.cpp -o build/ci/GameBossBarApi.o
 
   sdk-boundary-note:
     name: Native plugin SDK boundary
@@ -102,4 +130,4 @@ jobs:
       - run: |
           echo "Nightwalker.asi is intentionally not linked in public CI."
           echo "The plugin requires the local Script Hook RDR2 SDK and Windows/MSVC."
-          echo "CI validates pure logic plus Phase 8 runtime/controller/native-boundary compilation."
+          echo "CI validates pure logic plus Phase 10 encounter/HUD/runtime/controller/native-boundary compilation."

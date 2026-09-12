@@ -1,6 +1,7 @@
 #pragma once
 #include <filesystem>
 #include <functional>
+#include <string>
 #include <string_view>
 
 namespace nightwalker::core {
@@ -79,7 +80,30 @@ struct CombatSettings {
     int bossSpecialCooldownMs{2800};
 };
 
-struct EncounterSettings { bool enabled{true}; int startHour{0}; int endHour{4}; int respawnCooldownHours{24}; };
+struct EncounterSettings {
+    bool enabled{true};
+    int startHour{0};
+    int endHour{4};
+    int respawnCooldownHours{24};
+    double centerX{2741.01245};
+    double centerY{-1263.93384};
+    double centerZ{50.61435};
+    double triggerRadius{70.0};
+    double abortRadius{115.0};
+    double spawnMinDistance{18.0};
+    double spawnMaxDistance{55.0};
+    double confrontationDistance{18.0};
+    int eligibilityPollMs{500};
+    int omenDurationMs{2600};
+    int omenPulseMs{850};
+    int spawnRetryMs{450};
+    int spawnTimeoutMs{9000};
+    int stalkingMs{5000};
+    int confrontationMs{900};
+    int leaveGraceMs{7000};
+    int resolutionHoldMs{1500};
+    int abortCooldownMinutes{10};
+};
 
 struct VampireAiSettings {
     bool enabled{true};
@@ -95,7 +119,14 @@ struct VampireAiSettings {
     double retreatSpeedThreshold{0.55};
 };
 
-struct BossHudSettings { bool enabled{true}; double idleSeconds{6.0}; double fadeSeconds{0.35}; double deathHoldSeconds{1.25}; bool showNumericHealth{false}; };
+struct BossHudSettings {
+    bool enabled{true};
+    std::string displayName{"THE VAMPIRE"};
+    double idleSeconds{6.0};
+    double fadeSeconds{0.35};
+    double deathHoldSeconds{1.25};
+    bool showNumericHealth{false};
+};
 
 struct Config final {
     using DiagnosticSink = std::function<void(std::string_view)>;

@@ -4,13 +4,33 @@
 
 The boss bar exists for one reason: when the Saint Denis vampire becomes a true combat encounter, the player should immediately understand that this is a major enemy and how much health remains.
 
-It must not become a general RPG HUD and must not explain the boss's mechanics.
+It must not become a general RPG HUD and must not explain the boss's mechanics. `docs/DESIGN_LOCKS.md` remains authoritative.
+
+## Phase 10 implementation
+
+Phase 10 implements this specification with three ownership layers:
+
+- `SaintDenisDirector` explicitly supplies its encounter-owned `cs_vampire`; the HUD never scans the world.
+- `BossHudController` owns the active HUD/boss association and combat-activity detection.
+- `BossHudModel` owns pure/testable fade, death-hold, health smoothing and aspect-aware layout logic.
+- `GameBossBarApi` isolates the verified native rectangle/text drawing calls.
+
+The implemented state flow is:
+
+```text
+Hidden -> FadeIn -> Visible -> FadeOut -> Hidden
+
+Boss death:
+Visible/FadeIn/FadeOut -> DeathHold -> FadeOut -> Hidden
+```
+
+Beginning an encounter boss association does not itself pin the meter. `SaintDenisDirector` starts the HUD when Confrontation actually becomes Combat and immediately records combat activity. Thereafter boss health loss, boss-caused player health loss, or confirmed close combat engagement refreshes visibility. Quiet combat fades after the configured idle period; re-engagement reverses the fade with the current health.
+
+Abort, invalid/despawned boss, player/Story Mode unsafe state, F10/F11 cleanup, configuration disable and script shutdown all converge on immediate `ForceHide()` cleanup.
 
 ## Visual target
 
-The presentation should feel restrained, cinematic and compatible with Red Dead Redemption 2.
-
-Recommended layout:
+The presentation should feel restrained and compatible with RDR2:
 
 ```text
                     THE VAMPIRE
@@ -18,133 +38,48 @@ Recommended layout:
         ███████████████████████░░░░░░░░░
 ```
 
-- centered near the lower portion of the screen, above the normal bottom-edge HUD safe area;
-- thin horizontal bar rather than a large card;
-- dark translucent backing;
-- deep blood-red health fill;
-- muted off-white or warm-gray boss name;
-- subtle dark border/edge;
+- centered near the lower portion of the screen;
+- thin horizontal bar rather than a card;
+- dark translucent backing and subtle border;
+- deep blood-red fill;
+- muted warm-gray title;
 - no neon glow;
-- no icons for abilities;
-- no numeric HP by default;
-- no phase number;
-- no weakness/resistance indicators;
-- no status-effect row.
+- no ability/status icons;
+- no phase number or power names;
+- no weaknesses/resistances;
+- no floating damage.
 
-The exact title is configurable. Start with `THE VAMPIRE`; an original story-specific title can replace it later.
+Phase 10 uses normalized native drawing coordinates and compensates bar width for wide aspect ratios. Exact placement against every user safe-zone/HUD configuration remains an in-game verification case.
 
-## Behavior state machine
+## Behavior
 
-Suggested states:
+### Show/refresh
 
-```text
-Hidden
-  -> FadeIn
-  -> Visible
-  -> FadeOut
-  -> Hidden
+The bar is eligible only for the explicit active encounter boss. It fades in/refreshes when:
 
-Boss death:
-Visible/FadeIn -> DeathHold -> FadeOut -> Hidden
-```
+- scripted confrontation enters Combat;
+- boss health decreases;
+- the player's health decreases and RDR2 reports the boss as the damage/contact source;
+- boss/player have confirmed combat engagement within the controller's close-combat refresh distance.
 
-### Show the bar when
+### Idle hide
 
-- the encounter director marks the Saint Denis vampire as the active boss; AND
-- the player and boss enter combat engagement; OR
-- the boss damages the player; OR
-- the player damages the boss; OR
-- a scripted confrontation explicitly begins.
+Default inactivity timeout: `6.0` seconds. Fade duration: `0.35` seconds. New activity during FadeOut transitions directly back to FadeIn.
 
-### Refresh its visibility timer when
+### Health
 
-- boss takes damage;
-- player takes damage from boss;
-- boss performs an aggressive action close to the player;
-- player actively targets/aims at the boss within the encounter radius;
-- boss is close enough and has active combat intent.
+Maintain separate values:
 
-### Fade it away when
+- `actualHealthRatio` — current/max boss health, authoritative and clamped `[0,1]`;
+- `displayHealthRatio` — eased toward actual for presentation.
 
-The boss is still alive, but no relevant combat interaction has happened for a configurable period.
+The smoothing layer does not change gameplay health and never becomes the authoritative state.
 
-Recommended starting value:
+### Death
 
-- `BossBarIdleSeconds = 6.0`
-
-Use a smooth fade rather than an instant hide.
-
-Recommended fade duration:
-
-- `BossBarFadeSeconds = 0.35`
-
-### Immediately hide/clean up when
-
-- encounter is aborted;
-- boss entity is invalid or despawned;
-- player dies;
-- player enters an incompatible mission/cutscene transition;
-- the mod unloads;
-- Story Mode state becomes invalid.
-
-### Boss death behavior
-
-When health reaches zero:
-
-1. animate health fill down to zero;
-2. optionally hold the empty red bar for roughly 1.0–1.5 seconds;
-3. fade the entire widget away;
-4. do not show victory statistics or loot cards unless a later design explicitly asks for them.
-
-## Health smoothing
-
-Do not snap the visible bar directly to every health change if it looks harsh.
-
-Maintain:
-
-- `actualHealthRatio` — authoritative boss health / max health;
-- `displayHealthRatio` — eased visual value.
-
-Interpolate `displayHealthRatio` toward `actualHealthRatio` over a short period. If desired, a second delayed damage layer can briefly show the previous health in a darker red, but keep it extremely subtle and remove it if it looks too arcade-like.
-
-Clamp all values to `[0.0, 1.0]`.
-
-## Encounter ownership
-
-The HUD must never guess which random ped is a boss.
-
-`EncounterDirector` owns the active boss handle/ID and explicitly tells `BossHudController` when the boss encounter starts and ends.
-
-Suggested interface concept:
-
-```cpp
-class BossHudController {
-public:
-    void BeginBoss(Entity boss, const std::string& displayName);
-    void NotifyCombatActivity();
-    void Update(float deltaSeconds);
-    void EndBoss(bool defeated);
-    void ForceHide();
-};
-```
-
-The actual implementation can vary with the chosen RDR2 drawing/native approach.
-
-## Drawing strategy
-
-Start with the simplest stable in-game drawing path available through RDR2/Script Hook RDR2 natives:
-
-- draw rectangles/sprites/text every frame while visible;
-- calculate normalized safe-zone coordinates;
-- support 16:9 first, then verify ultrawide and common resolutions;
-- cache fonts/text scale decisions;
-- avoid loading a browser/CEF overlay just for one bar.
-
-Only introduce custom texture assets if the native drawing path cannot achieve a clean result.
+Boss death sets authoritative health to zero, enters `DeathHold`, holds the empty meter for the configured duration (default `1.25` seconds), then fades away. No victory statistics or loot card is displayed.
 
 ## Configuration
-
-Suggested settings:
 
 ```ini
 [BossHUD]
@@ -156,19 +91,31 @@ DeathHoldSeconds=1.25
 ShowNumericHealth=false
 ```
 
-Do not expose boss abilities through this configuration.
+`ShowNumericHealth` is deliberately default-off. Phase 10 permits numeric current/max HP only when the user explicitly opts in. It never enables ability names, phases, weaknesses, cooldowns or any player-resource HUD.
+
+## Drawing boundary
+
+`GameBossBarApi` uses the current RDR2 native drawing surface for:
+
+- screen resolution;
+- normalized rectangles;
+- literal centered text.
+
+No browser/CEF overlay or redistributed Rockstar UI asset is required.
 
 ## Acceptance tests
 
 The feature is complete only when all of these pass:
 
-1. Starting the encounter without combat does not permanently pin the bar onscreen.
-2. First hostile engagement fades the bar in.
-3. Damaging the boss reduces the bar correctly.
-4. Boss damaging the player refreshes the visibility timer.
-5. Breaking contact causes the bar to fade away after the idle period.
-6. Re-engaging makes it return smoothly with the correct current health.
-7. Going far away or aborting the encounter cleans it up.
-8. Boss death reaches zero, holds briefly, then fades away.
-9. Player death/mission transition/mod unload cannot leave the bar stuck.
-10. No boss powers, cooldowns, phases or weaknesses are revealed anywhere in the widget.
+1. Starting/stalking without Combat shows no bar.
+2. Combat handoff fades the bar in.
+3. Boss damage updates the authoritative ratio and smoothed fill.
+4. Boss-caused player damage refreshes visibility.
+5. Confirmed close combat refreshes visibility.
+6. Inactivity fades out after the configured timeout.
+7. Re-engagement returns smoothly with current health.
+8. Boss death reaches zero, holds, then fades.
+9. Boss invalidation/despawn and encounter abort hide immediately.
+10. Player death/mission transition/F10/F11/unload cannot leave the bar stuck.
+11. 16:9 and ultrawide layouts remain centered/restrained.
+12. No additional custom combat HUD is introduced.
