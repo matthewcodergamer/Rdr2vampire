@@ -1,19 +1,10 @@
 #include "nightwalker/systems/FeedingController.h"
+#include "nightwalker/systems/FeedingMath.h"
 #include <algorithm>
-#include <cmath>
 #include <string>
 
 namespace nightwalker::systems {
-namespace {
-constexpr double kMaxAlignmentVerticalDelta = 1.0;
-
-double DistanceSquared(const game::Vec3& a, const game::Vec3& b) noexcept {
-    const double dx = static_cast<double>(a.x) - b.x;
-    const double dy = static_cast<double>(a.y) - b.y;
-    const double dz = static_cast<double>(a.z) - b.z;
-    return dx * dx + dy * dy + dz * dz;
-}
-}
+namespace { constexpr double kMaxAlignmentVerticalDelta = 1.0; }
 
 FeedingController::FeedingController(game::IGameApi& gameApi,
                                      game::IGameCombatApi& combatApi,
@@ -30,8 +21,7 @@ bool FeedingController::Initialize() {
 }
 
 bool FeedingController::Request(FeedMode mode, std::uint64_t nowMs) noexcept {
-    if (!config_.IsFeatureEnabled(core::Feature::Feeding)) return false;
-    if (state_ != FeedingState::Idle) return false;
+    if (!config_.IsFeatureEnabled(core::Feature::Feeding) || state_ != FeedingState::Idle) return false;
     if (mode == FeedMode::Sip && !config_.feeding.allowNonLethal) return false;
     mode_ = mode;
     Enter(FeedingState::Candidate, nowMs);
@@ -40,17 +30,21 @@ bool FeedingController::Request(FeedMode mode, std::uint64_t nowMs) noexcept {
 
 void FeedingController::Update(const core::FrameContext& frame) {
     if (state_ == FeedingState::Idle) return;
-    if (!config_.IsFeatureEnabled(core::Feature::Feeding)) {
-        Abort("feeding disabled");
-        return;
-    }
-    if (StateTimedOut(frame.nowMs)) {
-        Abort("state timeout");
-        return;
-    }
+    if (!config_.IsFeatureEnabled(core::Feature::Feeding)) { Abort("feeding disabled"); return; }
+    if (StateTimedOut(frame.nowMs)) { Abort("state timeout"); return; }
 
     if (state_ == FeedingState::Candidate) {
         if (!AcquireCandidate(frame.nowMs)) Abort("no valid aimed feed target");
+        return;
+    }
+
+    if (state_ == FeedingState::ReleaseDrain) {
+        if (StateElapsed(frame.nowMs) >= static_cast<std::uint64_t>(config_.feeding.releaseMs)) Enter(FeedingState::Cleanup, frame.nowMs);
+        return;
+    }
+    if (state_ == FeedingState::Cleanup) {
+        CleanupOwnedTasks();
+        ResetInteraction();
         return;
     }
 
@@ -61,10 +55,7 @@ void FeedingController::Update(const core::FrameContext& frame) {
     }
 
     const char* reason = nullptr;
-    if (!ValidateParticipants(reason)) {
-        Abort(reason ? reason : "participant validation failed");
-        return;
-    }
+    if (!ValidateParticipants(reason)) { Abort(reason ? reason : "participant validation failed"); return; }
 
     switch (state_) {
         case FeedingState::Align:
@@ -93,29 +84,12 @@ void FeedingController::Update(const core::FrameContext& frame) {
             }
             break;
         }
-        case FeedingState::ReleaseDrain:
-            if (StateElapsed(frame.nowMs) >= static_cast<std::uint64_t>(config_.feeding.releaseMs)) {
-                Enter(FeedingState::Cleanup, frame.nowMs);
-            }
-            break;
-        case FeedingState::Cleanup:
-            CleanupOwnedTasks();
-            ResetInteraction();
-            break;
-        default:
-            break;
+        default: break;
     }
 }
 
-void FeedingController::Cancel() noexcept {
-    if (state_ == FeedingState::Idle) return;
-    Abort("cancelled");
-}
-
-void FeedingController::Shutdown() noexcept {
-    Cancel();
-    ResetInteraction();
-}
+void FeedingController::Cancel() noexcept { if (state_ != FeedingState::Idle) Abort("cancelled"); }
+void FeedingController::Shutdown() noexcept { Cancel(); ResetInteraction(); }
 
 bool FeedingController::AcquireCandidate(std::uint64_t nowMs) noexcept {
     player_ = gameApi_.PlayerPed();
@@ -128,11 +102,7 @@ bool FeedingController::AcquireCandidate(std::uint64_t nowMs) noexcept {
         return false;
     }
     completionApplied_ = false;
-    if (config_.debug.enabled) {
-        logger_.Write(util::LogLevel::Debug,
-                      std::string("Feed candidate accepted mode=") + ModeName(mode_) +
-                      " target=" + std::to_string(target_));
-    }
+    if (config_.debug.enabled) logger_.Write(util::LogLevel::Debug, std::string("Feed candidate accepted mode=") + ModeName(mode_) + " target=" + std::to_string(target_));
     Enter(FeedingState::Align, nowMs);
     BeginAlignment();
     return true;
@@ -149,16 +119,13 @@ bool FeedingController::ValidateParticipants(const char*& reason) const noexcept
     if (feedingApi_.IsPedRestricted(target_)) { reason = "target restricted"; return false; }
     if (!WithinDistance(state_ == FeedingState::FeedLoop ? 0.65 : 0.0)) { reason = "target out of range"; return false; }
     if (!feedingApi_.HasClearLos(player_, target_)) { reason = "line of sight blocked"; return false; }
-    const auto a = gameApi_.EntityCoords(player_);
-    const auto b = gameApi_.EntityCoords(target_);
-    if (std::abs(static_cast<double>(a.z) - b.z) > kMaxAlignmentVerticalDelta) { reason = "unsafe vertical alignment"; return false; }
+    if (!feeding_math::VerticalAligned(gameApi_.EntityCoords(player_), gameApi_.EntityCoords(target_), kMaxAlignmentVerticalDelta)) { reason = "unsafe vertical alignment"; return false; }
     return true;
 }
 
 bool FeedingController::WithinDistance(double extra) const noexcept {
     if (player_ == 0 || target_ == 0) return false;
-    const double limit = config_.feeding.maxDistance + std::max(0.0, extra);
-    return DistanceSquared(gameApi_.EntityCoords(player_), gameApi_.EntityCoords(target_)) <= limit * limit;
+    return feeding_math::WithinRange(gameApi_.EntityCoords(player_), gameApi_.EntityCoords(target_), config_.feeding.maxDistance + std::max(0.0, extra));
 }
 
 void FeedingController::Enter(FeedingState state, std::uint64_t nowMs) noexcept {
@@ -192,23 +159,13 @@ void FeedingController::BeginGrab() noexcept {
 void FeedingController::ApplyCompletion() noexcept {
     if (completionApplied_) return;
     completionApplied_ = true;
-
     if (mode_ == FeedMode::Drain && gameApi_.PedAlive(target_)) feedingApi_.SetHealth(target_, 0);
-
     const int gain = mode_ == FeedMode::Sip ? config_.feeding.healthRestoreSip : config_.feeding.healthRestoreDrain;
     const int current = feedingApi_.Health(player_);
     const int maximum = feedingApi_.MaxHealth(player_);
     if (maximum > 0 && current > 0 && gain > 0) feedingApi_.SetHealth(player_, std::min(maximum, current + gain));
-
-    if (config_.feeding.hiddenBloodEnabled) {
-        resource_.Gain(mode_ == FeedMode::Sip ? config_.feeding.sipBloodGain : config_.feeding.drainBloodGain);
-    }
-
-    if (config_.debug.enabled) {
-        logger_.Write(util::LogLevel::Debug,
-                      std::string("Feed completed mode=") + ModeName(mode_) +
-                      " internalResource=" + std::to_string(resource_.Value()));
-    }
+    if (config_.feeding.hiddenBloodEnabled) resource_.Gain(mode_ == FeedMode::Sip ? config_.feeding.sipBloodGain : config_.feeding.drainBloodGain);
+    if (config_.debug.enabled) logger_.Write(util::LogLevel::Debug, std::string("Feed completed mode=") + ModeName(mode_) + " internalResource=" + std::to_string(resource_.Value()));
 }
 
 void FeedingController::Abort(std::string_view reason) noexcept {
@@ -226,37 +183,16 @@ void FeedingController::CleanupOwnedTasks() noexcept {
 }
 
 void FeedingController::ResetInteraction() noexcept {
-    state_ = FeedingState::Idle;
-    mode_ = FeedMode::Sip;
-    player_ = 0;
-    target_ = 0;
-    stateStartedMs_ = 0;
-    playerTaskOwned_ = false;
-    targetTaskOwned_ = false;
-    completionApplied_ = false;
+    state_ = FeedingState::Idle; mode_ = FeedMode::Sip; player_ = 0; target_ = 0; stateStartedMs_ = 0;
+    playerTaskOwned_ = false; targetTaskOwned_ = false; completionApplied_ = false;
 }
 
-bool FeedingController::StateTimedOut(std::uint64_t nowMs) const noexcept {
-    return state_ != FeedingState::Idle && StateElapsed(nowMs) > static_cast<std::uint64_t>(config_.feeding.stateTimeoutMs);
-}
-
-std::uint64_t FeedingController::StateElapsed(std::uint64_t nowMs) const noexcept {
-    return nowMs >= stateStartedMs_ ? nowMs - stateStartedMs_ : 0;
-}
+bool FeedingController::StateTimedOut(std::uint64_t nowMs) const noexcept { return state_ != FeedingState::Idle && StateElapsed(nowMs) > static_cast<std::uint64_t>(config_.feeding.stateTimeoutMs); }
+std::uint64_t FeedingController::StateElapsed(std::uint64_t nowMs) const noexcept { return nowMs >= stateStartedMs_ ? nowMs - stateStartedMs_ : 0; }
 
 const char* FeedingController::StateName(FeedingState state) noexcept {
-    switch (state) {
-        case FeedingState::Idle: return "Idle";
-        case FeedingState::Candidate: return "Candidate";
-        case FeedingState::Align: return "Align";
-        case FeedingState::Grab: return "Grab";
-        case FeedingState::FeedLoop: return "FeedLoop";
-        case FeedingState::ReleaseDrain: return "ReleaseDrain";
-        case FeedingState::Cleanup: return "Cleanup";
-        default: return "Unknown";
-    }
+    switch (state) { case FeedingState::Idle:return "Idle";case FeedingState::Candidate:return "Candidate";case FeedingState::Align:return "Align";case FeedingState::Grab:return "Grab";case FeedingState::FeedLoop:return "FeedLoop";case FeedingState::ReleaseDrain:return "ReleaseDrain";case FeedingState::Cleanup:return "Cleanup";default:return "Unknown"; }
 }
-
 const char* FeedingController::ModeName(FeedMode mode) noexcept { return mode == FeedMode::Sip ? "Sip" : "Drain"; }
 
 } // namespace nightwalker::systems
