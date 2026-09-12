@@ -32,6 +32,8 @@ jobs:
         run: msbuild Nightwalker.Combat.Tests.vcxproj /m /p:Configuration=Release /p:Platform=x64
       - name: Build encounter tests
         run: msbuild Nightwalker.Encounter.Tests.vcxproj /m /p:Configuration=Release /p:Platform=x64
+      - name: Build boss HUD tests
+        run: msbuild Nightwalker.BossHud.Tests.vcxproj /m /p:Configuration=Release /p:Platform=x64
       - name: Run pure tests
         shell: pwsh
         run: |
@@ -43,6 +45,7 @@ jobs:
           & .\bin\tests\Release\Nightwalker.Feeding.Tests.exe
           & .\bin\tests\Release\Nightwalker.Combat.Tests.exe
           & .\bin\tests\Release\Nightwalker.Encounter.Tests.exe
+          & .\bin\tests\Release\Nightwalker.BossHud.Tests.exe
 
   linux-pure-tests:
     name: Linux compiler regression tests
@@ -82,7 +85,11 @@ jobs:
         run: |
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude tests/EncounterTests.cpp src/systems/EncounterMath.cpp src/systems/BossActorRegistry.cpp src/systems/SaintDenisSettingsLoader.cpp -o build/ci/encounter
           ./build/ci/encounter
-      - name: Compile Phase 9 controllers
+      - name: Build and run boss HUD tests
+        run: |
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core tests/BossHudTests.cpp src/ui/BossHudModel.cpp src/core/Config.cpp src/core/ConfigParse.cpp src/core/ConfigValidation.cpp -o build/ci/bosshud
+          ./build/ci/bosshud
+      - name: Compile Phase 10 controllers
         run: |
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/ShadowstepController.cpp -o build/ci/ShadowstepController.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/ShadowstepPresentation.cpp -o build/ci/ShadowstepPresentation.o
@@ -101,7 +108,8 @@ jobs:
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/SaintDenisDirectorActive.cpp -o build/ci/SaintDenisDirectorActive.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/SaintDenisDirectorFinish.cpp -o build/ci/SaintDenisDirectorFinish.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/SaintDenisDirectorLifecycle.cpp -o build/ci/SaintDenisDirectorLifecycle.o
-      - name: Compile Phase 9 runtime composition
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/ui/BossHudController.cpp -o build/ci/BossHudController.o
+      - name: Compile Phase 10 runtime composition
         run: |
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -Isrc/core -c src/core/RuntimeLifecycle.cpp -o build/ci/RuntimeLifecycle.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -Isrc/core -c src/core/RuntimeTick.cpp -o build/ci/RuntimeTick.o
@@ -113,6 +121,7 @@ jobs:
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -c src/game/GameFeedingApi.cpp -o build/ci/GameFeedingApi.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -c src/game/GamePhysicalApi.cpp -o build/ci/GamePhysicalApi.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -c src/game/GameEncounterApi.cpp -o build/ci/GameEncounterApi.o
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -c src/game/GameBossBarApi.cpp -o build/ci/GameBossBarApi.o
 
   sdk-boundary-note:
     name: Native plugin SDK boundary
@@ -121,4 +130,4 @@ jobs:
       - run: |
           echo "Nightwalker.asi is intentionally not linked in public CI."
           echo "The plugin requires the local Script Hook RDR2 SDK and Windows/MSVC."
-          echo "CI validates pure logic plus Phase 9 encounter/runtime/controller/native-boundary compilation."
+          echo "CI validates pure logic plus Phase 10 encounter/HUD/runtime/controller/native-boundary compilation."
