@@ -6,51 +6,51 @@ The external Script Hook RDR2 developer SDK is not stored in this repository. Pu
 
 Expected plugin output: `bin/Release/Nightwalker.asi` for Release builds.
 
-The solution builds three SDK-independent C++ test targets:
+SDK-independent test targets:
 
 - `Nightwalker.Tests` — config/timing/watchdog/model-streaming regression logic.
-- `Nightwalker.Shadowstep.Tests` — Shadowstep vector math and destination-safety logic.
-- `Nightwalker.Presentation.Tests` — Phase 4 presentation-setting parsing/default/clamping logic.
+- `Nightwalker.Shadowstep.Tests` — Shadowstep vector math and destination safety.
+- `Nightwalker.Presentation.Tests` — Phase 4 disappearance/carry setting logic.
+- `Nightwalker.Targeting.Tests` — Phase 5 intercept/flank/behind planning, unsafe fallback, and Vampire AI config/clamping.
 
-Run the test executables from `bin/tests/<Configuration>/`. They do not require RDR2 or Script Hook.
+Run test executables from `bin/tests/<Configuration>/`. They do not require RDR2 or Script Hook.
 
 ## GitHub Actions
 
-`.github/workflows/ci.yml` runs the SDK-independent tests on every push and on pull requests targeting `main`:
+`.github/workflows/ci.yml` runs on pushes and pull requests targeting `main`:
 
-- Windows: Visual Studio/MSBuild Release x64 builds and execution of all three test programs.
-- Linux: g++ C++20 compilation and execution of the same deterministic logic.
+- Windows/MSBuild Release x64 builds and runs all four SDK-independent tests.
+- Linux/g++ C++20 builds and runs the same deterministic logic.
+- Linux additionally syntax-compiles `ShadowstepController`, `ShadowstepPresentation`, and `VampireAIController`.
+- Test-only native signature fixtures compile `GamePresentationApi.cpp` and `GameCombatApi.cpp` without redistributing Script Hook files.
 
-The workflow intentionally does **not** build/link `Nightwalker.asi`. The native plugin requires the developer-local Script Hook RDR2 SDK plus the Windows game environment, and those proprietary/local dependencies are not committed to the repository.
+CI intentionally does **not** link `Nightwalker.asi`. The final plugin still requires the developer-local Script Hook RDR2 SDK and a Windows/RDR2 environment.
 
-For runtime setup, follow the official Script Hook RDR2 dependency documentation. This project is Story Mode only.
+## Phase 5 in-game verification
 
-## Phase 4 in-game verification
+1. Build `Release | x64` with the official Script Hook RDR2 developer SDK available locally.
+2. Install `Nightwalker.asi` in the RDR2 Script Hook loading location.
+3. Copy `config/Nightwalker.example.ini` beside it as `Nightwalker.ini`.
+4. Set `[Debug] Enabled=true`, `[VampireAI] Enabled=true`, and launch **Story Mode only**.
+5. Confirm `Nightwalker.log` reports that the Phase 5 runtime initialized with the owned `cs_vampire` as the primary debug Shadowstep combat actor.
+6. Press **F8** in an open dry area. Confirm exactly one Nightwalker-owned `cs_vampire` appears and begins ordinary RDR2 combat with the player.
+7. Back away from the vampire until roughly within the configured `ShadowstepMinDistance`/`ShadowstepMaxDistance` band. The vampire should periodically choose a legal intercept/flank destination, emit compact departure smoke, disappear briefly, relocate, reappear with arrival smoke, perform the short carry when safe, pause for the configured telegraph, then resume normal RDR2 combat.
+8. Confirm the vampire never damages the player on the exact teleport frame. Any damage must come from normal RDR2 combat after the readable arrival tell.
+9. Repeat while moving laterally and while retreating quickly. Debug logs should record each candidate type, score or rejection reason, chosen candidate, and cooldown decisions.
+10. Fight in a narrow Saint Denis-style alley, beside walls/props, on stairs and near water. If all target-relative candidates are unsafe, the vampire must remain in ordinary combat rather than teleport through geometry or force an unsafe landing.
+11. Stand very close and commit to melee attacks. Occasional evade Shadowsteps may occur, but the configured evade cooldown must prevent repeated every-hit escapes.
+12. Observe combat for **at least five continuous minutes**. Verify Shadowstep spacing feels deliberate rather than continuous spam; default base cooldown is 2400 ms and default evade cooldown is 5000 ms.
+13. During that five-minute run, verify the vampire never remains invisible, becomes permanently frozen, remains task-locked, teleports inside the player, falls through the world or gets stuck under/inside geometry.
+14. Press **F9** during ordinary combat and during/near a Shadowstep. Nightwalker must restore the owned vampire's appearance/tasks before the debug spawner removes only that owned ped.
+15. Spawn again, trigger a Shadowstep, then press **F11**. The AI must abort, restore visibility/alpha, clear Nightwalker-owned combat/task state, and return safely to Observe/idle ownership.
+16. Spawn again and trigger a mission/cutscene/player-control transition. Runtime cancellation must clean the AI presentation before the spawner is allowed to delete its ped.
+17. Test player death and vampire death/despawn. No hidden/transient AI state may survive actor invalidation.
+18. Change `ShadowstepCooldownMs`, `TelegraphMs`, `EvadeCooldownMs`, `PredictionMs`, `StrikingRange`, or distance-band values, then press **F10**. Safe values should reload; unsafe values should clamp and log warnings.
+19. Set `SmokeFx=false` and reload. Vampire teleport behavior must remain functional even if smoke is disabled/unavailable.
+20. Aim explicitly at a hostile ped and use **F7**. The player-side debug harness may choose a target-relative safe candidate, but confirm this remains secondary to the vampire's autonomous combat behavior.
+21. Confirm no player power HUD, boss phase label, cooldown readout, ability name, floating damage number, or boss power reveal is displayed.
+22. Exit/unload normally and confirm orderly shutdown restores owned presentation/tasks and logs `Nightwalker shutdown complete.` when Script Hook supplies a normal unload path.
 
-1. Build `Release | x64` with the official Script Hook RDR2 developer SDK present.
-2. Copy `Nightwalker.asi` into the RDR2 directory used by the Script Hook runtime.
-3. Copy `config/Nightwalker.example.ini` beside it as `Nightwalker.ini` and set `[Debug] Enabled=true`.
-4. Launch **Story Mode only** and stand in a normal open, dry outdoor area with player control.
-5. Confirm `Nightwalker.log` reports `Phase 4 runtime initialized; Shadowstep presentation remains debug-only and geometry-gated.`
-6. Press **F7** once in open terrain. The step should still use the Phase 3 validated endpoint before any presentation starts.
-7. Confirm a compact dark smoke puff appears at departure when the referenced RDR2 particle asset is available. If the asset fails to load, the teleport must still complete and cleanup must still succeed.
-8. Confirm the player disappears only very briefly (default `DisappearMs=110`) and becomes visible again at the validated destination. The player must never remain invisible after the sequence.
-9. Confirm arrival smoke is slightly stronger than departure and remains compact rather than filling the screen.
-10. Confirm the player carries/glides forward up to the configured `ArrivalCarryMeters` (default 1.25 m) over `ArrivalCarryMs` (default 140 ms).
-11. Repeat beside walls, props, railings, corners, stairs and narrow alleys. The carry must stop early when the dynamic segment becomes blocked or inconclusive; it must never push the player through geometry.
-12. Repeat near slopes and water edges. Carry must stop when safe pedestrian placement, ground, vertical delta or water checks become unsafe.
-13. Confirm the base blink still shortens/rejects blocked primary destinations exactly as Phase 3 did. Presentation must not weaken the original resolver.
-14. Trigger F7 and then force **F11 cleanup** during the short sequence. Visibility must be restored, presentation state must return to idle, and no particle loop/state should remain owned.
-15. Trigger a mission/cutscene/player-control transition during the sequence. The same cancellation/visibility restoration must occur.
-16. Disable Shadowstep or Debug via the INI and press F10. Any active presentation must be cancelled and the player must be visible/normal.
-17. Test player death during the sequence. Nightwalker must not leave visibility/alpha modified after normal game control returns.
-18. Change `DisappearMs`, `ArrivalCarryMeters`, `ArrivalCarryMs`, `MeleeBufferMs`, `StateTimeoutMs`, or `SmokeFx`, press F10, and confirm Phase 4 settings reload without rebuilding. Unsafe values should clamp and generate warnings.
-19. With `SmokeFx=false`, confirm F7 still performs the safe disappearance/reappearance/carry sequence with no smoke dependency.
-20. Press melee during departure/hidden/arrival and confirm normal RDR2 melee controls remain live. The controller records a brief melee-intent window; synthetic replay of a released tap is currently disabled in this repository build and must **not** be claimed as verified until the target-environment dispatch path is implemented/tested.
-21. Perform the existing **100 consecutive successful Shadowstep** stress run across open streets, alleys, stairs and varied safe terrain. No step may leave the player invisible, collisionless, invincible, control-locked, under the world, or embedded in geometry.
-22. Confirm F8/F9 vampire spawn/despawn and F10/F11 infrastructure still work after the stress run.
-23. Exit/unload normally and confirm `Nightwalker shutdown complete.` is logged when orderly Script Hook shutdown is available.
+## Phase 5 boundaries
 
-## Phase 4 boundaries
-
-Phase 4 does not implement aimed/hold Shadowstep, combat target selection, enemy/boss AI, bats, custom audio, feeding, supernatural sprint, boss combat, or any custom player HUD. The destination-safety resolver remains reusable for those later phases.
+Phase 5 does not implement the final Saint Denis encounter director, boss-health bar, feeding, supernatural sprint, bespoke vampire attack animations, scripted damage, boss phases, or progression. `Reposition` and `FeedAttempt` remain explicit AI seams for later phases, not hidden unfinished behavior.
