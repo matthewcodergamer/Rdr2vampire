@@ -116,6 +116,14 @@ Config Config::Parse(std::string_view text, DiagnosticSink diagnostics) {
         } else if (section == "movement") {
             if (key == "enabled") parsed = ParseBool(value, config.movement.enabled);
             else if (key == "sprintmoverate") parsed = ParseNumber(value, config.movement.sprintMoveRate);
+            else if (key == "accelerationms") parsed = ParseNumber(value, config.movement.accelerationMs);
+            else if (key == "burstdurationms" || key == "maxburstms") parsed = ParseNumber(value, config.movement.burstDurationMs);
+            else if (key == "recoveryms") parsed = ParseNumber(value, config.movement.recoveryMs);
+            else if (key == "dismountrecoveryms") parsed = ParseNumber(value, config.movement.dismountRecoveryMs);
+            else if (key == "activationdistance") parsed = ParseNumber(value, config.movement.activationDistance);
+            else if (key == "minvelocity") parsed = ParseNumber(value, config.movement.minVelocity);
+            else if (key == "trailfx") parsed = ParseBool(value, config.movement.trailFx);
+            else if (key == "trailintervalms") parsed = ParseNumber(value, config.movement.trailIntervalMs);
             else handled = false;
         } else if (section == "feeding") {
             if (key == "enabled") parsed = ParseBool(value, config.feeding.enabled);
