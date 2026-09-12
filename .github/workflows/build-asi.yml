@@ -3,7 +3,7 @@ name: Build Nightwalker ASI
 on:
   workflow_dispatch:
   push:
-    branches: [main]
+    branches: [main, build-real-nightwalker-asi]
   pull_request:
     branches: [main]
 
