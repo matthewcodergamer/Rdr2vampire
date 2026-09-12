@@ -35,14 +35,21 @@ public:
     ShadowstepResolver(game::IGameApi& api, const core::ShadowstepSettings& settings) noexcept;
 
     [[nodiscard]] ShadowstepResolveResult Resolve(
-        game::PedHandle player,
+        game::PedHandle actor,
         const game::Vec3& start,
         const game::Vec3& desiredDirection) const noexcept;
+
+    // Reuses the same Phase 3 safety core for AI/target-relative landing points.
+    [[nodiscard]] ShadowstepResolveResult ResolveToPoint(
+        game::PedHandle actor,
+        const game::Vec3& start,
+        const game::Vec3& desiredPoint,
+        bool allowShorten = true) const noexcept;
 
     [[nodiscard]] static const char* ReasonText(ShadowstepRejectReason reason) noexcept;
 
 private:
-    [[nodiscard]] bool HasClearance(game::PedHandle player, const game::Vec3& position,
+    [[nodiscard]] bool HasClearance(game::PedHandle actor, const game::Vec3& position,
                                     ShadowstepRejectReason& rejection) const noexcept;
 
     game::IGameApi& api_;
