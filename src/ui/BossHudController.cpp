@@ -7,6 +7,7 @@
 namespace nightwalker::ui {
 namespace {
 constexpr float kCombatRefreshDistance = 20.0F;
+constexpr std::size_t kMaxBossTitleLength = 48;
 
 float Distance2D(const game::Vec3& a, const game::Vec3& b) noexcept {
     const float dx = a.x - b.x;
@@ -45,6 +46,7 @@ bool BossHudController::BeginBoss(game::PedHandle boss, std::string_view display
 
     boss_ = boss;
     displayName_ = displayName.empty() ? "THE VAMPIRE" : std::string(displayName);
+    if (displayName_.size() > kMaxBossTitleLength) displayName_.resize(kMaxBossTitleLength);
     const float ratio = ReadBossHealthRatio(bossHealth_, bossMaxHealth_);
     const game::PedHandle player = api_.PlayerPed();
     playerHealth_ = player != 0 && api_.PedAlive(player) ? feedingApi_.Health(player) : 0;
@@ -126,10 +128,10 @@ float BossHudController::ReadBossHealthRatio(int& health, int& maxHealth) const 
 
 bool BossHudController::CloseCombatEngagement(game::PedHandle player) const noexcept {
     if (boss_ == 0 || player == 0) return false;
-    if (!combatApi_.IsPedInCombatWith(boss_, player) && !combatApi_.IsPedInCombatWith(player, boss_)) {
-        return false;
-    }
-    return Distance2D(api_.EntityCoords(boss_), api_.EntityCoords(player)) <= kCombatRefreshDistance;
+    const float distance = Distance2D(api_.EntityCoords(boss_), api_.EntityCoords(player));
+    if (distance > kCombatRefreshDistance) return false;
+    if (combatApi_.PlayerAimedPed(player) == boss_) return true;
+    return combatApi_.IsPedInCombatWith(boss_, player) || combatApi_.IsPedInCombatWith(player, boss_);
 }
 
 void BossHudController::Draw() noexcept {
