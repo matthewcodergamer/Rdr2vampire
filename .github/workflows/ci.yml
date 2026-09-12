@@ -29,12 +29,16 @@ jobs:
       - name: Build Shadowstep presentation tests
         run: msbuild Nightwalker.Presentation.Tests.vcxproj /m /p:Configuration=Release /p:Platform=x64
 
+      - name: Build targeted Shadowstep tests
+        run: msbuild Nightwalker.Targeting.Tests.vcxproj /m /p:Configuration=Release /p:Platform=x64
+
       - name: Run pure tests
         shell: pwsh
         run: |
           & .\bin\tests\Release\Nightwalker.Tests.exe
           & .\bin\tests\Release\Nightwalker.Shadowstep.Tests.exe
           & .\bin\tests\Release\Nightwalker.Presentation.Tests.exe
+          & .\bin\tests\Release\Nightwalker.Targeting.Tests.exe
 
   linux-pure-tests:
     name: Linux compiler regression tests
@@ -69,17 +73,31 @@ jobs:
             -o build/ci/nightwalker-presentation-tests
           ./build/ci/nightwalker-presentation-tests
 
-      - name: Compile Phase 4 controller sources
+      - name: Build and run targeted Shadowstep tests
+        run: |
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core \
+            tests/TargetedShadowstepTests.cpp \
+            src/core/Config.cpp src/core/ConfigParse.cpp src/core/ConfigValidation.cpp \
+            src/systems/ShadowstepMath.cpp src/systems/ShadowstepResolver.cpp \
+            src/systems/TargetedShadowstepPlanner.cpp \
+            -o build/ci/nightwalker-targeting-tests
+          ./build/ci/nightwalker-targeting-tests
+
+      - name: Compile Phase 5 controller sources
         run: |
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core \
             -c src/systems/ShadowstepController.cpp -o build/ci/ShadowstepController.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core \
             -c src/systems/ShadowstepPresentation.cpp -o build/ci/ShadowstepPresentation.o
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core \
+            -c src/systems/VampireAIController.cpp -o build/ci/VampireAIController.o
 
-      - name: Compile presentation native boundary against verified signature fixture
+      - name: Compile native boundaries against verified signature fixture
         run: |
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude \
             -c src/game/GamePresentationApi.cpp -o build/ci/GamePresentationApi.o
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude \
+            -c src/game/GameCombatApi.cpp -o build/ci/GameCombatApi.o
 
   sdk-boundary-note:
     name: Native plugin SDK boundary
@@ -89,4 +107,4 @@ jobs:
         run: |
           echo "Nightwalker.asi is intentionally not linked in public CI."
           echo "The native plugin requires the developer-local Script Hook RDR2 SDK and Windows/MSVC."
-          echo "CI validates deterministic code and Phase 4 syntax boundaries; the full x64 plugin is built locally."
+          echo "CI validates deterministic code plus Phase 5 controller/native-boundary syntax; the full x64 plugin is built locally."
