@@ -10,6 +10,7 @@
 #include "nightwalker/game/GameEncounterApi.h"
 #include "nightwalker/game/GamePresentationApi.h"
 #include "nightwalker/game/ModelStreamRequest.h"
+#include "nightwalker/narrative/NarrativeController.h"
 #include "nightwalker/systems/BossActorRegistry.h"
 #include "nightwalker/ui/BossHudController.h"
 #include "nightwalker/util/Logger.h"
@@ -25,8 +26,8 @@ class SaintDenisDirector final : public core::ILifecycleSystem {
 public:
     SaintDenisDirector(game::IGameApi& api, game::IGameCombatApi& combatApi,
         game::IGameEncounterApi& encounterApi, game::IGamePresentationApi& presentationApi,
-        BossActorRegistry& registry, ui::BossHudController& bossHud,
-        util::Logger& logger, const core::Config& config) noexcept;
+        BossActorRegistry& registry, narrative::NarrativeController& narrative,
+        ui::BossHudController& bossHud, util::Logger& logger, const core::Config& config) noexcept;
 
     [[nodiscard]] std::string_view Name() const noexcept override { return "EncounterDirector"; }
     bool Initialize() override;
@@ -59,6 +60,7 @@ private:
     game::IGameEncounterApi& encounterApi_;
     game::IGamePresentationApi& presentationApi_;
     BossActorRegistry& registry_;
+    narrative::NarrativeController& narrative_;
     ui::BossHudController& bossHud_;
     util::Logger& logger_;
     const core::Config& config_;
