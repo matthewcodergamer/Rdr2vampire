@@ -14,7 +14,10 @@ public:
  DebugVampireSpawner(game::IGameApi& api,BossActorRegistry& registry,util::Logger& logger,const core::Config& config)noexcept;
  std::string_view Name()const noexcept override{return "DebugVampireSpawner";}
  bool Initialize()override;void Update(const core::FrameContext& frame)override;void Cancel()noexcept override;void Shutdown()noexcept override;
- void RequestSpawn(std::uint64_t nowMs)noexcept;void RequestDespawn()noexcept;game::PedHandle OwnedPed()const noexcept{return ownedPed_;}
+ void RequestSpawn(std::uint64_t nowMs)noexcept;void RequestDespawn()noexcept;
+ game::PedHandle OwnedPed()const noexcept{return registry_.Ped();}
+ bool CombatEnabled()const noexcept{return registry_.CombatEnabled();}
+ BossOwner Owner()const noexcept{return registry_.Owner();}
 private:
  struct BoolRef{const bool* value{};operator bool()const noexcept{return value&&*value;}};
  struct LocalSettings{struct Debug{BoolRef enabled{};std::uint64_t modelLoadTimeoutMs{5000};}debug{};explicit LocalSettings(const core::Config& c)noexcept{debug.enabled.value=&c.debug.enabled;}};
