@@ -1,42 +1,35 @@
 # Build Nightwalker ASI with GitHub Actions
 
-Nightwalker now has a dedicated manual GitHub Actions workflow named **Build Nightwalker ASI**.
+Nightwalker has one dedicated manual workflow named **Build Nightwalker ASI**. It is separate from **Nightwalker CI**.
 
-This workflow is separate from the normal CI/test workflow. Its purpose is to produce the real Windows x64 `Nightwalker.asi` file using MSBuild and the Script Hook RDR2 developer SDK.
+The ASI workflow downloads the official Script Hook RDR2 developer SDK for the temporary GitHub Windows runner, builds `Release | x64`, verifies that `Nightwalker.asi` is a Windows PE file, and uploads an install-ready artifact. You do not need Visual Studio on your phone and you do not need to configure a repository variable for the normal case.
 
-## From iPhone or any browser
+## iPhone / mobile steps
 
-1. Open the Nightwalker GitHub repository.
+1. Open the Nightwalker repository on GitHub.
 2. Tap **Actions**.
-3. In the workflow list, tap **Build Nightwalker ASI**.
+3. If GitHub shows **All workflows**, open it and choose **Build Nightwalker ASI**.
 4. Tap **Run workflow**.
-5. Leave `source_ref` as `main` to build the current released repository state, or enter a feature branch such as `phase-12-narrative-scaffolding` when testing an unmerged phase.
-6. Leave the developer SDK URL at its default unless the official SDK download URL changes.
-7. Tap **Run workflow**.
-8. Open the new workflow run and wait for **Build Nightwalker ASI** to finish successfully.
-9. Scroll to **Artifacts** and download **Nightwalker-ASI**.
-10. Unzip the artifact. It contains `Nightwalker.asi`, `Nightwalker.ini`, the SHA-256 file, and any runtime content file present in the source ref such as `Nightwalker.dialogue`.
+5. Use the branch selector in GitHub's Run workflow panel. Choose **main** for the current repository build, or choose another branch when you intentionally want to test that branch.
+6. Tap the green **Run workflow** button.
+7. Open the new run named **Build Nightwalker ASI** and wait until the `Build Nightwalker ASI` job is green.
+8. Scroll to **Artifacts**.
+9. Download **Nightwalker-ASI**.
+10. Unzip the artifact, then unzip `Nightwalker-Windows-x64.zip` inside it for the install-ready package.
 
-## What the workflow does
+The install-ready package contains `Nightwalker.asi`, `Nightwalker.ini`, `Nightwalker.dialogue` when that source branch provides it, the project documentation shipped by the repository, and a SHA-256 checksum for the ASI.
 
-The Windows runner:
+## No hidden SDK setup required
 
-- checks out the requested branch/tag/commit;
-- downloads the Script Hook RDR2 developer SDK from the configured HTTPS URL;
-- stages the SDK headers and `ScriptHookRDR2.lib` under the repository's expected local SDK layout;
-- runs `MSBuild` for `Release | x64`;
-- verifies that `bin/Release/Nightwalker.asi` exists;
-- packages the ASI plus Nightwalker configuration/content files;
-- uploads the result as the **Nightwalker-ASI** artifact.
+The workflow uses the official Script Hook RDR2 developer SDK download from `dev-c.com` by default.
 
-## SDK source
+An optional repository variable named `SCRIPHOOK_SDK_URL` can override the SDK download URL later if Alexander Blade changes the official SDK package location. Leaving that variable unset is now supported and is the normal setup.
 
-The default workflow URL points to the developer SDK download published from Alexander Blade's official Script Hook RDR2 page on `dev-c.com`. The repository does not commit or redistribute the SDK itself.
+The SDK is downloaded only to the temporary GitHub runner. It is not committed to the Nightwalker repository or included in the Nightwalker artifact.
 
-If the official SDK URL changes, paste the new official HTTPS SDK ZIP URL into the workflow's `sdk_url` field before running it.
+## What each Actions workflow is for
 
-## Important distinction
+- **Build Nightwalker ASI** — manually creates the downloadable Windows x64 `Nightwalker.asi` package.
+- **Nightwalker CI** — automatically runs deterministic tests, compiler regressions, policy checks, and native-boundary checks. It is not the download build.
 
-The normal **Nightwalker CI** action validates deterministic tests and native/API compile boundaries. It intentionally does not produce the final ASI.
-
-Use **Build Nightwalker ASI** when you specifically want a downloadable plugin artifact.
+If you are trying to get the `.asi` on your phone, use **Build Nightwalker ASI**, not **Nightwalker CI**.
