@@ -6,44 +6,46 @@ The external Script Hook RDR2 developer SDK is not stored in this repository. Pu
 
 Expected Release plugin output: `bin/Release/Nightwalker.asi`.
 
-SDK-independent test targets now include nine suites, with `Nightwalker.Encounter.Tests` covering encounter ownership and `Nightwalker.BossHud.Tests` covering Phase 10 fade/re-engage/death/smoothing/layout/config behavior.
+SDK-independent test targets now include **ten** suites. `Nightwalker.SaveData.Tests` covers schema round-trip/migration, value clamps, tuning application, temp/replace writes, replacement, and corrupt-primary backup recovery.
 
 ## GitHub Actions
 
 `.github/workflows/ci.yml` runs on pushes and pull requests targeting `main`:
 
-- Windows/MSBuild Release x64 builds and runs all nine SDK-independent suites.
+- Windows/MSBuild Release x64 builds and runs all ten SDK-independent suites.
 - Linux/g++ builds/runs the same deterministic logic.
-- Linux syntax-compiles gameplay, encounter, HUD and Runtime composition.
-- Test-only native fixtures compile `GameBossBarApi` with the existing native boundaries.
+- Linux syntax-compiles gameplay, encounter, HUD, `ProgressionController`, and Runtime composition.
+- Test-only native fixtures continue compiling the verified game boundaries.
 
 CI intentionally does **not** link `Nightwalker.asi`; a genuine plugin requires the developer-local Script Hook RDR2 SDK and Windows/RDR2 Story Mode.
 
-## Phase 10 Story Mode verification
+## Phase 11 Story Mode persistence verification
 
 1. Build `Release | x64` with the official/local Script Hook RDR2 developer SDK and install `Nightwalker.asi` plus `Nightwalker.ini`.
-2. Keep `[Debug] Enabled=false`, `[Encounter.SaintDenis] Enabled=true`, `[VampireAI] Enabled=true`, and `[BossHUD] Enabled=true`.
-3. Approach the configured Saint Denis church district during the active night window. Omen/Stalking must show **no boss bar**.
-4. Enter Confrontation and wait for the readable combat handoff. When Combat is armed, confirm the bar fades in near the lower safe area with title `THE VAMPIRE` and no ability/phase text.
-5. Damage the vampire repeatedly. Confirm the actual health loss is reflected while the visible fill eases smoothly instead of snapping or lagging materially behind state.
-6. Let the vampire damage the player. Confirm the visibility timer refreshes.
-7. Stay in active close combat without exchanging damage for several seconds. Confirm confirmed engagement keeps the meter visible.
-8. Break combat/contact for longer than `IdleSeconds` (default 6.0). Confirm a smooth fade-out rather than an instant hide.
-9. Re-engage after the bar has faded or while it is fading. Confirm it returns smoothly using the **current** boss health, not a stale ratio.
-10. Set `ShowNumericHealth=false` (default) and verify no numbers appear. Set it true explicitly, reload safely with F10, start a fresh encounter, and verify only current/max boss HP is added; no powers/phases/cooldowns appear.
-11. Change `DisplayName` and verify the configured title is used without creating another HUD element.
-12. Kill the boss while the meter is visible. Confirm fill reaches zero, remains briefly for `DeathHoldSeconds` (default 1.25), then fades away without victory statistics or loot cards.
-13. Abort by leaving the encounter area beyond its grace period. The bar must hide immediately and no UI may remain after actor cleanup.
-14. Test player death, boss invalidation/despawn, mission/cutscene/player-control transition, F10 reload, F11 cleanup and normal script unload. Every path must hide the HUD immediately.
-15. Disable `[BossHUD] Enabled=false`. The encounter/combat should continue normally with **no custom HUD**.
-16. Verify at 16:9 and an ultrawide resolution. The bar should remain centered with a restrained width and lower-screen placement rather than stretching across the display.
-17. Confirm no permanent player health replacement, blood/hunger meter, stamina replacement, Shadowstep cooldown, icon row, move list, phase label, power name, weakness/resistance, floating damage number or combo counter appears anywhere.
-18. Run several encounter start -> disengage -> re-engage -> boss death cycles and abort/restart cycles. No stale boss handle or stuck bar may survive into the next encounter.
+2. Start with no `Nightwalker.state`, `.tmp`, or `.bak`. Launch Story Mode and confirm the log reports safe default state rather than an error/crash.
+3. Complete a normal feed so hidden blood changes. Allow several seconds for the throttled checkpoint or exit normally. Confirm `Nightwalker.state` is created beside the plugin and contains `schemaVersion=1`.
+4. Exit RDR2 completely, relaunch, and confirm the stored blood value is loaded as the feeding resource seed. No blood/hunger meter should appear.
+5. Resolve the Saint Denis vampire encounter. Confirm the state file records `encounter.saintDenis.completed=true` and a non-zero absolute `cooldownUntilGameSeconds`.
+6. Exit and restart before that cooldown expires. Enter the Saint Denis district during the normal night window and verify the encounter remains unavailable until the stored timestamp expires.
+7. Temporarily use practical encounter cooldown values for testing, let the stored timestamp expire, and verify the user's `[Encounter.SaintDenis] Enabled` preference becomes effective again.
+8. Abort an active encounter through the existing leave-grace or unsafe-transition path. Confirm reverse lifecycle cleanup occurs before the persistence checkpoint, so the resulting abort cooldown is stored.
+9. Verify the already-fixed Dormant cancellation edge: load during an unsafe mission/cutscene with no encounter actor. A cancellation while `Dormant` must not create a fresh abort cooldown.
+10. Trigger F10 during/after an encounter. Confirm active gameplay cleans first, progression state checkpoints, the INI reloads, and saved tuning is reapplied once without multiplying itself again.
+11. Change safe progression multipliers in `Nightwalker.state` **while RDR2 is closed**, restart, and verify player Shadowstep debug-harness range/cooldown and feed efficiency change within documented clamps.
+12. Set extreme values in the state file and restart. Confirm clamp warnings/default behavior and no unsafe multiplier is accepted.
+13. Keep a valid `Nightwalker.state.bak`, corrupt the primary state file, then launch. Confirm a warning and backup recovery rather than a crash.
+14. Corrupt the primary with no valid backup. Confirm Nightwalker recovers to safe defaults and remains playable.
+15. Set a future unsupported `schemaVersion`. Confirm runtime avoids destructive downgrade writes for that session.
+16. Interrupt a write in a controlled development copy so a valid `.tmp`/`.bak` remains, then verify the recovery path on next launch.
+17. Run feed -> checkpoint -> restart and encounter abort/resolution -> checkpoint -> restart cycles repeatedly. No resource reset, duplicate boss, stranded actor, or stale cooldown should appear.
+18. Confirm **no** skill tree, radial wheel, progression overlay, blood meter, Shadowstep cooldown display, ability card, or new custom combat HUD appears. The Phase 10 red boss-health bar remains the only custom combat HUD.
 
-## Current boundaries
+## Phase 10 boss-HUD regression checks
 
-Phase 10 uses normalized native rectangle/text drawing and aspect-aware width compensation. Exact visual safe-zone placement still requires target-environment verification across user HUD/safe-zone settings.
+After Phase 11 integration, also repeat the high-value HUD cases: Omen/Stalking shows no bar; Combat fades in the red meter; inactivity fades it out; re-engagement restores current health; death reaches zero/holds/fades; abort/player death/F10/F11/unload hides immediately.
 
-The HUD receives its boss handle only from `SaintDenisDirector`; it never scans the world. Damage/contact queries are read-only for the HUD and do not clear vanilla or Nightwalker combat state.
+## Current persistence boundaries
 
-The encounter completion/cooldown remains session-owned. Nightwalker still does not write to RDR2 save structures.
+`Nightwalker.state` is a Nightwalker-owned file. It never replaces or patches RDR2 save data. Phase 11 immediately applies saved tuning only to the player Shadowstep debug harness and feeding efficiency. Stored sprint/flank/regeneration/throw-strength progression is reserved for later explicitly approved player gameplay because current sprint/physical systems also affect the enemy vampire.
+
+Editing `Nightwalker.state` while the game is running is unsupported; runtime checkpoints can overwrite external edits. F10 re-reads the INI and reapplies the state already loaded into memory. Re-reading the state file itself requires a restart in Phase 11.
