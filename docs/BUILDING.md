@@ -1,51 +1,82 @@
-# Building
+# Building Nightwalker 1.0.0-rc1
 
-Use Visual Studio 2022 with the Desktop C++ workload and a Windows SDK. Build `Nightwalker.sln` as `Debug | x64` or `Release | x64`.
+Use Visual Studio 2022 with the Desktop C++ workload and a Windows SDK. Nightwalker targets **Windows x64 / RDR2 Story Mode**.
 
-The external Script Hook RDR2 developer SDK is not stored in this repository. Put `main.h`, `natives.h`, and the SDK headers under `third_party/ScriptHookRDR2/inc`, and `ScriptHookRDR2.lib` under `third_party/ScriptHookRDR2/lib`, or override `ScriptHookRdr2Root`.
+## Native plugin dependency
 
-Expected Release plugin output: `bin/Release/Nightwalker.asi`. When `content/Nightwalker.dialogue` exists, the native project copies it beside the built ASI.
+The Script Hook RDR2 developer SDK is intentionally not stored in this repository. Keep its headers and import library in your local dependency location documented by `third_party/ScriptHookRDR2/README.md`, or override the `ScriptHookRdr2Root` MSBuild property.
 
-SDK-independent test targets now include **eleven** suites. `Nightwalker.Narrative.Tests` covers schema parsing, stable sequence presence, wrapping, playback/skip/watchdog behavior, and narrative-settings clamps.
+A genuine `Nightwalker.asi` cannot be linked by public CI without that local developer SDK. Public CI therefore validates pure logic plus controller/runtime/native-boundary compilation, but it does not pretend a stub-linked binary is a releasable plugin.
 
-## GitHub Actions
+## Build
 
-`.github/workflows/ci.yml` runs on pushes and pull requests targeting `main`:
+Open `Nightwalker.sln` and build `Debug | x64` or `Release | x64`.
 
-- Windows/MSBuild Release x64 builds and runs all eleven SDK-independent suites.
-- Linux/g++ builds/runs the same deterministic logic.
-- Linux syntax-compiles gameplay, encounter, HUD, persistence, `NarrativeController`, and Runtime composition.
-- Test-only native fixtures continue compiling the verified game boundaries.
+Expected native output:
 
-CI intentionally does **not** link `Nightwalker.asi`; a genuine plugin requires the developer-local Script Hook RDR2 SDK and Windows/RDR2 Story Mode.
+```text
+bin/Release/Nightwalker.asi
+```
 
-## Phase 12 Story Mode narrative verification
+`Release | x64` disables release PDB generation and, after the ASI links successfully, runs the deterministic release packager. The packager validates the binary, copies only the explicit release allowlist, scans the staged text files for local developer paths, and creates:
 
-1. Build `Release | x64`, install `Nightwalker.asi`, `Nightwalker.ini`, and the copied `Nightwalker.dialogue` beside the plugin.
-2. Keep `[Narrative] Enabled=true` and enter the Saint Denis encounter normally.
-3. Reach Confrontation and verify the original pre-fight subtitle sequence appears while the boss is still non-combat.
-4. Allow it to complete naturally and confirm Combat arms afterward with the existing boss AI/HUD behavior unchanged.
-5. Start another encounter and press Enter once during the first line. Confirm only the current line advances. Hold Enter and confirm it does not repeatedly skip lines.
-6. Temporarily shorten `MaxConfrontationHoldMs` and verify the watchdog cancels remaining text and still enters Combat.
-7. Kill the boss and verify the bounded post-defeat subtitle appears before resolution cleanup.
-8. Temporarily shorten `MaxSequenceMs`; confirm post-fight text cannot strand encounter cleanup.
-9. Abort during pre-fight and post-fight playback by leaving the area, F11 cleanup, player death, and mission/cutscene transition. Subtitles must disappear immediately and actor/HUD cleanup must continue.
-10. Remove `Nightwalker.dialogue`, relaunch, and verify the built-in original subtitle catalog is used.
-11. Corrupt the external dialogue schema/records, relaunch, and verify warnings plus built-in fallback rather than a crash.
-12. Leave `OptionalAudio=true`. The Phase 12 subtitle-only audio backend must quietly fall back to text and never delay encounter state.
-13. Set `[Narrative] Enabled=false`. Encounter confrontation/combat/resolution must still work without narrative text.
-14. F10 during an active sequence must clean the encounter/narrative first, reload INI/dialogue data, and leave no stale subtitle.
-15. Confirm clue and alternate-outcome records remain data hooks only; Phase 12 does not spawn unsafe clue props or add a choice UI.
-16. Confirm no player power HUD, dialogue wheel, blood meter, cooldown bar, boss phase label, or other persistent combat UI was added.
+```text
+artifacts/Nightwalker-1.0.0-rc1-win64.zip
+```
 
-## Phase 11 persistence regression checks
+Archive contents:
 
-Repeat the high-value persistence cases after Phase 12 integration: hidden blood survives restart; Saint Denis completion/cooldown survives restart; corrupt-primary backup recovery works; F10 does not compound tuning; Dormant cancellation does not create a false abort cooldown.
+```text
+Nightwalker/
+  Nightwalker.asi
+  Nightwalker.ini
+  Nightwalker.dialogue
+  README.md
+  CHANGELOG.md
+  THIRD_PARTY_NOTICES.md
+```
 
-## Phase 10 boss-HUD regression checks
+The release ZIP intentionally excludes PDBs, logs, state files, build intermediates, repository metadata, SDK headers/libraries and optional LML content.
 
-Omen/Stalking shows no bar; Combat fades in the red meter; inactivity fades it out; re-engagement restores current health; death reaches zero/holds/fades; abort/player death/F10/F11/unload hides immediately.
+You can also invoke the packager manually after a successful local Release build:
 
-## Current boundaries
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File scripts/package-release.ps1 `
+  -PluginPath bin/Release/Nightwalker.asi `
+  -Version 1.0.0-rc1
+```
 
-`Nightwalker.state` remains separate from RDR2 save data. Narrative text/audio IDs remain separate from gameplay code. Phase 12 ships no custom voice files and no guessed RDR2 audio identifiers; subtitles are the guaranteed production fallback.
+## Automated test targets
+
+Nightwalker currently has eleven SDK-independent C++ suites:
+
+- `Nightwalker.Tests`
+- `Nightwalker.Shadowstep.Tests`
+- `Nightwalker.Presentation.Tests`
+- `Nightwalker.Targeting.Tests`
+- `Nightwalker.Movement.Tests`
+- `Nightwalker.Feeding.Tests`
+- `Nightwalker.Combat.Tests`
+- `Nightwalker.Encounter.Tests`
+- `Nightwalker.BossHud.Tests`
+- `Nightwalker.SaveData.Tests`
+- `Nightwalker.Narrative.Tests`
+
+The foundation suite includes long-session recovery/quarantine semantics and cached-model behavior. The save suite covers migration/corruption/backup recovery. The HUD suite covers fade/death/layout behavior.
+
+## GitHub Actions release gates
+
+`.github/workflows/ci.yml` runs on pushes and pull requests:
+
+- Windows/MSBuild builds and runs all eleven Release x64 pure-test executables.
+- Linux/g++ builds and runs the same deterministic logic.
+- Linux syntax-compiles gameplay controllers, encounter, HUD, persistence, narrative and Runtime composition.
+- Native-boundary sources compile against test-only signatures.
+- Custom draw-native use is restricted to `GameBossBarApi.cpp`.
+- `scripts/release_audit.py` verifies RC version consistency, Story-Mode-only source policy, required release documentation, local SDK exclusion, tracked build-junk exclusion, package allowlist and current no-attachment/no-collision-toggle release assumptions.
+
+## Release-candidate target testing
+
+Automation is not a substitute for RDR2 Story Mode. Before final `1.0.0`, run `docs/RELEASE_TEST_MATRIX.md` against the exact packaged RC binary. Required manual cases include Arthur, John, Saint Denis dense streets/cathedral/alleys, forest/plains, slopes/stairs, water edges, mounted transitions, wanted level, nearby missions, death interruption cases, boss death during special movement, low/high FPS, keyboard/mouse and controller.
+
+A build should remain `1.0.0-rc*` until that matrix is complete enough to support a stable-release claim.

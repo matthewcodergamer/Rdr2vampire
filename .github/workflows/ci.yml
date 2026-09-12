@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   windows-pure-tests:
-    name: Windows pure C++ tests
+    name: Windows x64 release-candidate tests
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -52,6 +52,34 @@ jobs:
           & .\bin\tests\Release\Nightwalker.BossHud.Tests.exe
           & .\bin\tests\Release\Nightwalker.SaveData.Tests.exe
           & .\bin\tests\Release\Nightwalker.Narrative.Tests.exe
+      - name: Run release policy audit
+        run: python scripts/release_audit.py
+      - name: Parse and smoke-test release packager
+        shell: pwsh
+        run: |
+          $tokens = $null
+          $errors = $null
+          [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path '.\scripts\package-release.ps1'), [ref]$tokens, [ref]$errors) | Out-Null
+          if ($errors.Count -ne 0) { $errors | ForEach-Object { Write-Error $_ }; exit 1 }
+          New-Item -ItemType Directory -Path .\build\package-fixture -Force | Out-Null
+          Copy-Item .\bin\tests\Release\Nightwalker.Tests.exe .\build\package-fixture\Nightwalker.asi
+          & .\scripts\package-release.ps1 -PluginPath .\build\package-fixture\Nightwalker.asi -Version 1.0.0-rc1 -OutputDirectory .\build\package-smoke
+          $zip = '.\build\package-smoke\Nightwalker-1.0.0-rc1-win64.zip'
+          if (-not (Test-Path $zip)) { throw 'Release packager smoke test did not create expected ZIP.' }
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          $archive = [System.IO.Compression.ZipFile]::OpenRead((Resolve-Path $zip))
+          try {
+            $names = $archive.Entries | Where-Object { -not [string]::IsNullOrEmpty($_.Name) } | ForEach-Object { $_.FullName.Replace('\', '/') } | Sort-Object
+            $expected = @(
+              'Nightwalker/CHANGELOG.md',
+              'Nightwalker/Nightwalker.asi',
+              'Nightwalker/Nightwalker.dialogue',
+              'Nightwalker/Nightwalker.ini',
+              'Nightwalker/README.md',
+              'Nightwalker/THIRD_PARTY_NOTICES.md'
+            ) | Sort-Object
+            if (($names -join '|') -ne ($expected -join '|')) { throw "Unexpected release ZIP entries: $($names -join ', ')" }
+          } finally { $archive.Dispose() }
 
   linux-pure-tests:
     name: Linux compiler regression tests
@@ -112,7 +140,9 @@ jobs:
             echo "$bad"
             exit 1
           fi
-      - name: Compile Phase 13 controllers
+      - name: Run release policy audit
+        run: python3 scripts/release_audit.py
+      - name: Compile Phase 14 controllers
         run: |
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/ShadowstepController.cpp -o build/ci/ShadowstepController.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/ShadowstepPresentation.cpp -o build/ci/ShadowstepPresentation.o
@@ -134,7 +164,7 @@ jobs:
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/ProgressionController.cpp -o build/ci/ProgressionController.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -Isrc/core -c src/narrative/NarrativeController.cpp -o build/ci/NarrativeController.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/ui/BossHudController.cpp -o build/ci/BossHudController.o
-      - name: Compile Phase 13 runtime composition
+      - name: Compile Phase 14 runtime composition
         run: |
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -Isrc/core -c src/core/RuntimeLifecycle.cpp -o build/ci/RuntimeLifecycle.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -Isrc/core -c src/core/RuntimeTick.cpp -o build/ci/RuntimeTick.o
@@ -155,4 +185,4 @@ jobs:
       - run: |
           echo "Nightwalker.asi is intentionally not linked in public CI."
           echo "The plugin requires the local Script Hook RDR2 SDK and Windows/MSVC."
-          echo "CI validates pure logic plus Phase 13 hardening/runtime/controller/native-boundary compilation."
+          echo "CI validates Phase 14 release policy, deterministic regressions, packaging smoke checks, controllers, runtime composition and native boundaries."
