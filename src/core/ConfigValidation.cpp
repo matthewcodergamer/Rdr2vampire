@@ -1,99 +1,37 @@
 #include "ConfigInternal.h"
-
 #include <algorithm>
 #include <string>
 
 namespace nightwalker::core::config_internal {
 namespace {
+constexpr int kDebugSipKey=0x74;
+constexpr int kDebugDrainKey=0x75;
+constexpr int kDebugSpawnKey=0x77;
+constexpr int kDebugDespawnKey=0x78;
+constexpr int kDefaultShadowstepKey=0x76;
+constexpr int kDefaultReloadKey=0x79;
+constexpr int kDefaultRestoreKey=0x7A;
 
-constexpr int kDebugSpawnKey = 0x77;        // F8
-constexpr int kDebugDespawnKey = 0x78;      // F9
-constexpr int kDefaultShadowstepKey = 0x76; // F7
-constexpr int kDefaultReloadKey = 0x79;     // F10
-constexpr int kDefaultRestoreKey = 0x7A;    // F11
-
-template <typename T>
-void Clamp(T& value, T low, T high, const char* name, const Config::DiagnosticSink& diagnostics) {
-    const T original = value;
-    value = std::clamp(value, low, high);
-    if (value != original && diagnostics) {
-        diagnostics(std::string(name) + " was outside the safe range and was clamped.");
-    }
+template<class T>void Clamp(T& v,T lo,T hi,const char* name,const Config::DiagnosticSink& d){const T before=v;v=std::clamp(v,lo,hi);if(v!=before&&d)d(std::string(name)+" was outside the safe range and was clamped.");}
+bool DebugHotkeysCollide(const DebugSettings& d)noexcept{
+ if(d.shadowstepHotkey==d.reloadHotkey||d.shadowstepHotkey==d.restoreHotkey||d.reloadHotkey==d.restoreHotkey)return true;
+ const int reserved[]={kDebugSipKey,kDebugDrainKey,kDebugSpawnKey,kDebugDespawnKey};
+ for(int key:reserved)if(d.shadowstepHotkey==key||d.reloadHotkey==key||d.restoreHotkey==key)return true;
+ return false;
+}
 }
 
-bool DebugHotkeysCollide(const DebugSettings& debug) noexcept {
-    if (debug.shadowstepHotkey == debug.reloadHotkey ||
-        debug.shadowstepHotkey == debug.restoreHotkey ||
-        debug.reloadHotkey == debug.restoreHotkey) {
-        return true;
-    }
-
-    const int reserved[] = {kDebugSpawnKey, kDebugDespawnKey};
-    for (const int key : reserved) {
-        if (debug.shadowstepHotkey == key ||
-            debug.reloadHotkey == key ||
-            debug.restoreHotkey == key) {
-            return true;
-        }
-    }
-    return false;
-}
-
-} // namespace
-
-void Validate(Config& config, const Config::DiagnosticSink& diagnostics) {
-    Clamp(config.shadowstep.quickDistance, 1.0, 15.0, "Shadowstep.QuickDistance", diagnostics);
-    Clamp(config.shadowstep.aimDistance, 1.0, 25.0, "Shadowstep.AimDistance", diagnostics);
-    Clamp(config.shadowstep.cooldownMs, 100, 10000, "Shadowstep.CooldownMs", diagnostics);
-    Clamp(config.shadowstep.maxVerticalDelta, 0.25, 3.0, "Shadowstep.MaxVerticalDelta", diagnostics);
-    Clamp(config.shadowstep.validationTimeoutMs, 50, 2000, "Shadowstep.ValidationTimeoutMs", diagnostics);
-    Clamp(config.shadowstep.wallClearance, 0.40, 1.50, "Shadowstep.WallClearance", diagnostics);
-
-    Clamp(config.movement.sprintMoveRate, 1.0, 1.20, "Movement.SprintMoveRate", diagnostics);
-    Clamp(config.movement.accelerationMs, 100, 1200, "Movement.AccelerationMs", diagnostics);
-    Clamp(config.movement.burstDurationMs, 300, 4000, "Movement.BurstDurationMs", diagnostics);
-    Clamp(config.movement.recoveryMs, 250, 5000, "Movement.RecoveryMs", diagnostics);
-    Clamp(config.movement.dismountRecoveryMs, 150, 2000, "Movement.DismountRecoveryMs", diagnostics);
-    Clamp(config.movement.activationDistance, 2.5, 15.0, "Movement.ActivationDistance", diagnostics);
-    Clamp(config.movement.minVelocity, 0.05, 3.0, "Movement.MinVelocity", diagnostics);
-    Clamp(config.movement.trailIntervalMs, 100, 1000, "Movement.TrailIntervalMs", diagnostics);
-
-    Clamp(config.encounter.startHour, 0, 23, "Encounter.StartHour", diagnostics);
-    Clamp(config.encounter.endHour, 0, 23, "Encounter.EndHour", diagnostics);
-    Clamp(config.encounter.respawnCooldownHours, 1, 720, "Encounter.RespawnCooldownHours", diagnostics);
-
-    Clamp(config.vampireAi.shadowstepMinDistance, 2.5, 8.0, "VampireAI.ShadowstepMinDistance", diagnostics);
-    Clamp(config.vampireAi.shadowstepMaxDistance, 5.0, 15.0, "VampireAI.ShadowstepMaxDistance", diagnostics);
-    Clamp(config.vampireAi.strikingRange, 1.2, 2.5, "VampireAI.StrikingRange", diagnostics);
-    Clamp(config.vampireAi.predictionMs, 50, 600, "VampireAI.PredictionMs", diagnostics);
-    Clamp(config.vampireAi.decisionIntervalMs, 80, 1000, "VampireAI.DecisionIntervalMs", diagnostics);
-    Clamp(config.vampireAi.shadowstepCooldownMs, 1200, 10000, "VampireAI.ShadowstepCooldownMs", diagnostics);
-    Clamp(config.vampireAi.telegraphMs, 180, 900, "VampireAI.TelegraphMs", diagnostics);
-    Clamp(config.vampireAi.recoveryMs, 300, 3000, "VampireAI.RecoveryMs", diagnostics);
-    Clamp(config.vampireAi.evadeCooldownMs, 2500, 15000, "VampireAI.EvadeCooldownMs", diagnostics);
-    Clamp(config.vampireAi.retreatSpeedThreshold, 0.2, 3.0, "VampireAI.RetreatSpeedThreshold", diagnostics);
-    if (config.vampireAi.shadowstepMaxDistance < config.vampireAi.shadowstepMinDistance + 0.5) {
-        config.vampireAi.shadowstepMaxDistance = config.vampireAi.shadowstepMinDistance + 0.5;
-        if (diagnostics) diagnostics("VampireAI.ShadowstepMaxDistance was raised above the minimum distance.");
-    }
-
-    Clamp(config.bossHud.idleSeconds, 1.0, 30.0, "BossHUD.IdleSeconds", diagnostics);
-    Clamp(config.bossHud.fadeSeconds, 0.1, 3.0, "BossHUD.FadeSeconds", diagnostics);
-    Clamp(config.bossHud.deathHoldSeconds, 0.0, 5.0, "BossHUD.DeathHoldSeconds", diagnostics);
-
-    if (DebugHotkeysCollide(config.debug)) {
-        if (diagnostics) {
-            diagnostics("Debug hotkeys collided with F8/F9 or each other; restoring safe F7/F10/F11 defaults.");
-        }
-        config.debug.shadowstepHotkey = kDefaultShadowstepKey;
-        config.debug.reloadHotkey = kDefaultReloadKey;
-        config.debug.restoreHotkey = kDefaultRestoreKey;
-    }
-
-    if (config.bossHud.showNumericHealth) {
-        if (diagnostics) diagnostics("BossHUD.ShowNumericHealth is locked off by DESIGN_LOCKS.md.");
-        config.bossHud.showNumericHealth = false;
-    }
+void Validate(Config& c,const Config::DiagnosticSink& d){
+ Clamp(c.shadowstep.quickDistance,1.0,15.0,"Shadowstep.QuickDistance",d);Clamp(c.shadowstep.aimDistance,1.0,25.0,"Shadowstep.AimDistance",d);Clamp(c.shadowstep.cooldownMs,100,10000,"Shadowstep.CooldownMs",d);Clamp(c.shadowstep.maxVerticalDelta,0.25,3.0,"Shadowstep.MaxVerticalDelta",d);Clamp(c.shadowstep.validationTimeoutMs,50,2000,"Shadowstep.ValidationTimeoutMs",d);Clamp(c.shadowstep.wallClearance,0.40,1.50,"Shadowstep.WallClearance",d);
+ Clamp(c.movement.sprintMoveRate,1.0,1.20,"Movement.SprintMoveRate",d);Clamp(c.movement.accelerationMs,100,1200,"Movement.AccelerationMs",d);Clamp(c.movement.burstDurationMs,300,4000,"Movement.BurstDurationMs",d);Clamp(c.movement.recoveryMs,250,5000,"Movement.RecoveryMs",d);Clamp(c.movement.dismountRecoveryMs,150,2000,"Movement.DismountRecoveryMs",d);Clamp(c.movement.activationDistance,2.5,15.0,"Movement.ActivationDistance",d);Clamp(c.movement.minVelocity,0.05,3.0,"Movement.MinVelocity",d);Clamp(c.movement.trailIntervalMs,100,1000,"Movement.TrailIntervalMs",d);
+ Clamp(c.feeding.initialBlood,0.0,100.0,"Feeding.InitialBlood",d);Clamp(c.feeding.sipBloodGain,0.0,100.0,"Feeding.SipBloodGain",d);Clamp(c.feeding.drainBloodGain,0.0,100.0,"Feeding.DrainBloodGain",d);Clamp(c.feeding.healthRestoreSip,0,200,"Feeding.HealthRestoreSip",d);Clamp(c.feeding.healthRestoreDrain,0,300,"Feeding.HealthRestoreDrain",d);Clamp(c.feeding.maxDistance,1.0,2.5,"Feeding.MaxDistance",d);Clamp(c.feeding.alignMs,100,1200,"Feeding.AlignMs",d);Clamp(c.feeding.grabMs,100,1500,"Feeding.GrabMs",d);Clamp(c.feeding.sipDurationMs,300,3000,"Feeding.SipDurationMs",d);Clamp(c.feeding.drainDurationMs,500,4500,"Feeding.DrainDurationMs",d);Clamp(c.feeding.releaseMs,0,1000,"Feeding.ReleaseMs",d);Clamp(c.feeding.stateTimeoutMs,500,8000,"Feeding.StateTimeoutMs",d);
+ const int longestFeed=std::max(c.feeding.sipDurationMs,c.feeding.drainDurationMs);if(c.feeding.stateTimeoutMs<longestFeed+250){c.feeding.stateTimeoutMs=std::min(8000,longestFeed+250);if(d)d("Feeding.StateTimeoutMs was raised above the longest feed stage.");}
+ Clamp(c.encounter.startHour,0,23,"Encounter.StartHour",d);Clamp(c.encounter.endHour,0,23,"Encounter.EndHour",d);Clamp(c.encounter.respawnCooldownHours,1,720,"Encounter.RespawnCooldownHours",d);
+ Clamp(c.vampireAi.shadowstepMinDistance,2.5,8.0,"VampireAI.ShadowstepMinDistance",d);Clamp(c.vampireAi.shadowstepMaxDistance,5.0,15.0,"VampireAI.ShadowstepMaxDistance",d);Clamp(c.vampireAi.strikingRange,1.2,2.5,"VampireAI.StrikingRange",d);Clamp(c.vampireAi.predictionMs,50,600,"VampireAI.PredictionMs",d);Clamp(c.vampireAi.decisionIntervalMs,80,1000,"VampireAI.DecisionIntervalMs",d);Clamp(c.vampireAi.shadowstepCooldownMs,1200,10000,"VampireAI.ShadowstepCooldownMs",d);Clamp(c.vampireAi.telegraphMs,180,900,"VampireAI.TelegraphMs",d);Clamp(c.vampireAi.recoveryMs,300,3000,"VampireAI.RecoveryMs",d);Clamp(c.vampireAi.evadeCooldownMs,2500,15000,"VampireAI.EvadeCooldownMs",d);Clamp(c.vampireAi.retreatSpeedThreshold,0.2,3.0,"VampireAI.RetreatSpeedThreshold",d);
+ if(c.vampireAi.shadowstepMaxDistance<c.vampireAi.shadowstepMinDistance+0.5){c.vampireAi.shadowstepMaxDistance=c.vampireAi.shadowstepMinDistance+0.5;if(d)d("VampireAI.ShadowstepMaxDistance was raised above the minimum distance.");}
+ Clamp(c.bossHud.idleSeconds,1.0,30.0,"BossHUD.IdleSeconds",d);Clamp(c.bossHud.fadeSeconds,0.1,3.0,"BossHUD.FadeSeconds",d);Clamp(c.bossHud.deathHoldSeconds,0.0,5.0,"BossHUD.DeathHoldSeconds",d);
+ if(DebugHotkeysCollide(c.debug)){if(d)d("Debug hotkeys collided with F5/F6/F8/F9 or each other; restoring safe F7/F10/F11 defaults.");c.debug.shadowstepHotkey=kDefaultShadowstepKey;c.debug.reloadHotkey=kDefaultReloadKey;c.debug.restoreHotkey=kDefaultRestoreKey;}
+ if(c.bossHud.showNumericHealth){if(d)d("BossHUD.ShowNumericHealth is locked off by DESIGN_LOCKS.md.");c.bossHud.showNumericHealth=false;}
 }
 
 } // namespace nightwalker::core::config_internal
