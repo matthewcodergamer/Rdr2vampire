@@ -2,63 +2,48 @@
 
 Use Visual Studio 2022 with the Desktop C++ workload and a Windows SDK. Build `Nightwalker.sln` as `Debug | x64` or `Release | x64`.
 
-The external Script Hook RDR2 developer SDK is not stored in this repository. Put `main.h`, `natives.h`, and the rest of the SDK headers under `third_party/ScriptHookRDR2/inc`, and put `ScriptHookRDR2.lib` under `third_party/ScriptHookRDR2/lib`, or override the `ScriptHookRdr2Root` MSBuild property.
+The external Script Hook RDR2 developer SDK is not stored in this repository. Put `main.h`, `natives.h`, and the SDK headers under `third_party/ScriptHookRDR2/inc`, and `ScriptHookRDR2.lib` under `third_party/ScriptHookRDR2/lib`, or override `ScriptHookRdr2Root`.
 
-Expected plugin output: `bin/Release/Nightwalker.asi` for Release builds.
+Expected Release plugin output: `bin/Release/Nightwalker.asi`.
 
-SDK-independent test targets:
-
-- `Nightwalker.Tests` — config/timing/watchdog/model-streaming regression logic.
-- `Nightwalker.Shadowstep.Tests` — Shadowstep vector math and destination safety.
-- `Nightwalker.Presentation.Tests` — disappearance/carry settings.
-- `Nightwalker.Targeting.Tests` — intercept/flank/behind planning and Vampire AI tuning.
-- `Nightwalker.Movement.Tests` — continuous-movement ramp math and config bounds.
-- `Nightwalker.Feeding.Tests` — hidden-resource/feed geometry/config compatibility.
-- `Nightwalker.Combat.Tests` — bounded physical-release math and combat config.
-- `Nightwalker.Encounter.Tests` — night-window/radius/cooldown math, authoritative boss ownership, and Saint Denis setting clamps.
-
-Run test executables from `bin/tests/<Configuration>/`. They do not require RDR2 or Script Hook.
+SDK-independent test targets now include nine suites, with `Nightwalker.Encounter.Tests` covering encounter ownership and `Nightwalker.BossHud.Tests` covering Phase 10 fade/re-engage/death/smoothing/layout/config behavior.
 
 ## GitHub Actions
 
 `.github/workflows/ci.yml` runs on pushes and pull requests targeting `main`:
 
-- Windows/MSBuild Release x64 builds and runs all eight SDK-independent tests.
-- Linux/g++ C++20 builds and runs the same deterministic logic.
-- Linux syntax-compiles the Shadowstep, vampire AI, movement, feeding, physical-combat, debug-spawn and Saint Denis encounter controllers.
-- Linux syntax-compiles Runtime composition so constructor/system-order changes are checked.
-- Test-only native signature fixtures compile `GameEncounterApi` alongside the existing presentation/combat/movement/feed/physics boundaries.
+- Windows/MSBuild Release x64 builds and runs all nine SDK-independent suites.
+- Linux/g++ builds/runs the same deterministic logic.
+- Linux syntax-compiles gameplay, encounter, HUD and Runtime composition.
+- Test-only native fixtures compile `GameBossBarApi` with the existing native boundaries.
 
-CI intentionally does **not** link `Nightwalker.asi`. A genuine plugin build still requires the developer-local Script Hook RDR2 SDK and Windows/RDR2.
+CI intentionally does **not** link `Nightwalker.asi`; a genuine plugin requires the developer-local Script Hook RDR2 SDK and Windows/RDR2 Story Mode.
 
-## Phase 9 in-game verification
+## Phase 10 Story Mode verification
 
-1. Build `Release | x64` with the local Script Hook RDR2 developer SDK, install `Nightwalker.asi`, and copy the example INI as `Nightwalker.ini`.
-2. Leave `[Debug] Enabled=false`. Keep `[Encounter.SaintDenis] Enabled=true` and `[VampireAI] Enabled=true` to prove the production encounter does not depend on the debug harness.
-3. Set RDR2 time inside the configured `StartHour`/`EndHour` window and approach the configured Saint Denis church district. Confirm the encounter remains dormant outside `TriggerRadius` and becomes eligible inside it.
-4. Confirm the omen is restrained: compact smoke only, no control/camera lock, no custom power HUD, and no permanent effects.
-5. During `SpawnPending`, move/look around. The vampire should appear only at a safe ground/water-valid point, prefer an off-camera candidate, and never create a duplicate actor.
-6. During Stalking, confirm the vampire exists but does not run the Phase 5–8 combat AI yet. Aim at him, approach inside `ConfrontationDistance`, or allow the stalking timer to expire to enter Confrontation.
-7. Confirm Confrontation provides its short readable delay before combat is armed. There must be no scripted damage during this handoff.
-8. Fight normally. Existing Shadowstep, arrival carry/telegraph, supernatural chase movement, heavy melee, grab/throw, and combat feed should operate on the encounter-owned actor.
-9. Move outside `AbortRadius`, return before `LeaveGraceMs`, and verify the encounter remains active. Then leave longer than the grace period and verify the boss is disarmed, tasks/presentation are restored, and the actor is removed.
-10. Start a major mission/cutscene or otherwise lose player control during Omen, SpawnPending, Stalking, Confrontation, and Combat in separate tests. Runtime unsafe-state cleanup must remove the encounter actor before systems resume.
-11. Test player death during active encounter states. No boss, movement override, invisible state, model request, or smoke ownership may be stranded.
-12. Kill the boss. Confirm combat is disarmed immediately, Resolution holds briefly, Cleanup removes the owned actor, then the long `RespawnCooldownHours` session cooldown begins.
-13. Temporarily shorten `RespawnCooldownHours` and `AbortCooldownMinutes` to practical test values. Verify the encounter cannot restart early, then can restart after the appropriate in-game-time cooldown.
-14. Press F8 while the real encounter owns the registry. No debug duplicate should spawn. Press F9; the real encounter boss must not be deleted.
-15. Press F11 during an active encounter. Global cleanup should abort the encounter and delete only Nightwalker-owned encounter state.
-16. Press F10 during an active encounter. Combat/AI must clean first, the encounter actor must be removed, then the new config should load from a safe state.
-17. Set `[Encounter.SaintDenis] Enabled=false` and reload. The real encounter should remain inactive while F8 debug testing still obeys `[Debug]`.
-18. Move `CenterX/Y/Z` or radii to intentionally bad/extreme values and reload. Verify clamping warnings rather than unsafe ranges.
-19. Repeat successful start -> fight -> death resolution and start -> abort cycles several times. There must never be more than one Nightwalker boss or a stranded `cs_vampire` from the previous cycle.
-20. Confirm Phase 9 adds no boss-health bar yet and exposes no power names, phase labels, cooldowns, blood meter, skill wheel, or move list.
-21. Exit/unload normally and confirm `Nightwalker shutdown complete.` when Script Hook supplies a normal unload path.
+1. Build `Release | x64` with the official/local Script Hook RDR2 developer SDK and install `Nightwalker.asi` plus `Nightwalker.ini`.
+2. Keep `[Debug] Enabled=false`, `[Encounter.SaintDenis] Enabled=true`, `[VampireAI] Enabled=true`, and `[BossHUD] Enabled=true`.
+3. Approach the configured Saint Denis church district during the active night window. Omen/Stalking must show **no boss bar**.
+4. Enter Confrontation and wait for the readable combat handoff. When Combat is armed, confirm the bar fades in near the lower safe area with title `THE VAMPIRE` and no ability/phase text.
+5. Damage the vampire repeatedly. Confirm the actual health loss is reflected while the visible fill eases smoothly instead of snapping or lagging materially behind state.
+6. Let the vampire damage the player. Confirm the visibility timer refreshes.
+7. Stay in active close combat without exchanging damage for several seconds. Confirm confirmed engagement keeps the meter visible.
+8. Break combat/contact for longer than `IdleSeconds` (default 6.0). Confirm a smooth fade-out rather than an instant hide.
+9. Re-engage after the bar has faded or while it is fading. Confirm it returns smoothly using the **current** boss health, not a stale ratio.
+10. Set `ShowNumericHealth=false` (default) and verify no numbers appear. Set it true explicitly, reload safely with F10, start a fresh encounter, and verify only current/max boss HP is added; no powers/phases/cooldowns appear.
+11. Change `DisplayName` and verify the configured title is used without creating another HUD element.
+12. Kill the boss while the meter is visible. Confirm fill reaches zero, remains briefly for `DeathHoldSeconds` (default 1.25), then fades away without victory statistics or loot cards.
+13. Abort by leaving the encounter area beyond its grace period. The bar must hide immediately and no UI may remain after actor cleanup.
+14. Test player death, boss invalidation/despawn, mission/cutscene/player-control transition, F10 reload, F11 cleanup and normal script unload. Every path must hide the HUD immediately.
+15. Disable `[BossHUD] Enabled=false`. The encounter/combat should continue normally with **no custom HUD**.
+16. Verify at 16:9 and an ultrawide resolution. The bar should remain centered with a restrained width and lower-screen placement rather than stretching across the display.
+17. Confirm no permanent player health replacement, blood/hunger meter, stamina replacement, Shadowstep cooldown, icon row, move list, phase label, power name, weakness/resistance, floating damage number or combo counter appears anywhere.
+18. Run several encounter start -> disengage -> re-engage -> boss death cycles and abort/restart cycles. No stale boss handle or stuck bar may survive into the next encounter.
 
-## Phase 9 boundaries
+## Current boundaries
 
-The encounter's completion and cooldown state are session-owned in Phase 9. Nightwalker does not write into RDR2 save structures; persistent mod-owned save data remains a later phase.
+Phase 10 uses normalized native rectangle/text drawing and aspect-aware width compensation. Exact visual safe-zone placement still requires target-environment verification across user HUD/safe-zone settings.
 
-Omen V1 intentionally ships without guessed bell/scream audio, spawned corpse/blood clues, or permanent bat swarms. `docs/ENCOUNTER.md` documents the ownership and cleanup contract in detail.
+The HUD receives its boss handle only from `SaintDenisDirector`; it never scans the world. Damage/contact queries are read-only for the HUD and do not clear vanilla or Nightwalker combat state.
 
-The temporary red boss-health bar described in `docs/BOSS_HEALTH_BAR.md` is also intentionally deferred. Phase 9 provides the authoritative boss handle/state that the later HUD controller will consume.
+The encounter completion/cooldown remains session-owned. Nightwalker still does not write to RDR2 save structures.
