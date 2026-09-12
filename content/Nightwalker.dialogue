@@ -1,0 +1,20 @@
+# Nightwalker narrative script
+# schema 1
+# line=<sequence>|<line-id>|<speaker>|<text-id>|<audio-id>|<duration-ms>|<subtitle text>
+# The pipe character is reserved as a field separator in schema 1.
+schema=1
+
+# Encounter confrontation. Audio IDs are optional metadata; Phase 12 always has subtitle fallback.
+line=saint_denis.pre_fight|sd_pre_01|THE VAMPIRE|nw.sd.pre.01|nw.audio.sd.pre.01|2500|You followed the dead all this way. Did you think they were leading you home?
+line=saint_denis.pre_fight|sd_pre_02|THE VAMPIRE|nw.sd.pre.02|nw.audio.sd.pre.02|2200|You should have left Saint Denis to its hungers.
+
+# Defeat text. This remains valid even if no audio is supplied.
+line=saint_denis.post_defeat|sd_post_01||nw.sd.post.01||3200|Inside the vampire's coat is a strip of paper bearing the same cut mark seen near the church.
+
+# Future clue hooks; not automatically spawned in Phase 12.
+line=saint_denis.clue.bloodless_body|sd_clue_body_01||nw.sd.clue.body.01||3000|The corpse is pale and nearly bloodless. The mud shows it was carried here.
+line=saint_denis.clue.stone_mark|sd_clue_mark_01||nw.sd.clue.mark.01||3000|A narrow sigil has been cut beneath the old writing. The edges are fresh.
+
+# Future alternate-outcome hooks. Phase 12 does not add a choice mechanic.
+line=saint_denis.outcome.spared|sd_spared_01|THE VAMPIRE|nw.sd.outcome.spared.01|nw.audio.sd.spared.01|2600|Mercy is a debt, hunter. Pray I never come to collect.
+line=saint_denis.outcome.withdrawn|sd_withdrawn_01||nw.sd.outcome.withdrawn.01||2600|The vampire recedes into the dark, leaving the bells to answer for him.
