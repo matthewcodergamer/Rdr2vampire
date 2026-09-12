@@ -63,13 +63,19 @@ void NormalizeSaveData(NightwalkerSaveData& data, SaveDiagnosticSink diagnostics
                                           const NightwalkerSaveData& data,
                                           SaveDiagnosticSink diagnostics = {});
 
+// Debug-only development surface. When [ProgressionDebug] Enabled=true in Nightwalker.ini,
+// Points=0..10 applies the deterministic safe test preset to save-state progression.
+[[nodiscard]] bool ApplyProgressionDebugSeed(const std::filesystem::path& iniPath,
+                                             bool debugEnabled,
+                                             NightwalkerSaveData& data,
+                                             SaveDiagnosticSink diagnostics = {});
+
 // Applies only currently player-owned/runtime-safe tuning. Boss-only systems are not
 // silently strengthened by progression. Stored sprint/flank/regeneration fields are
 // retained for later explicitly-approved player gameplay consumers.
 void ApplyProgressionTuning(Config& config, const NightwalkerSaveData& data) noexcept;
 
-// Development-only progression preset used by the F12 debug command. This is not a
-// final skill-tree balance curve and never creates UI.
+// Deterministic development preset, not final progression balance and never a HUD.
 void AdvanceDebugProgression(NightwalkerSaveData& data) noexcept;
 
 } // namespace nightwalker::core
