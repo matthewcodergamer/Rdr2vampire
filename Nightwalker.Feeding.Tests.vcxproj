@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<ItemGroup Label="ProjectConfigurations"><ProjectConfiguration Include="Debug|x64"><Configuration>Debug</Configuration><Platform>x64</Platform></ProjectConfiguration><ProjectConfiguration Include="Release|x64"><Configuration>Release</Configuration><Platform>x64</Platform></ProjectConfiguration></ItemGroup>
+<PropertyGroup Label="Globals"><VCProjectVersion>17.0</VCProjectVersion><ProjectGuid>{A5D61E92-3D8C-48C1-9B87-80F620F7E712}</ProjectGuid><RootNamespace>NightwalkerFeedingTests</RootNamespace><WindowsTargetPlatformVersion>10.0</WindowsTargetPlatformVersion></PropertyGroup>
+<Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+<PropertyGroup Condition="'$(Configuration)'=='Debug'" Label="Configuration"><ConfigurationType>Application</ConfigurationType><UseDebugLibraries>true</UseDebugLibraries><PlatformToolset>v143</PlatformToolset><CharacterSet>Unicode</CharacterSet></PropertyGroup>
+<PropertyGroup Condition="'$(Configuration)'=='Release'" Label="Configuration"><ConfigurationType>Application</ConfigurationType><UseDebugLibraries>false</UseDebugLibraries><PlatformToolset>v143</PlatformToolset><WholeProgramOptimization>true</WholeProgramOptimization><CharacterSet>Unicode</CharacterSet></PropertyGroup>
+<Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+<PropertyGroup><TargetName>Nightwalker.Feeding.Tests</TargetName><OutDir>$(ProjectDir)bin\tests\$(Configuration)\</OutDir><IntDir>$(ProjectDir)build\feeding-tests\$(Configuration)\</IntDir></PropertyGroup>
+<ItemDefinitionGroup><ClCompile><WarningLevel>Level4</WarningLevel><ConformanceMode>true</ConformanceMode><LanguageStandard>stdcpp20</LanguageStandard><ExceptionHandling>Sync</ExceptionHandling><AdditionalIncludeDirectories>$(ProjectDir)include;$(ProjectDir)src\core;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories></ClCompile></ItemDefinitionGroup>
+<ItemGroup><ClCompile Include="tests\FeedingTests.cpp"/><ClCompile Include="src\core\Config.cpp"/><ClCompile Include="src\core\ConfigParse.cpp"/><ClCompile Include="src\core\ConfigValidation.cpp"/><ClCompile Include="src\systems\FeedingMath.cpp"/><ClCompile Include="src\systems\HiddenResource.cpp"/></ItemGroup>
+<ItemGroup><ClInclude Include="src\core\ConfigInternal.h"/><ClInclude Include="include\nightwalker\core\Config.h"/><ClInclude Include="include\nightwalker\game\GameApi.h"/><ClInclude Include="include\nightwalker\systems\FeedingMath.h"/><ClInclude Include="include\nightwalker\systems\HiddenResource.h"/></ItemGroup>
+<Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+</Project>
