@@ -1,0 +1,121 @@
+name: Build Nightwalker ASI
+
+on:
+  workflow_dispatch:
+    inputs:
+      source_ref:
+        description: "Branch, tag, or commit to build"
+        required: true
+        default: "main"
+        type: string
+      sdk_url:
+        description: "Script Hook RDR2 developer SDK ZIP URL"
+        required: true
+        default: "https://www.dev-c.com/files/ScriptHookRDR2_SDK_1.0.1207.73.zip"
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  build-nightwalker-asi:
+    name: Build Nightwalker ASI
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout requested source
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.source_ref }}
+
+      - name: Set up MSBuild
+        uses: microsoft/setup-msbuild@v2
+
+      - name: Download Script Hook RDR2 developer SDK
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $sdkUrl = '${{ inputs.sdk_url }}'
+          if (-not $sdkUrl.StartsWith('https://')) {
+            throw 'sdk_url must use HTTPS.'
+          }
+
+          $zipPath = Join-Path $env:RUNNER_TEMP 'ScriptHookRDR2_SDK.zip'
+          $extractPath = Join-Path $env:RUNNER_TEMP 'ScriptHookRDR2_SDK'
+          Remove-Item $extractPath -Recurse -Force -ErrorAction SilentlyContinue
+
+          Write-Host "Downloading developer SDK from $sdkUrl"
+          Invoke-WebRequest -Uri $sdkUrl -OutFile $zipPath -UseBasicParsing
+          Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force
+
+          $includeDir = Get-ChildItem -Path $extractPath -Directory -Recurse | Where-Object {
+            (Test-Path (Join-Path $_.FullName 'main.h')) -and
+            (Test-Path (Join-Path $_.FullName 'natives.h'))
+          } | Select-Object -First 1
+          $importLib = Get-ChildItem -Path $extractPath -File -Recurse -Filter 'ScriptHookRDR2.lib' | Select-Object -First 1
+
+          if ($null -eq $includeDir) {
+            throw 'SDK archive did not contain an include directory with main.h and natives.h.'
+          }
+          if ($null -eq $importLib) {
+            throw 'SDK archive did not contain ScriptHookRDR2.lib.'
+          }
+
+          $sdkRoot = Join-Path $PWD 'third_party\ScriptHookRDR2'
+          $incDest = Join-Path $sdkRoot 'inc'
+          $libDest = Join-Path $sdkRoot 'lib'
+          New-Item -ItemType Directory -Path $incDest -Force | Out-Null
+          New-Item -ItemType Directory -Path $libDest -Force | Out-Null
+
+          Copy-Item -Path (Join-Path $includeDir.FullName '*') -Destination $incDest -Recurse -Force
+          Copy-Item -Path (Join-Path $importLib.Directory.FullName '*') -Destination $libDest -Recurse -Force
+
+          if (-not (Test-Path (Join-Path $incDest 'main.h'))) { throw 'main.h staging failed.' }
+          if (-not (Test-Path (Join-Path $incDest 'natives.h'))) { throw 'natives.h staging failed.' }
+          if (-not (Test-Path (Join-Path $libDest 'ScriptHookRDR2.lib'))) { throw 'ScriptHookRDR2.lib staging failed.' }
+          Write-Host 'Script Hook RDR2 developer SDK staged successfully.'
+
+      - name: Build Nightwalker ASI
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          msbuild Nightwalker.vcxproj /m /p:Configuration=Release /p:Platform=x64
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          if (-not (Test-Path 'bin\Release\Nightwalker.asi')) {
+            throw 'Build completed without producing bin\Release\Nightwalker.asi.'
+          }
+
+      - name: Package Nightwalker
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $package = Join-Path $PWD 'artifact\Nightwalker'
+          New-Item -ItemType Directory -Path $package -Force | Out-Null
+
+          Copy-Item 'bin\Release\Nightwalker.asi' (Join-Path $package 'Nightwalker.asi') -Force
+          if (Test-Path 'bin\Release\Nightwalker.pdb') {
+            Copy-Item 'bin\Release\Nightwalker.pdb' (Join-Path $package 'Nightwalker.pdb') -Force
+          }
+          if (Test-Path 'config\Nightwalker.example.ini') {
+            Copy-Item 'config\Nightwalker.example.ini' (Join-Path $package 'Nightwalker.ini') -Force
+          }
+          if (Test-Path 'content\Nightwalker.dialogue') {
+            Copy-Item 'content\Nightwalker.dialogue' (Join-Path $package 'Nightwalker.dialogue') -Force
+          }
+          Copy-Item 'README.md' (Join-Path $package 'README.md') -Force
+
+          $hash = (Get-FileHash (Join-Path $package 'Nightwalker.asi') -Algorithm SHA256).Hash
+          "SHA256 Nightwalker.asi: $hash" | Set-Content (Join-Path $package 'Nightwalker.asi.sha256.txt')
+
+          "## Nightwalker ASI build" >> $env:GITHUB_STEP_SUMMARY
+          "Built source: `${{ inputs.source_ref }}`" >> $env:GITHUB_STEP_SUMMARY
+          "Artifact: **Nightwalker-ASI**" >> $env:GITHUB_STEP_SUMMARY
+          "SHA256: `$hash`" >> $env:GITHUB_STEP_SUMMARY
+
+      - name: Upload Nightwalker ASI artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nightwalker-ASI
+          path: artifact/Nightwalker/
+          if-no-files-found: error
+          retention-days: 30
