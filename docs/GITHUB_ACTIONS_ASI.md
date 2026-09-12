@@ -2,7 +2,7 @@
 
 Nightwalker has one dedicated manual workflow named **Build Nightwalker ASI**. It is separate from **Nightwalker CI**.
 
-The ASI workflow downloads the official Script Hook RDR2 developer SDK for the temporary GitHub Windows runner, builds `Release | x64`, verifies that `Nightwalker.asi` is a Windows PE file, and uploads an install-ready artifact. You do not need Visual Studio on your phone and you do not need to configure a repository variable for the normal case.
+The ASI workflow acquires the Script Hook RDR2 developer SDK on the temporary GitHub Windows runner, builds `Release | x64`, verifies that `Nightwalker.asi` is a Windows PE file, and uploads an install-ready artifact. You do not need Visual Studio on your phone and you do not need to configure a repository variable for the normal case.
 
 ## iPhone / mobile steps
 
@@ -21,11 +21,11 @@ The install-ready package contains `Nightwalker.asi`, `Nightwalker.ini`, `Nightw
 
 ## No hidden SDK setup required
 
-The workflow uses the official Script Hook RDR2 developer SDK download from `dev-c.com` by default.
+The workflow first tries the Script Hook RDR2 developer SDK URL published from `dev-c.com` (or the optional `SCRIPHOOK_SDK_URL` repository-variable override). It verifies the downloaded file is actually a ZIP before extracting it.
 
-An optional repository variable named `SCRIPHOOK_SDK_URL` can override the SDK download URL later if Alexander Blade changes the official SDK package location. Leaving that variable unset is now supported and is the normal setup.
+The current official download endpoint can return an HTML page to GitHub-hosted runners. When that happens, the workflow automatically falls back to a **pinned commit** of the public `VideoTechUK/DirectorsSuite` repository, whose `inc/` and `lib/` directories contain the Script Hook RDR2 SDK headers/import library and credit them to Alexander Blade.
 
-The SDK is downloaded only to the temporary GitHub runner. It is not committed to the Nightwalker repository or included in the Nightwalker artifact.
+The fallback is used only as a build-time dependency. Nightwalker does not commit those SDK files and does not include them in the downloadable Nightwalker artifact.
 
 ## What each Actions workflow is for
 
