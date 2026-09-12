@@ -5,6 +5,7 @@
 #include <string>
 #include <utility>
 #include "nightwalker/Version.h"
+#include "nightwalker/systems/SaintDenisSettingsLoader.h"
 
 namespace nightwalker::core {
 namespace {
@@ -12,10 +13,11 @@ bool ModulePath(HMODULE module,std::filesystem::path& out){if(!module)return fal
 }
 
 Runtime::Runtime()
-    : debugVampireSpawner_(gameApi_, logger_, config_),
+    : debugVampireSpawner_(gameApi_, bossRegistry_, logger_, config_),
       shadowstepController_(gameApi_, gameCombatApi_, logger_, config_),
       feedingController_(gameApi_, gameCombatApi_, gameFeedingApi_, logger_, config_),
       vampireCombatController_(gameApi_, gameCombatApi_, gameFeedingApi_, gameMovementApi_, gamePhysicalApi_, debugVampireSpawner_, feedingController_, logger_, config_),
+      saintDenisDirector_(gameApi_, gameCombatApi_, gameEncounterApi_, gamePresentationApi_, bossRegistry_, logger_, config_),
       vampireAiController_(gameApi_, gameCombatApi_, gamePresentationApi_, debugVampireSpawner_, vampireCombatController_, logger_, config_),
       movementController_(gameApi_, gameCombatApi_, gameMovementApi_, gamePresentationApi_, debugVampireSpawner_, vampireAiController_, logger_, config_) {}
 Runtime::~Runtime()noexcept{Shutdown();}
@@ -28,24 +30,27 @@ bool Runtime::Initialize(HMODULE module){
  if(!fileLog)logger_.Write(util::LogLevel::Warning,"Nightwalker.log unavailable; debugger logging remains active.");
  const auto iniPath=gameContext_.PluginDirectory()/L"Nightwalker.ini";
  config_=Config::Load(iniPath,[this](std::string_view m){logger_.Write(util::LogLevel::Warning,m);});
+ systems::LoadSaintDenisSettings(iniPath,config_.encounter,[this](std::string_view m){logger_.Write(util::LogLevel::Warning,m);});
  logger_.SetMinimumLevel(config_.debug.enabled?util::LogLevel::Debug:util::LogLevel::Info);debugInput_.Configure(config_.debug);
+ bossRegistry_.ForceClear();
  shadowstepController_.ReloadPresentationSettings(iniPath);
  vampireAiController_.ReloadPresentationSettings(iniPath);
  systems_.clear();
  systems_.push_back(&debugVampireSpawner_);
  systems_.push_back(&shadowstepController_);
  systems_.push_back(&feedingController_);
+ systems_.push_back(&saintDenisDirector_);
  systems_.push_back(&vampireAiController_);
  systems_.push_back(&movementController_);
  systems_.push_back(&vampireCombatController_);
- for(auto* system:systems_)if(system&&!system->Initialize()){logger_.Write(util::LogLevel::Error,std::string("System initialization failed: ")+std::string(system->Name()));for(auto s=systems_.rbegin();s!=systems_.rend();++s)if(*s)(*s)->Shutdown();systems_.clear();gameContext_.Reset();logger_.Shutdown();return false;}
+ for(auto* system:systems_)if(system&&!system->Initialize()){logger_.Write(util::LogLevel::Error,std::string("System initialization failed: ")+std::string(system->Name()));for(auto s=systems_.rbegin();s!=systems_.rend();++s)if(*s)(*s)->Shutdown();systems_.clear();bossRegistry_.ForceClear();gameContext_.Reset();logger_.Shutdown();return false;}
  lastTickMs_=util::MonotonicClock::NowMilliseconds();tickCount_=0;unsafeState_=false;initialized_=true;
- logger_.Write(util::LogLevel::Info,"Phase 8 runtime initialized; Shadowstep follow-up, heavy strike, short grab, physical release and combat feed are active without ability HUD.");return true;
+ logger_.Write(util::LogLevel::Info,"Phase 9 runtime initialized; Saint Denis nighttime encounter direction is active and boss-health UI remains deferred.");return true;
 }
 
 void Runtime::Shutdown()noexcept{
  if(!initialized_)return;CancelSystems();RestoreOwnedState("shutdown");
  for(auto it=systems_.rbegin();it!=systems_.rend();++it)if(*it)try{(*it)->Shutdown();}catch(...){logger_.Write(util::LogLevel::Error,"System shutdown failed.");}
- systems_.clear();debugInput_.Reset();initialized_=false;tickCount_=0;lastTickMs_=0;unsafeState_=false;gameContext_.Reset();logger_.Write(util::LogLevel::Info,"Nightwalker shutdown complete.");logger_.Shutdown();
+ systems_.clear();bossRegistry_.ForceClear();debugInput_.Reset();initialized_=false;tickCount_=0;lastTickMs_=0;unsafeState_=false;gameContext_.Reset();logger_.Write(util::LogLevel::Info,"Nightwalker shutdown complete.");logger_.Shutdown();
 }
 }
