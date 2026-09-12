@@ -30,6 +30,7 @@ public:
     void Shutdown() noexcept override;
 
     bool Request(FeedMode mode, std::uint64_t nowMs) noexcept;
+    void GainHiddenResource(double amount) noexcept;
     [[nodiscard]] bool IsActive() const noexcept { return state_ != FeedingState::Idle; }
     [[nodiscard]] FeedingState State() const noexcept { return state_; }
     [[nodiscard]] double HiddenResourceValue() const noexcept { return resource_.Value(); }
