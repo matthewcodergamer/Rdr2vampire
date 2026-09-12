@@ -10,6 +10,7 @@ enum class Feature { Shadowstep, Movement, Feeding, Combat, Encounter, VampireAi
 
 struct DebugSettings {
     bool enabled{false};
+    bool profileRuntime{false};
     int shadowstepHotkey{0x76};
     int restoreHotkey{0x7A};
     int reloadHotkey{0x79};

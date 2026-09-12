@@ -26,7 +26,7 @@ Config Config::Parse(std::string_view text,DiagnosticSink diagnostics){
   if(section=="general"){
    if(key=="enabled")parsed=ParseBool(value,c.enabled);else if(key=="debugmode")parsed=ParseBool(value,c.debug.enabled);else handled=false;
   }else if(section=="debug"){
-   if(key=="enabled")parsed=ParseBool(value,c.debug.enabled);else if(key=="shadowstephotkey")parsed=ParseHotkey(value,c.debug.shadowstepHotkey);else if(key=="restorehotkey")parsed=ParseHotkey(value,c.debug.restoreHotkey);else if(key=="reloadhotkey")parsed=ParseHotkey(value,c.debug.reloadHotkey);else handled=false;
+   if(key=="enabled")parsed=ParseBool(value,c.debug.enabled);else if(key=="profileruntime")parsed=ParseBool(value,c.debug.profileRuntime);else if(key=="shadowstephotkey")parsed=ParseHotkey(value,c.debug.shadowstepHotkey);else if(key=="restorehotkey")parsed=ParseHotkey(value,c.debug.restoreHotkey);else if(key=="reloadhotkey")parsed=ParseHotkey(value,c.debug.reloadHotkey);else handled=false;
   }else if(section=="shadowstep"){
    if(key=="enabled")parsed=ParseBool(value,c.shadowstep.enabled);else if(key=="quickdistance")parsed=ParseNumber(value,c.shadowstep.quickDistance);else if(key=="aimdistance")parsed=ParseNumber(value,c.shadowstep.aimDistance);else if(key=="cooldownms")parsed=ParseNumber(value,c.shadowstep.cooldownMs);else if(key=="maxverticaldelta"||key=="maxverticalrise")parsed=ParseNumber(value,c.shadowstep.maxVerticalDelta);else if(key=="validationtimeoutms")parsed=ParseNumber(value,c.shadowstep.validationTimeoutMs);else if(key=="wallclearance")parsed=ParseNumber(value,c.shadowstep.wallClearance);else handled=false;
   }else if(section=="movement"){

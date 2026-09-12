@@ -1,11 +1,14 @@
 #pragma once
 #include <Windows.h>
+#include <array>
+#include <cstddef>
 #include <cstdint>
 #include <string_view>
 #include <vector>
 #include "nightwalker/core/Config.h"
 #include "nightwalker/core/DebugInput.h"
 #include "nightwalker/core/ILifecycleSystem.h"
+#include "nightwalker/core/LongSessionGuard.h"
 #include "nightwalker/core/SafetyWatchdog.h"
 #include "nightwalker/util/Timing.h"
 #include "nightwalker/game/GameApi.h"
@@ -36,8 +39,11 @@ public:
  Runtime();~Runtime()noexcept;Runtime(const Runtime&)=delete;Runtime&operator=(const Runtime&)=delete;
  bool Initialize(HMODULE moduleHandle);void Tick();void Shutdown()noexcept;bool IsInitialized()const noexcept{return initialized_;}
 private:
+ struct SystemProfile final {std::uint64_t updates{0};std::uint64_t totalMicros{0};std::uint64_t maxMicros{0};};
+ static constexpr std::size_t kMaxProfiledSystems=16;
  void ReloadConfig();void CancelSystems()noexcept;void RestoreOwnedState(std::string_view reason)noexcept;
- game::GameContext gameContext_{};util::Logger logger_{};Config config_{};SafetyWatchdog watchdog_{};DebugInput debugInput_{};
+ bool ValidateBossReference(std::uint64_t nowMs)noexcept;void UpdateSystems(const FrameContext& frame);void ResetPerformanceProfile()noexcept;void ReportPerformance(std::uint64_t nowMs);
+ game::GameContext gameContext_{};util::Logger logger_{};Config config_{};SafetyWatchdog watchdog_{};LongSessionGuard sessionGuard_{};DebugInput debugInput_{};
  game::GameApi gameApi_{};game::GameBossBarApi gameBossBarApi_{};game::GameCombatApi gameCombatApi_{};game::GameEncounterApi gameEncounterApi_{};game::GameFeedingApi gameFeedingApi_{};game::GameMovementApi gameMovementApi_{};game::SubtitleOnlyNarrativeAudioApi gameNarrativeAudioApi_{};game::GamePhysicalApi gamePhysicalApi_{};game::GamePresentationApi gamePresentationApi_{};
  systems::BossActorRegistry bossRegistry_{};
  ui::BossHudController bossHudController_;
@@ -50,6 +56,6 @@ private:
  systems::VampireAIController vampireAiController_;
  systems::MovementController movementController_;
  systems::ProgressionController progressionController_;
- std::vector<ILifecycleSystem*> systems_{};util::Deadline debugDebounce_{};std::uint64_t tickCount_{0};std::uint64_t lastTickMs_{0};bool unsafeState_{false};bool initialized_{false};
+ std::vector<ILifecycleSystem*> systems_{};std::array<SystemProfile,kMaxProfiledSystems> systemProfiles_{};util::Deadline debugDebounce_{};std::uint64_t tickCount_{0};std::uint64_t lastTickMs_{0};std::uint64_t nextBossValidationMs_{0};std::uint64_t nextProfileReportMs_{0};bool initialized_{false};
 };
 }

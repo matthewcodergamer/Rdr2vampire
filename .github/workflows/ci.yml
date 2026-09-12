@@ -103,7 +103,16 @@ jobs:
         run: |
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude tests/NarrativeTests.cpp src/narrative/NarrativeScript.cpp src/narrative/NarrativePlayback.cpp src/narrative/NarrativeSettingsLoader.cpp -o build/ci/narrative
           ./build/ci/narrative
-      - name: Compile Phase 12 controllers
+      - name: Enforce custom HUD draw boundary
+        run: |
+          hits="$(git grep -n -E 'DRAW_RECT|_BG_DISPLAY_TEXT' -- src || true)"
+          bad="$(printf '%s\n' "$hits" | grep -v '^src/game/GameBossBarApi.cpp:' || true)"
+          if [ -n "$bad" ]; then
+            echo "Unexpected direct custom draw-native use outside GameBossBarApi.cpp:"
+            echo "$bad"
+            exit 1
+          fi
+      - name: Compile Phase 13 controllers
         run: |
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/ShadowstepController.cpp -o build/ci/ShadowstepController.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/ShadowstepPresentation.cpp -o build/ci/ShadowstepPresentation.o
@@ -125,7 +134,7 @@ jobs:
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/ProgressionController.cpp -o build/ci/ProgressionController.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -Isrc/core -c src/narrative/NarrativeController.cpp -o build/ci/NarrativeController.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/ui/BossHudController.cpp -o build/ci/BossHudController.o
-      - name: Compile Phase 12 runtime composition
+      - name: Compile Phase 13 runtime composition
         run: |
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -Isrc/core -c src/core/RuntimeLifecycle.cpp -o build/ci/RuntimeLifecycle.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -Isrc/core -c src/core/RuntimeTick.cpp -o build/ci/RuntimeTick.o
@@ -146,4 +155,4 @@ jobs:
       - run: |
           echo "Nightwalker.asi is intentionally not linked in public CI."
           echo "The plugin requires the local Script Hook RDR2 SDK and Windows/MSVC."
-          echo "CI validates pure logic plus Phase 12 narrative/runtime/controller/native-boundary compilation."
+          echo "CI validates pure logic plus Phase 13 hardening/runtime/controller/native-boundary compilation."

@@ -22,10 +22,10 @@ bool GamePresentationApi::MeleeInputPressed() const noexcept {
  return PAD::IS_CONTROL_PRESSED(0,kMeleeControl)==TRUE;
 }
 bool GamePresentationApi::PulseMeleeInput() noexcept { return false; }
-void GamePresentationApi::RequestShadowSmoke() noexcept { STREAMING::REQUEST_NAMED_PTFX_ASSET(SmokeAssetHash()); }
+void GamePresentationApi::RequestShadowSmoke() noexcept { const Hash h=SmokeAssetHash();if(!STREAMING::HAS_NAMED_PTFX_ASSET_LOADED(h))STREAMING::REQUEST_NAMED_PTFX_ASSET(h); }
 bool GamePresentationApi::PlayShadowSmoke(const Vec3& p,float scale) noexcept {
  const Hash h=SmokeAssetHash();
- if(!STREAMING::HAS_NAMED_PTFX_ASSET_LOADED(h)){STREAMING::REQUEST_NAMED_PTFX_ASSET(h);return false;}
+ if(!STREAMING::HAS_NAMED_PTFX_ASSET_LOADED(h))return false;
  GRAPHICS::USE_PARTICLE_FX_ASSET(kSmokeAsset);
  GRAPHICS::SET_PARTICLE_FX_NON_LOOPED_COLOUR(0.12F,0.12F,0.12F);
  return GRAPHICS::START_PARTICLE_FX_NON_LOOPED_AT_COORD(kSmokeEffect,p.x,p.y,p.z,0.0F,0.0F,0.0F,scale,FALSE,FALSE,FALSE)!=0;
