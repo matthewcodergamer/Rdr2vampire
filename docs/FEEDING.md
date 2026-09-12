@@ -11,7 +11,7 @@ Debug controls while `[Debug] Enabled=true`:
 - `F5` — request non-lethal Sip on the currently free-aimed close ped; press again while active to cancel.
 - `F6` — request lethal Drain on the currently free-aimed close ped; press again while active to cancel.
 
-The explicit aimed-ped requirement avoids broad ambient-ped scans and makes target ownership deterministic during this phase.
+The explicit aimed-ped requirement avoids broad ambient-ped scans and makes target ownership deterministic during this phase. Phase 7 also rejects active melee/combat participants; a true combat-feed execution is reserved for the later combat-feed hook.
 
 ## State machine
 
@@ -27,6 +27,7 @@ A target is accepted only when:
 - target is not the player;
 - target is human unless `AllowAnimalFeeding=true`;
 - target is not reported by RDR2 as a mission entity;
+- player/target are not already in melee or direct combat with each other;
 - player and target are not ragdolled, falling, swimming, mounted, in a vehicle, or using a scenario;
 - target is within `MaxDistance`;
 - player has clear line of sight to target;
@@ -36,7 +37,7 @@ If any validation fails during the interaction, feeding aborts and Nightwalker c
 
 ## Animation/task strategy
 
-RDR2 exposes a verified `TASK_GRAPPLE` native, but its exact style/hash semantics are under-documented. Phase 7 therefore does not invent a vampire animation dictionary or pretend the vanilla vampire feeding scene has been reconstructed.
+RDR2 exposes a verified `TASK_GRAPPLE` native. Its documented behavior is a combat grab/beat sequence and its exact style/hash parameters are under-documented, so Phase 7 does not invent a vampire animation dictionary or pretend the vanilla vampire feeding scene has been reconstructed.
 
 - **Sip:** uses verified face/hold task behavior only. This avoids allowing a combat grapple task to accidentally kill a victim that must survive.
 - **Drain:** attempts the verified generic grapple task for a stronger Rockstar-authored approximation. If the grapple does not start, Nightwalker falls back to stationary participant tasks and still preserves cleanup.
