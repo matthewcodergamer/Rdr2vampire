@@ -2,187 +2,51 @@ name: Build Nightwalker ASI
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
 
 permissions:
   contents: read
 
 jobs:
-  build-nightwalker:
-    name: Build Nightwalker.asi
+  build-asi:
+    name: Windows Release x64 ASI
     runs-on: windows-2022
+    timeout-minutes: 20
 
     steps:
       - name: Checkout Nightwalker
         uses: actions/checkout@v4
 
-      - name: Setup Visual Studio 2022 MSBuild
+      - name: Set up Visual Studio 2022 MSBuild
         uses: microsoft/setup-msbuild@v2
         with:
           vs-version: '[17.0,18.0)'
 
-      - name: Download Script Hook RDR2 SDK
+      - name: Download official SDK, build and package Nightwalker.asi
         shell: pwsh
-        env:
-          SDK_URL: ${{ vars.SCRIPHOOK_SDK_URL }}
         run: |
-          $ErrorActionPreference = 'Stop'
+          ./scripts/build-asi.ps1 -Configuration Release
 
-          if ([string]::IsNullOrWhiteSpace($env:SDK_URL)) {
-            throw "SCRIPHOOK_SDK_URL repository variable is missing."
-          }
-
-          $zip = Join-Path $env:RUNNER_TEMP 'ScriptHookRDR2_SDK.zip'
-          $extract = Join-Path $env:RUNNER_TEMP 'ScriptHookRDR2_SDK'
-
-          Write-Host 'Downloading Script Hook RDR2 SDK...'
-
-          curl.exe `
-            --fail `
-            --location `
-            --retry 3 `
-            --retry-delay 2 `
-            --output $zip `
-            "$env:SDK_URL"
-
-          if (!(Test-Path $zip -PathType Leaf)) {
-            throw 'SDK download failed.'
-          }
-
-          if ((Get-Item $zip).Length -lt 1024) {
-            throw 'Downloaded SDK archive is unexpectedly small.'
-          }
-
-          if (Test-Path $extract) {
-            Remove-Item $extract -Recurse -Force
-          }
-
-          New-Item -ItemType Directory -Force -Path $extract | Out-Null
-          Expand-Archive -Path $zip -DestinationPath $extract -Force
-
-      - name: Install Script Hook RDR2 SDK
+      - name: Verify packaged ASI
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
+          $asi = 'dist\Nightwalker\Nightwalker.asi'
+          if (!(Test-Path $asi -PathType Leaf)) { throw 'Nightwalker.asi was not packaged.' }
+          $item = Get-Item $asi
+          if ($item.Length -lt 4096) { throw "Nightwalker.asi is unexpectedly small ($($item.Length) bytes)." }
+          $bytes = [System.IO.File]::ReadAllBytes($item.FullName)
+          if ($bytes[0] -ne 0x4D -or $bytes[1] -ne 0x5A) { throw 'Nightwalker.asi is not a Windows PE image.' }
+          Write-Host "Nightwalker.asi size: $($item.Length) bytes"
+          Get-FileHash -Algorithm SHA256 $asi | Format-List
 
-          $extract = Join-Path $env:RUNNER_TEMP 'ScriptHookRDR2_SDK'
-          $target = 'third_party\ScriptHookRDR2'
-
-          $mainHeader = Get-ChildItem $extract -Recurse -File -Filter main.h |
-            Select-Object -First 1
-
-          $nativesHeader = Get-ChildItem $extract -Recurse -File -Filter natives.h |
-            Select-Object -First 1
-
-          $library = Get-ChildItem $extract -Recurse -File -Filter ScriptHookRDR2.lib |
-            Select-Object -First 1
-
-          if (!$mainHeader) {
-            throw 'main.h not found in SDK.'
-          }
-
-          if (!$nativesHeader) {
-            throw 'natives.h not found in SDK.'
-          }
-
-          if (!$library) {
-            throw 'ScriptHookRDR2.lib not found in SDK.'
-          }
-
-          New-Item -ItemType Directory -Force "$target\inc" | Out-Null
-          New-Item -ItemType Directory -Force "$target\lib" | Out-Null
-
-          # Copy the full header directory containing main.h so dependent SDK headers
-          # stay together exactly as supplied by the SDK archive.
-          Copy-Item "$($mainHeader.Directory.FullName)\*" "$target\inc\" -Recurse -Force
-
-          # If natives.h lives elsewhere in a future SDK archive, ensure it is still
-          # available at the location expected by Nightwalker's MSBuild project.
-          if (!(Test-Path "$target\inc\natives.h")) {
-            Copy-Item $nativesHeader.FullName "$target\inc\natives.h" -Force
-          }
-
-          Copy-Item $library.FullName "$target\lib\ScriptHookRDR2.lib" -Force
-
-          if (!(Test-Path "$target\inc\main.h" -PathType Leaf)) {
-            throw 'Installed main.h verification failed.'
-          }
-
-          if (!(Test-Path "$target\inc\natives.h" -PathType Leaf)) {
-            throw 'Installed natives.h verification failed.'
-          }
-
-          if (!(Test-Path "$target\lib\ScriptHookRDR2.lib" -PathType Leaf)) {
-            throw 'Installed ScriptHookRDR2.lib verification failed.'
-          }
-
-          Write-Host 'Script Hook RDR2 SDK installed for this runner only.'
-
-      - name: Build Nightwalker Release x64
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-
-          msbuild Nightwalker.vcxproj `
-            /m `
-            /p:Configuration=Release `
-            /p:Platform=x64
-
-      - name: Verify Nightwalker ASI
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $path = 'bin\Release\Nightwalker.asi'
-
-          if (!(Test-Path $path -PathType Leaf)) {
-            throw 'BUILD FAILED: Nightwalker.asi was not produced.'
-          }
-
-          $asi = Get-Item $path
-          if ($asi.Length -lt 4096) {
-            throw "BUILD FAILED: Nightwalker.asi is unexpectedly small ($($asi.Length) bytes)."
-          }
-
-          $bytes = [System.IO.File]::ReadAllBytes($asi.FullName)
-          if ($bytes[0] -ne 0x4D -or $bytes[1] -ne 0x5A) {
-            throw 'BUILD FAILED: Nightwalker.asi is not a Windows PE image.'
-          }
-
-          Write-Host '====================================='
-          Write-Host ' NIGHTWALKER ASI BUILD SUCCESSFUL'
-          Write-Host '====================================='
-          Write-Host "File: $($asi.FullName)"
-          Write-Host "Size: $($asi.Length) bytes"
-
-      - name: Prepare downloadable build
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $output = 'github-build'
-
-          if (Test-Path $output) {
-            Remove-Item $output -Recurse -Force
-          }
-          New-Item -ItemType Directory -Force -Path $output | Out-Null
-
-          Copy-Item 'bin\Release\Nightwalker.asi' "$output\Nightwalker.asi" -Force
-
-          if (Test-Path 'artifacts') {
-            Get-ChildItem 'artifacts' -File -Filter '*.zip' |
-              Copy-Item -Destination $output -Force
-          }
-
-          $files = Get-ChildItem $output -File
-          if (!$files) {
-            throw 'No downloadable build outputs were prepared.'
-          }
-
-          Write-Host 'Download payload:'
-          $files | ForEach-Object { Write-Host " - $($_.Name) ($($_.Length) bytes)" }
-
-      - name: Upload Nightwalker build
+      - name: Upload Nightwalker release package
         uses: actions/upload-artifact@v4
         with:
-          name: Nightwalker-Windows-x64
-          path: github-build/
+          name: Nightwalker-Release-x64-${{ github.sha }}
+          path: dist/Nightwalker/
           if-no-files-found: error
           retention-days: 30
