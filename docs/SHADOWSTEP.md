@@ -1,287 +1,258 @@
 # Shadowstep Implementation Spec
 
-## Reference behavior
+## Core fantasy
 
-The Blood of Dawnwalker's released gameplay describes Shadowstep as a short-range vampire teleport. A quick activation moves forward; holding the ability allows aiming before release. The mechanic is also used for combat repositioning and traversal.
+Nightwalker's signature Shadowstep is a combat grammar, not extreme running speed:
 
-For Nightwalker, the goal is **not** to duplicate proprietary code or animation data. We reproduce the visual/interaction language inside RDR2 using native scripting:
+> vanish briefly -> skip space -> reappear close to the target -> carry forward slightly -> begin a readable attack.
 
-> vanish briefly → reposition instantly → reappear with momentum → attack can flow immediately.
+The primary actor is the **enemy Saint Denis vampire** (`cs_vampire`, `0xD95BCB7D`). The player-side Shadowstep remains a debug/safety harness and optional future player mechanic. `docs/DESIGN_LOCKS.md` is authoritative if older roadmap text suggests otherwise.
+
+The project may study the feel of modern vampire games but must not copy proprietary Dawnwalker code, animations, audio, dialogue or assets.
 
 ---
 
-## Current implementation status — Phase 4
+## Current implementation status — Phase 5
 
-The safe Phase 3 forward resolver is retained unchanged as the authority for the primary teleport. Phase 4 layers presentation only after that endpoint is valid.
+Phase 5 reuses the Phase 3 geometry safety and Phase 4 disappearance/carry presentation for enemy combat instead of building a second teleport implementation.
 
-Implemented sequence:
+### Vampire AI flow
 
 ```text
-Idle
-→ ResolveIntent
-→ ValidateDestination
-→ Departure smoke
-→ Relocate
-→ HiddenTransit (very short)
-→ Arrival smoke
-→ ArrivalCarry
-→ MeleeWindow
-→ Recovery
-→ Cooldown
-→ Idle
+Observe
+-> Approach
+-> Decide
+-> ShadowstepDepart
+-> HiddenTransit
+-> ShadowstepArrive
+-> Telegraph
+-> Attack
+-> Recover
+-> Cooldown
+-> Approach
 ```
 
-Key implementation rules:
-
-- visibility ownership is registered with an idempotent watchdog **before** the player is hidden;
-- player collision is not disabled in Phase 4;
-- primary relocation still uses the Phase 3 resolver and rollback verification;
-- the carry endpoint is prevalidated separately, then its short moving segment is checked again while carrying;
-- blocked/inconclusive carry movement ends early rather than clipping;
-- particle failure never blocks relocation or restoration;
-- every active presentation state has a watchdog timeout;
-- no cooldown/power HUD or landing marker is drawn;
-- melee intent is observed/buffered, but synthetic replay of a released tap is intentionally disabled until a target-environment-safe dispatch path is implemented and verified;
-- aimed/hold Shadowstep is deferred because the current F7 debug input is edge-triggered and Phase 4 does not justify adding an unapproved landing UI.
-
-Current presentation defaults are `DisappearMs=110`, `ArrivalCarryMeters=1.25`, `ArrivalCarryMs=140`, `MeleeBufferMs=220`, `StateTimeoutMs=1000`, and `SmokeFx=true`.
-
-The current smoke reference is RDR2 runtime content: asset `scr_fme_spawn_effects`, effect `scr_fme_smoke_puff_tint`. It is best-effort. Bats and custom audio remain deferred.
-
----
-
-## State machine
+Explicit future/exception states also exist:
 
 ```text
-Idle
-  ↓ press
-Targeting (hold only)
-  ↓ release / tap
-ValidateDestination
-  ├─ invalid → Cancel
-  └─ valid
-      ↓
-Departure
-      ↓
-HiddenTransit
-      ↓
-Arrival
-      ↓
-Recovery
-      ↓
-Cooldown
-      ↓
-Idle
+Evade
+Reposition      // future seam
+FeedAttempt     // future seam
+Abort
 ```
 
-Every state must have a timeout and cleanup path.
+Only the Nightwalker-owned debug `cs_vampire` is controlled in Phase 5. The AI does not scan for or take ownership of arbitrary vanilla vampires/peds.
+
+### Combat read
+
+1. Vampire approaches using ordinary RDR2 combat.
+2. At a safe distance and after cooldown, it evaluates target-relative landing candidates.
+3. If the player is retreating, a short velocity prediction biases toward intercept/flank candidates.
+4. Every candidate goes through `ShadowstepResolver` before it is eligible.
+5. Vampire plays compact departure smoke and becomes invisible only after cleanup ownership is registered.
+6. Vampire relocates instantly to the chosen validated point.
+7. Visibility is restored after the short disappearance window and arrival smoke plays.
+8. A small carry toward striking range occurs only if the short segment remains safe.
+9. Vampire pauses through a readable telegraph.
+10. Only after the telegraph does Nightwalker hand the vampire back to ordinary RDR2 combat with `TASK_COMBAT_PED`.
+11. Recovery and internal cooldown prevent continuous teleport spam.
+
+Nightwalker applies **no direct damage on the teleport frame**.
 
 ---
 
-## Suggested first tuning values
+## Shared destination safety
 
-These are starting points for testing, not final balance.
+`ShadowstepResolver` is the single safety authority for both the player debug harness and vampire AI.
 
-| Parameter | Initial value |
+It supports:
+
+- forward direction requests; and
+- arbitrary target-relative point requests through `ResolveToPoint`.
+
+A candidate is rejected or shortened as appropriate when:
+
+- path tracing is inconclusive;
+- an obstruction blocks the route;
+- no safe pedestrian coordinate exists;
+- navmesh snapping moves too far from the requested point;
+- ground cannot be established;
+- vertical change exceeds the configured limit;
+- the point is in deep water;
+- wall/prop clearance fails;
+- headroom fails.
+
+For target-relative AI points, Phase 5 requests exact candidates (`allowShorten=false`). If a flank/intercept/behind point is obstructed, that candidate loses rather than silently turning into a different tactical point.
+
+---
+
+## Target-relative candidate planner
+
+`TargetedShadowstepPlanner` generates four candidates around a target:
+
+- **Intercept** — pressure point biased into the target's short predicted movement path.
+- **Left flank** — lateral point relative to target facing.
+- **Right flank** — opposite lateral point.
+- **Behind** — point behind target facing.
+
+The target position is predicted conservatively from current velocity with a short configurable prediction window and a hard displacement cap.
+
+Each safe candidate is scored for:
+
+- requested tactical preference (intercept/evade/general pressure);
+- target facing relationship;
+- closeness to desired pre-carry striking distance;
+- vertical difference;
+- total actor travel distance.
+
+Unsafe candidates retain their structured resolver rejection reason so debug telemetry can explain why they lost.
+
+### Retreat behavior
+
+If the player is moving away from the vampire above the configured threshold, the AI biases toward the intercept candidate, then flanks. The goal is the cinematic moment where the player backs away, the vampire disappears, and reappears where the player is heading.
+
+Prediction remains intentionally short so the vampire does not unrealistically lead several seconds into the future.
+
+### Evade behavior
+
+At close range, a new player melee-button press can create an evade opportunity. Phase 5 deliberately rate-limits this in two ways:
+
+- only alternating eligible close-range attack opportunities request an evade; and
+- evade has its own longer cooldown.
+
+Evade planning favors left/right flank, then behind. If no safe candidate exists, the vampire stays in ordinary combat instead of becoming untouchable through forced teleporting.
+
+---
+
+## Presentation
+
+Current default presentation tuning:
+
+| Parameter | Default |
 | --- | ---: |
-| Quick-step distance | 6.5 m |
-| Aimed max distance | 9.0 m |
-| Combat flank radius | 1.6 m from target |
-| Disappear window | 80–130 ms |
-| Arrival carry | 1.25 m |
-| Arrival carry time | 100–180 ms |
-| Base cooldown | 550 ms |
-| Combat chain cooldown | 700 ms |
-| Stamina cost | 8% |
-| Hunger cost | 1–2 points |
-| Max vertical rise V1 | 1.5 m |
+| Disappear window | 110 ms |
+| Arrival carry | 1.25 m max |
+| Arrival carry time | 140 ms |
+| State watchdog | 1000 ms |
+| Smoke | enabled |
 
-Later progression can extend range and reduce cost.
+Current best-effort RDR2 particle reference:
 
----
+- asset: `scr_fme_spawn_effects`
+- effect: `scr_fme_smoke_puff_tint`
 
-## Destination solving
+Departure is compact and arrival is slightly stronger. Missing/unloaded PTFX must never block relocation or cleanup.
 
-### Quick step
+Bats and custom audio remain deferred until a suitable verified lightweight path is selected.
 
-1. Read player forward vector.
-2. Set requested point at `position + forward * range`.
-3. Ray/shape test from chest height toward requested point.
-4. If blocked, shorten destination to just before the obstruction.
-5. Cast downward near the endpoint to find ground.
-6. Validate enough capsule/head clearance.
-7. Reject if no safe point exists.
-
-### Aimed step
-
-1. Raycast from gameplay camera center.
-2. Clamp hit/destination to max range from player.
-3. Prefer ground directly below the aim point when landing on terrain.
-4. If the surface is vertical, V1 rejects it; future vertical traversal may interpret it as a ledge target.
-5. Show a marker only when the final landing point is valid.
-
-### Combat target step
-
-For a target ped with position `T`, forward vector `Tf` and right vector `Tr`:
-
-- behind candidate: `T - Tf * 1.6`
-- left flank: `T - Tr * 1.6`
-- right flank: `T + Tr * 1.6`
-- front pressure: `T + Tf * 1.8`
-
-Score each point for:
-
-- collision clearance;
-- ground validity;
-- distance from player;
-- line of sight;
-- distance from walls/props;
-- whether the target is moving into that point.
-
-Pick the best valid candidate. If none are safe, fall back to a shortened forward step.
+Collision is not deliberately disabled for Shadowstep in the current implementation.
 
 ---
 
-## Visual sequence
+## Enemy fairness rules
 
-### Departure
+- Never teleport directly inside the player.
+- Do not deal damage on the teleport frame.
+- Keep a readable post-arrival attack startup.
+- Use smoke/reappearance as the visual tell.
+- Maintain internal Shadowstep cooldown.
+- Maintain a separate longer evade cooldown.
+- If all candidate points are unsafe, keep ordinary RDR2 movement/combat.
+- Do not repeatedly teleport behind the player every second.
+- Do not expose ability names, cooldowns, phases or next moves in UI.
 
-- Stop incompatible player tasks for the minimum necessary time.
-- Spawn a short dark smoke/dust burst at feet/torso.
-- Optional 1–3 bat entities or a bat-like particle burst for high-quality mode.
-- Apply very short motion blur/camera impulse if the user allows it.
-- Fade the ped's alpha or visibility rapidly.
+Default Phase 5 AI tuning:
 
-### Transit
+| Parameter | Default |
+| --- | ---: |
+| Shadowstep minimum distance | 4.0 m |
+| Shadowstep maximum distance | 10.0 m |
+| Final striking range | 1.65 m |
+| Prediction | 250 ms |
+| Decision interval | 180 ms |
+| Shadowstep cooldown | 2400 ms |
+| Arrival telegraph | 320 ms |
+| Attack/recovery observation | 850 ms |
+| Evade cooldown | 5000 ms |
+| Retreat speed threshold | 0.55 |
 
-- Keep transit essentially instantaneous.
-- Do **not** leave the player invisible for a long animation.
-- Temporarily disable collision only if tests prove it is necessary, and restore it immediately after repositioning.
-
-### Arrival
-
-- Set the safe destination.
-- Face movement direction or the combat target.
-- Restore visibility.
-- Spawn arrival smoke.
-- Apply a tiny forward movement/velocity or short animation-driven carry.
-- Let buffered melee input fire during the final recovery frames.
-
-The small post-arrival carry is what creates the visual impression that the vampire appears and then slides/glides into striking distance.
-
----
-
-## Enemy AI version
-
-### Conditions to consider a blink
-
-- target is alive;
-- target is between roughly 4 m and 12 m away;
-- vampire is not ragdolled, feeding, mounted or in a protected scene;
-- ability cooldown is ready;
-- at least one destination candidate is valid.
-
-### Decision weights
-
-If player is backing away:
-
-- favor front/intercept candidate;
-- estimate player velocity for a very short prediction window;
-- arrive slightly off-center so the animation reads clearly.
-
-If player is attacking:
-
-- favor side evade or behind candidate.
-
-If vampire is low health:
-
-- favor escape step, then attempt to feed on a nearby victim if the boss design enables it.
-
-### Fairness rules
-
-- Never teleport directly inside the player's collision capsule.
-- Minimum arrival tell: smoke/audio cue, even if very short.
-- Do not deal damage on the exact teleport frame.
-- Give a readable attack startup after arrival.
-- Add anti-spam cooldown after chained steps.
+These values are internal and never displayed to the player.
 
 ---
 
-## Supernatural speed versus Shadowstep
+## Player-side targeted debug harness
 
-Keep these separate:
+F7 remains the existing player test path.
 
-**Shadowstep** = discontinuous repositioning / teleport.
+If RDR2 reports an explicitly free-aimed ped that is alive and already in combat with the player, the player harness uses the same candidate planner for a target-relative test step. Otherwise F7 remains the forward safety blink.
 
-**Vampire sprint** = continuous running speed with movement-rate override.
+This is intentionally narrow:
 
-Combining both all the time will make collision and combat unreadable. The sprint should make the vampire frighteningly fast; Shadowstep should be the special impossible movement.
-
----
-
-## RDR2 systems we expect to use
-
-Exact function calls should be confirmed against the Script Hook SDK/native database during implementation.
-
-- Player/ped world position and heading.
-- Gameplay camera position/direction.
-- Shape tests/raycasting.
-- Entity coordinate repositioning.
-- Entity visibility/alpha.
-- Collision toggle if absolutely necessary.
-- `TASK_PLAY_ANIM` for departure/arrival/combat transitions where suitable.
-- Particle FX on entity/coordinates.
-- `SET_PED_MOVE_RATE_OVERRIDE` for continuous vampire speed, not the teleport itself.
-- Ragdoll/force functions for throws and impacts.
+- it uses existing RDR2 aim context;
+- it does not create a custom lock-on system;
+- it does not draw a landing marker;
+- it does not add a cooldown/power HUD.
 
 ---
 
-## Bat effect strategy
+## Native ownership boundaries
 
-RDR2 includes an `A_C_Bat_01` animal archetype. However, real bat peds are heavier and less deterministic than particles.
+Exact RDR2 calls remain isolated behind wrappers:
 
-Build in this order:
+- `GameApi` — entity/geometry/ground/water/relocation.
+- `GamePresentationApi` — ped visibility/alpha restoration, player melee-input observation and compact smoke.
+- `GameCombatApi` — aimed-ped lookup, velocity, combat-state queries, telegraph stand-still task, normal combat task, and owned-task cleanup.
 
-1. smoke-only VFX;
-2. fake/particle bat silhouettes if a usable effect exists;
-3. optional short-lived real bats for cinematic encounters only.
-
-Never spawn a fresh group of real bat peds every Shadowstep without strict cleanup.
+Controllers must not invent raw hashes or guessed animation names.
 
 ---
 
-## Failure recovery
+## Cleanup rules
 
-At the start of every game tick, if the Shadowstep controller detects an impossible state for too long, force-reset:
+The vampire AI must restore owned transient state when:
 
-- player visible = true;
-- alpha = full;
-- collision = enabled;
-- invincibility/proofs = normal;
-- movement rate = normal;
-- input lock = released;
-- ability state = Idle.
+- player dies/becomes invalid;
+- owned vampire dies/becomes invalid;
+- F9 despawns the owned vampire;
+- F11 cleanup is requested;
+- config is reloaded or disables the feature;
+- a mission/cutscene/player-control transition occurs;
+- an internal state timeout/error occurs;
+- the plugin unloads.
 
-Also reset on death, character swap, save/load transition and script unload.
+Cleanup restores vampire appearance and clears only Nightwalker-owned task state after revalidating that the handle still belongs to the owned `cs_vampire`.
+
+The runtime system order is arranged so `VampireAIController` is cancelled before `DebugVampireSpawner` deletes its owned ped.
 
 ---
 
-## Test cases
+## Known Phase 5 boundary
 
-1. Flat Saint Denis street.
-2. Narrow alley.
-3. Stairs.
-4. Inside a building.
-5. Against a wall.
-6. Fence/railing in the path.
-7. Cliff edge.
-8. Shallow and deep water.
-9. Moving combat target.
-10. Player backing away from vampire AI.
-11. Target next to a wall.
-12. Repeated rapid input.
-13. Cutscene begins during targeting.
-14. Player dies during arrival.
-15. 100 consecutive random-direction blinks.
+The existing resolver traces world/object/vehicle geometry and enforces explicit separation from the combat target. Phase 5 does **not** perform an expensive broad nearby-ped scan every decision tick, and no unverified ped trace flag is guessed.
 
-A Shadowstep build is not considered stable until it survives all of these without a soft lock.
+Dense crowds therefore remain a required in-game verification case. If additional ambient-ped occupancy logic is needed, it must be implemented through a verified RDR2 native contract in a later hardening slice.
+
+---
+
+## Required in-game tests
+
+1. Open street combat.
+2. Player continuously retreats from vampire.
+3. Lateral player movement.
+4. Narrow Saint Denis alley.
+5. Stairs and uneven terrain.
+6. Wall/prop beside candidate positions.
+7. Water edge.
+8. Dense crowd/manual occupancy check.
+9. Player commits repeated close melee attacks; evade must remain occasional.
+10. Five-minute uninterrupted fight; no teleport spam or stuck invisible state.
+11. F9 during/near Shadowstep.
+12. F11 during hidden/arrival state.
+13. Player death.
+14. Vampire death/despawn.
+15. Mission/cutscene transition.
+16. F10 config reload during combat.
+17. Smoke disabled/unavailable.
+18. Explicit hostile aim + F7 player harness.
+
+A Phase 5 build is not considered target-environment verified until the five-minute fight and cleanup cases pass in RDR2 Story Mode.
