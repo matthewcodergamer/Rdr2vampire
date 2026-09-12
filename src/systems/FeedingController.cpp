@@ -17,6 +17,10 @@ bool FeedingController::Request(FeedMode mode,std::uint64_t nowMs) noexcept {
     mode_=mode;Enter(FeedingState::Candidate,nowMs);return true;
 }
 
+void FeedingController::GainHiddenResource(double amount) noexcept {
+    if(config_.feeding.hiddenBloodEnabled&&amount>0.0)resource_.Gain(amount);
+}
+
 void FeedingController::Update(const core::FrameContext& frame){
     if(state_==FeedingState::Idle)return;
     if(!config_.IsFeatureEnabled(core::Feature::Feeding)){Abort("feeding disabled");return;}
