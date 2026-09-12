@@ -46,7 +46,7 @@ bool GameFeedingApi::SetHealth(PedHandle ped, int health) noexcept {
     if (ped == 0 || !ENTITY::DOES_ENTITY_EXIST(static_cast<Entity>(ped))) return false;
     const int maxHealth = std::max(0, PED::GET_PED_MAX_HEALTH(static_cast<Ped>(ped)));
     const int clamped = std::clamp(health, 0, maxHealth);
-    ENTITY::_SET_ENTITY_HEALTH(static_cast<Entity>(ped), clamped, 0);
+    ENTITY::SET_ENTITY_HEALTH(static_cast<Entity>(ped), clamped, 0);
     return true;
 }
 
@@ -72,7 +72,7 @@ bool GameFeedingApi::StartGrapple(PedHandle attacker, PedHandle target) noexcept
 
 void GameFeedingApi::ClearTasks(PedHandle ped) noexcept {
     if (ped == 0 || !ENTITY::DOES_ENTITY_EXIST(static_cast<Entity>(ped))) return;
-    TASK::CLEAR_PED_TASKS(static_cast<Ped>(ped), TRUE, TRUE);
+    TASK::CLEAR_PED_TASKS(static_cast<Ped>(ped), TRUE, FALSE);
 }
 
 } // namespace nightwalker::game
