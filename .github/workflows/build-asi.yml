@@ -7,6 +7,15 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/build-asi.yml'
+      - 'Nightwalker.vcxproj'
+      - 'src/**'
+      - 'include/**'
+      - 'scripts/**'
+      - 'config/Nightwalker.example.ini'
+      - 'content/Nightwalker.dialogue'
+      - 'README.md'
+      - 'CHANGELOG.md'
+      - 'THIRD_PARTY_NOTICES.md'
   pull_request:
     branches: [main]
     paths:
