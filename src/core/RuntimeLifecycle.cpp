@@ -31,7 +31,7 @@ bool Runtime::Initialize(HMODULE module){
  shadowstepController_.ReloadPresentationSettings(iniPath);
  vampireAiController_.ReloadPresentationSettings(iniPath);
  systems_.clear();systems_.push_back(&debugVampireSpawner_);systems_.push_back(&shadowstepController_);systems_.push_back(&vampireAiController_);systems_.push_back(&movementController_);systems_.push_back(&feedingController_);
- for(auto* system:systems_)if(system&&!system->Initialize()){logger_.Write(util::LogLevel::Error,std::string("System initialization failed: ")+std::string(system->Name()));for(auto* s=systems_.rbegin();s!=systems_.rend();++s)if(*s)(*s)->Shutdown();systems_.clear();gameContext_.Reset();logger_.Shutdown();return false;}
+ for(auto* system:systems_)if(system&&!system->Initialize()){logger_.Write(util::LogLevel::Error,std::string("System initialization failed: ")+std::string(system->Name()));for(auto s=systems_.rbegin();s!=systems_.rend();++s)if(*s)(*s)->Shutdown();systems_.clear();gameContext_.Reset();logger_.Shutdown();return false;}
  lastTickMs_=util::MonotonicClock::NowMilliseconds();tickCount_=0;unsafeState_=false;initialized_=true;
  logger_.Write(util::LogLevel::Info,"Phase 7 runtime initialized; cleanup-safe debug feeding and hidden resource are available without a player meter.");return true;
 }
