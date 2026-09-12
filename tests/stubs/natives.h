@@ -16,6 +16,9 @@ BOOL IS_ENTITY_A_MISSION_ENTITY(Entity entity);
 int GET_ENTITY_HEALTH(Entity entity);
 void SET_ENTITY_HEALTH(Entity entity, int health, Entity entityKilledBy);
 BOOL HAS_ENTITY_CLEAR_LOS_TO_ENTITY(Entity entity1, Entity entity2, int traceType);
+BOOL HAS_ENTITY_BEEN_DAMAGED_BY_ENTITY(Entity entity1, Entity entity2, BOOL p2, BOOL p3);
+void CLEAR_ENTITY_LAST_DAMAGE_ENTITY(Entity entity);
+void APPLY_FORCE_TO_ENTITY_CENTER_OF_MASS(Entity entity, int forceType, float x, float y, float z, BOOL p5, BOOL isDirectionRel, BOOL isForceRel, BOOL p8);
 void SET_ENTITY_ALPHA(Entity entity, int alphaLevel, BOOL skin);
 void SET_ENTITY_VISIBLE(Entity entity, BOOL visible);
 void RESET_ENTITY_ALPHA(Entity entity);
@@ -40,6 +43,8 @@ BOOL IS_PED_SWIMMING(Ped ped);
 BOOL IS_PED_RAGDOLL(Ped ped);
 BOOL IS_PED_FALLING(Ped ped);
 BOOL IS_PED_ON_MOUNT(Ped ped);
+BOOL CAN_PED_RAGDOLL(Ped ped);
+BOOL SET_PED_TO_RAGDOLL(Ped ped, int time1, int time2, int ragdollType, BOOL p4, BOOL p5, BOOL p6);
 }
 
 namespace TASK {

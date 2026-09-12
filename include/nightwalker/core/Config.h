@@ -5,13 +5,13 @@
 
 namespace nightwalker::core {
 
-enum class Feature { Shadowstep, Movement, Feeding, Encounter, VampireAi, BossHud };
+enum class Feature { Shadowstep, Movement, Feeding, Combat, Encounter, VampireAi, BossHud };
 
 struct DebugSettings {
     bool enabled{false};
-    int shadowstepHotkey{0x76}; // F7
-    int restoreHotkey{0x7A};    // F11
-    int reloadHotkey{0x79};     // F10
+    int shadowstepHotkey{0x76};
+    int restoreHotkey{0x7A};
+    int reloadHotkey{0x79};
 };
 
 struct ShadowstepSettings {
@@ -56,6 +56,29 @@ struct FeedingSettings {
     int stateTimeoutMs{3500};
 };
 
+struct CombatSettings {
+    bool enabled{true};
+    double maxDistance{2.25};
+    int heavyWindupMs{260};
+    int shadowstepFollowupWindupMs{120};
+    int strikeWindowMs{700};
+    int recoveryMs{600};
+    int grabAlignMs{300};
+    int grabHoldMs{400};
+    int feedHoldMs{500};
+    int throwRagdollMs{1200};
+    int stateTimeoutMs{4500};
+    int strikeBonus{8};
+    int combatFeedCost{18};
+    int combatFeedRestore{10};
+    double combatFeedBloodGain{12.0};
+    double strikeMoveRate{1.08};
+    double throwHorizontalForce{1.35};
+    double throwUpForce{0.28};
+    double throwProjectionMeters{2.25};
+    int bossSpecialCooldownMs{2800};
+};
+
 struct EncounterSettings { bool enabled{true}; int startHour{0}; int endHour{4}; int respawnCooldownHours{24}; };
 
 struct VampireAiSettings {
@@ -81,6 +104,7 @@ struct Config final {
     ShadowstepSettings shadowstep{};
     MovementSettings movement{};
     FeedingSettings feeding{};
+    CombatSettings combat{};
     EncounterSettings encounter{};
     VampireAiSettings vampireAi{};
     BossHudSettings bossHud{};

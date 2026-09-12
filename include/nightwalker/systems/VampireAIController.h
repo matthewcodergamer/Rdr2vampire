@@ -14,6 +14,7 @@
 #include "nightwalker/systems/ShadowstepPresentationSettings.h"
 #include "nightwalker/systems/ShadowstepResolver.h"
 #include "nightwalker/systems/TargetedShadowstepPlanner.h"
+#include "nightwalker/systems/VampireCombatController.h"
 #include "nightwalker/util/Logger.h"
 
 namespace nightwalker::systems {
@@ -27,6 +28,7 @@ enum class VampireAiState {
     ShadowstepArrive,
     Telegraph,
     Attack,
+    MeleeAbility,
     Recover,
     Cooldown,
     Evade,
@@ -42,6 +44,7 @@ public:
         game::IGameCombatApi& combatApi,
         game::IGamePresentationApi& presentationApi,
         DebugVampireSpawner& spawner,
+        VampireCombatController& combatController,
         util::Logger& logger,
         const core::Config& config) noexcept;
 
@@ -67,12 +70,14 @@ private:
     [[nodiscard]] bool BeginShadowstep(std::uint64_t nowMs) noexcept;
     [[nodiscard]] bool UpdateArrivalCarry(std::uint64_t nowMs) noexcept;
     [[nodiscard]] bool StateTimedOut(std::uint64_t nowMs) const noexcept;
+    [[nodiscard]] CombatMove NextCloseCombatMove() noexcept;
     [[nodiscard]] static const char* StateName(VampireAiState state) noexcept;
 
     game::IGameApi& api_;
     game::IGameCombatApi& combatApi_;
     game::IGamePresentationApi& presentationApi_;
     DebugVampireSpawner& spawner_;
+    VampireCombatController& combatController_;
     util::Logger& logger_;
     const core::Config& config_;
 
@@ -94,6 +99,8 @@ private:
     std::uint64_t nextDecisionMs_{0};
     std::uint64_t shadowstepCooldownUntilMs_{0};
     std::uint64_t evadeCooldownUntilMs_{0};
+    std::uint64_t bossSpecialCooldownUntilMs_{0};
+    unsigned bossSpecialSequence_{0};
     bool evadeIntent_{false};
     bool evadeOpportunityToggle_{false};
     bool playerMeleeWasDown_{false};

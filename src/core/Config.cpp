@@ -12,6 +12,7 @@ bool Config::IsFeatureEnabled(Feature feature) const noexcept {
         case Feature::Shadowstep: return shadowstep.enabled;
         case Feature::Movement: return movement.enabled;
         case Feature::Feeding: return feeding.enabled;
+        case Feature::Combat: return combat.enabled;
         case Feature::Encounter: return encounter.enabled;
         case Feature::VampireAi: return vampireAi.enabled;
         case Feature::BossHud: return bossHud.enabled;
