@@ -3,13 +3,17 @@ run-name: Build Nightwalker ASI • ${{ github.ref_name }} • #${{ github.run_n
 
 on:
   workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/build-asi.yml'
   pull_request:
     branches: [main]
     paths:
       - '.github/workflows/build-asi.yml'
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build-nightwalker-asi:
@@ -210,3 +214,34 @@ jobs:
           path: github-build/
           if-no-files-found: error
           retention-days: 30
+
+      - name: Publish install ZIP on main repository page
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
+        shell: pwsh
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $source = 'github-build\Nightwalker-Windows-x64.zip'
+          $destination = 'Nightwalker-1.0.0-rc1-win64.zip'
+
+          if (!(Test-Path $source -PathType Leaf)) {
+            throw 'Install-ready ZIP was not produced.'
+          }
+
+          Copy-Item $source $destination -Force
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- $destination
+          git diff --cached --quiet
+          $diffExit = $LASTEXITCODE
+
+          if ($diffExit -eq 0) {
+            Write-Host 'Published ZIP is already current; no repository update needed.'
+          } elseif ($diffExit -eq 1) {
+            git commit -m 'Update compiled Nightwalker RC package [skip ci]'
+            if ($LASTEXITCODE -ne 0) { throw 'Could not commit compiled package.' }
+            git push origin HEAD:main
+            if ($LASTEXITCODE -ne 0) { throw 'Could not publish compiled package to main.' }
+            Write-Host "Published $destination to the repository root."
+          } else {
+            throw 'Could not determine whether the published ZIP changed.'
+          }
