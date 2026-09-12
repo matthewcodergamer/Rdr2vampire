@@ -39,7 +39,6 @@ void Validate(Config& c,const Config::DiagnosticSink& d){
  if(c.vampireAi.shadowstepMaxDistance<c.vampireAi.shadowstepMinDistance+0.5){c.vampireAi.shadowstepMaxDistance=c.vampireAi.shadowstepMinDistance+0.5;if(d)d("VampireAI.ShadowstepMaxDistance was raised above the minimum distance.");}
  Clamp(c.bossHud.idleSeconds,1.0,30.0,"BossHUD.IdleSeconds",d);Clamp(c.bossHud.fadeSeconds,0.1,3.0,"BossHUD.FadeSeconds",d);Clamp(c.bossHud.deathHoldSeconds,0.0,5.0,"BossHUD.DeathHoldSeconds",d);
  if(DebugHotkeysCollide(c.debug)){if(d)d("Debug hotkeys collided with F1-F6/F8/F9 or each other; restoring safe F7/F10/F11 defaults.");c.debug.shadowstepHotkey=kDefaultShadowstepKey;c.debug.reloadHotkey=kDefaultReloadKey;c.debug.restoreHotkey=kDefaultRestoreKey;}
- if(c.bossHud.showNumericHealth){if(d)d("BossHUD.ShowNumericHealth is locked off by DESIGN_LOCKS.md.");c.bossHud.showNumericHealth=false;}
 }
 
 } // namespace nightwalker::core::config_internal
