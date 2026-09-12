@@ -6,15 +6,25 @@ Nightwalker is a native C++ Red Dead Redemption 2 vampire mod project. The repos
 
 ## Status
 
-**Phase 8: expanded vampire melee.** Existing safe Shadowstep, enemy vampire AI, controlled supernatural sprint, and Phase 7 feeding remain intact. Phase 8 adds a small physical combat layer shared by the Nightwalker-owned `cs_vampire` and an explicit player debug harness.
+**Phase 9: Saint Denis nighttime boss encounter.** The existing safe Shadowstep, vampire AI, supernatural sprint, feeding, and expanded physical combat systems remain intact. Phase 9 adds the free-roam encounter lifecycle around the existing Saint Denis `cs_vampire` rather than creating another combat implementation.
 
-The combat layer stays grounded in RDR2 instead of inventing a second arcade combat system. Shadowstep keeps its existing readable arrival tell, then delegates the follow-up strike. Heavy/claw-like attacks use normal RDR2 unarmed combat and only receive a small configured bonus after RDR2 confirms the intended actor actually hit the intended target. Short throat-control uses the verified generic grapple for a tightly bounded window with a stationary fallback; Phase 8 does not pretend there is a verified custom vampire throat-lift animation.
+The encounter director runs an explicit state flow:
 
-Physical release clears Nightwalker-owned participant tasks before ragdoll. A short projected path is raycast first, and the bounded impulse is applied only when that trace is conclusive and clear; blocked or uncertain paths suppress the launch. Combat feed can follow the short grab, while the player debug path can also use it on an explicitly aimed ragdolled human target. Player combat feed replenishes the same hidden Phase 7 resource and **does not add a resource meter**.
+`Dormant -> Eligible -> Omen -> SpawnPending -> Stalking -> Confrontation -> Combat -> Resolution -> Cleanup -> Cooldown`
 
-The boss rotates close-range specials deterministically with an internal cooldown and keeps the existing Shadowstep telegraph. There is no direct teleport-frame damage and no custom UI exposing move names, cooldowns, phases or powers.
+with `Abort -> Cleanup` for unsafe exits.
 
-Fear behavior and passive regeneration are optional Phase 8 ideas and are intentionally deferred until civilian-query ownership and resource/damage policy are separately proven.
+Eligibility requires the configured midnight/pre-dawn time window, a living controllable Story Mode player, the player inside the configured Saint Denis church district, the encounter feature enabled, no other Nightwalker boss owner, and the session cooldown expired. Runtime mission/player-control safety remains authoritative; when Story Mode enters an incompatible mission/cutscene/world transition, the global lifecycle cancels the encounter and cleans its owned actor before gameplay systems resume.
+
+Phase 9 introduces `BossActorRegistry` so there is exactly one authoritative Nightwalker boss actor. The encounter director owns its real encounter `cs_vampire`; F8 may claim the same registry only for a debug actor when no encounter boss exists. During Omen/Stalking/Confrontation the encounter owns the actor but keeps boss combat disarmed. Only after the confrontation delay does it arm the existing `VampireAIController`, which then reuses the already-tested Shadowstep, movement, and physical combat systems.
+
+Spawn candidates are ground-validated, water-rejected, bounded away from the player, and ranked to prefer positions outside the current gameplay camera. If every safe candidate is visible, the safest visible candidate may be used with a warning rather than spawning in invalid geometry. Duplicate bosses are rejected by registry ownership.
+
+Omen V1 intentionally stays restrained: compact existing dark smoke only. No guessed bell, scream, bat, corpse, or blood-clue asset names are shipped. The encounter does not force a cinematic cutscene and remains compatible with free-roam play.
+
+On boss death the director disarms combat, briefly enters Resolution, cleans the owned ped/effects/tasks, and starts the configured in-game-time cooldown. Abort uses a shorter configurable cooldown so the encounter can become eligible again later. Completion/cooldown is **session-owned in Phase 9**; persistent mod save data remains a later project phase and RDR2's save structure is never modified.
+
+The boss-health bar is **not** implemented in Phase 9. This phase establishes the authoritative encounter/boss handle that the later `BossHudController` will consume. No player blood/hunger meter, ability HUD, cooldown bar, power label, boss phase label, move list, or other RPG HUD is added.
 
 ## Build
 
@@ -30,69 +40,63 @@ SDK-independent test executables include:
 - `Nightwalker.Targeting.Tests` — target-relative planning and Vampire AI config tests.
 - `Nightwalker.Movement.Tests` — acceleration-ramp math, velocity math and movement-config bounds.
 - `Nightwalker.Feeding.Tests` — hidden-resource, feed-range/alignment and feeding-config tests.
-- `Nightwalker.Combat.Tests` — bounded release-vector math and Phase 8 combat-config/alias tests.
+- `Nightwalker.Combat.Tests` — bounded release-vector math and combat-config tests.
+- `Nightwalker.Encounter.Tests` — night-window/radius/cooldown math, boss-registry exclusivity, and Saint Denis setting clamps.
 
-GitHub Actions runs deterministic tests on Windows/MSBuild and Linux/g++. Linux CI also syntax-compiles the gameplay controllers and native boundaries against test-only signature fixtures. Public CI intentionally does not link `Nightwalker.asi` because Script Hook RDR2 is a developer-local dependency.
+GitHub Actions runs deterministic tests on Windows/MSBuild and Linux/g++. Linux CI also syntax-compiles the gameplay controllers, Phase 9 runtime composition, and native boundaries against test-only signature fixtures. Public CI intentionally does not link `Nightwalker.asi` because Script Hook RDR2 is a developer-local dependency.
 
-See `docs/BUILDING.md` for local dependency layout and the Story Mode verification checklist, `docs/FEEDING.md` for Phase 7 feeding, and `docs/COMBAT.md` for the Phase 8 ownership/safety contract.
+See `docs/BUILDING.md` for the Story Mode verification checklist, `docs/COMBAT.md` for physical combat, and `docs/ENCOUNTER.md` for the Phase 9 ownership/state contract.
 
 ## Debug controls
 
-Copy `config/Nightwalker.example.ini` beside `Nightwalker.asi` as `Nightwalker.ini` and set `[Debug] Enabled=true`.
+Copy `config/Nightwalker.example.ini` beside `Nightwalker.asi` as `Nightwalker.ini` and set `[Debug] Enabled=true` for the development harness. The production Saint Denis encounter itself does **not** require Debug mode.
 
-- **F1** — heavy/claw-like strike approximation on the explicitly aimed close ped.
+- **F1** — heavy/claw-like strike approximation on an explicitly aimed close ped.
 - **F2** — short grab/throat-control approximation.
-- **F3** — convert an active Phase 8 grab Hold into physical release, or request grab-then-release directly.
-- **F4** — convert an active Phase 8 grab Hold into combat feed, or feed an explicitly aimed ragdolled human target.
-- **F5** — Phase 7 non-lethal Sip.
-- **F6** — Phase 7 lethal Drain.
+- **F3** — physical release/throw follow-up.
+- **F4** — combat feed follow-up/direct stagger test.
+- **F5/F6** — Phase 7 Sip/Drain.
 - **F7** — player-side Shadowstep safety/targeting harness.
-- **F8** — spawn one Nightwalker-owned `cs_vampire` debug ped for autonomous vampire combat testing.
-- **F9** — cancel active transient combat/feed/movement/AI state and despawn only the Nightwalker-owned debug vampire.
-- **F10** — cancel transient systems, reload configuration, and re-arm from safe state.
-- **F11** — cancel systems and restore Nightwalker-owned temporary state.
+- **F8** — spawn the debug `cs_vampire` only if the authoritative boss registry is free.
+- **F9** — despawn only a debug-owned vampire. It is ignored while the real Saint Denis encounter owns the boss.
+- **F10** — clean transient/encounter state, reload config, and re-arm from a safe state.
+- **F11** — global cleanup; an active encounter is aborted and its owned boss is removed.
 
-The F1–F7 inputs are development/test harnesses, not a custom skill wheel or ability HUD.
-
-## Phase 8 combat defaults
+## Encounter defaults
 
 ```ini
-[Combat]
+[Encounter.SaintDenis]
 Enabled=true
-MaxDistance=2.25
-HeavyWindupMs=260
-ShadowstepFollowupWindupMs=120
-StrikeWindowMs=700
-RecoveryMs=600
-GrabAlignMs=300
-GrabHoldMs=400
-BiteHoldMs=500
-ThrowRagdollMs=1200
-StateTimeoutMs=4500
-StrikeBonus=8
-BiteDamage=18
-BiteHeal=10
-BiteBloodGain=12.0
-StrikeMoveRate=1.08
-ThrowHorizontalForce=1.35
-ThrowUpForce=0.28
-ThrowProjectionMeters=2.25
-BossSpecialCooldownMs=2800
+StartHour=0
+EndHour=4
+RespawnCooldownHours=24
+CenterX=2741.01245
+CenterY=-1263.93384
+CenterZ=50.61435
+TriggerRadius=70.0
+AbortRadius=115.0
+SpawnMinDistance=18.0
+SpawnMaxDistance=55.0
+ConfrontationDistance=18.0
+OmenDurationMs=2600
+StalkingMs=5000
+ConfrontationMs=900
+LeaveGraceMs=7000
+AbortCooldownMinutes=10
 ```
 
-`BiteHoldMs`, `BiteDamage`, `BiteHeal`, and `BiteBloodGain` remain readable aliases for the internal CombatFeed settings. All values are clamped to conservative ranges.
+The district center and all gameplay radii/timings are configurable and clamped to safe ranges.
 
 ## Native boundaries
 
-- `GameApi` owns entity/geometry/model operations and the world raycast used before physical release.
-- `GameCombatApi` owns combat state, aimed-ped lookup, velocity and ordinary combat tasks.
+- `GameApi` owns entity, geometry, ground/water, relocation, and model operations.
+- `GameCombatApi` owns combat state, aimed-ped lookup, velocity, and ordinary combat tasks.
+- `GameEncounterApi` owns the verified RDR2 clock-hour, game-time-seconds, and camera sphere-visibility queries used by Phase 9.
 - `GamePresentationApi` owns visibility/alpha and compact smoke presentation.
-- `GameMovementApi` owns movement-rate and locomotion-state queries.
-- `GameFeedingApi` owns human/mission/restriction checks, LOS, health, face/hold/grapple tasks and participant-task cleanup.
-- `GamePhysicalApi` owns Phase 8 hit-contact confirmation, ragdoll and center-of-mass impulse calls.
+- `GameMovementApi`, `GameFeedingApi`, and `GamePhysicalApi` retain their existing movement/feed/physics boundaries.
 
-Controllers do not scatter raw native calls or embed guessed animation/style/effect hashes.
+Controllers do not scatter raw native calls or embed guessed animation, audio, or effect names.
 
 ## Design authority
 
-`docs/DESIGN_LOCKS.md` overrides older planning text when there is a conflict. No player blood/hunger meter, cooldown bar, move list, ability card, skill wheel, boss phase label, or power HUD is added. The only planned custom combat HUD remains the temporary red Saint Denis vampire boss-health bar described in `docs/BOSS_HEALTH_BAR.md`.
+`docs/DESIGN_LOCKS.md` overrides older planning text when there is a conflict. The only custom combat HUD allowed is the later temporary red Saint Denis vampire boss-health bar described in `docs/BOSS_HEALTH_BAR.md`.
