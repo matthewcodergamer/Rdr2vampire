@@ -60,15 +60,20 @@ int GET_CLOCK_HOURS();
 int _GET_SECONDS_SINCE_BASE_YEAR();
 }
 
-namespace CAM {
-BOOL IS_SPHERE_VISIBLE(float x, float y, float z, float radius);
-}
-
+namespace CAM { BOOL IS_SPHERE_VISIBLE(float x, float y, float z, float radius); }
 namespace PAD { BOOL IS_CONTROL_PRESSED(int padIndex, Hash control); }
-namespace MISC { Hash GET_HASH_KEY(const char* text); }
+namespace MISC { Hash GET_HASH_KEY(const char* text); const char* VAR_STRING(int flags, const char* textTemplate, ...); }
+namespace HUD { void SET_TEXT_CENTRE(BOOL align); }
+namespace UIDEBUG {
+void _BG_SET_TEXT_SCALE(float scaleX, float scaleY);
+void _BG_SET_TEXT_COLOR(int red, int green, int blue, int alpha);
+void _BG_DISPLAY_TEXT(const char* text, float x, float y);
+}
 namespace STREAMING { void REQUEST_NAMED_PTFX_ASSET(Hash asset); BOOL HAS_NAMED_PTFX_ASSET_LOADED(Hash asset); void REMOVE_NAMED_PTFX_ASSET(Hash asset); }
 namespace GRAPHICS {
 void USE_PARTICLE_FX_ASSET(const char* assetName);
 void SET_PARTICLE_FX_NON_LOOPED_COLOUR(float r, float g, float b);
 BOOL START_PARTICLE_FX_NON_LOOPED_AT_COORD(const char* effectName,float xPos,float yPos,float zPos,float xRot,float yRot,float zRot,float scale,BOOL xAxis,BOOL yAxis,BOOL zAxis);
+void GET_SCREEN_RESOLUTION(int* x, int* y);
+void DRAW_RECT(float x,float y,float width,float height,int red,int green,int blue,int alpha,BOOL p8,BOOL p9);
 }
