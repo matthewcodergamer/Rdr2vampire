@@ -27,6 +27,11 @@ BOOL GET_ENTITY_PLAYER_IS_FREE_AIMING_AT(Player player, Entity* entity);
 namespace PED {
 BOOL IS_PED_IN_COMBAT(Ped ped, Ped target);
 BOOL IS_PED_IN_MELEE_COMBAT(Ped ped);
+void SET_PED_MOVE_RATE_OVERRIDE(Ped ped, float value);
+BOOL IS_PED_SWIMMING(Ped ped);
+BOOL IS_PED_RAGDOLL(Ped ped);
+BOOL IS_PED_FALLING(Ped ped);
+BOOL IS_PED_ON_MOUNT(Ped ped);
 }
 
 namespace TASK {
