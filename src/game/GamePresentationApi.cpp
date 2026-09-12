@@ -7,13 +7,13 @@ constexpr const char* kSmokeAsset = "scr_fme_spawn_effects";
 constexpr const char* kSmokeEffect = "scr_fme_smoke_puff_tint";
 Hash SmokeAssetHash() noexcept { return MISC::GET_HASH_KEY(kSmokeAsset); }
 }
-bool GamePresentationApi::SetPlayerVisible(PedHandle ped,bool visible) noexcept {
+bool GamePresentationApi::SetPedVisible(PedHandle ped,bool visible) noexcept {
  if(ped==0||!ENTITY::DOES_ENTITY_EXIST(static_cast<Entity>(ped)))return false;
  ENTITY::SET_ENTITY_ALPHA(static_cast<Entity>(ped),visible?255:0,FALSE);
  ENTITY::SET_ENTITY_VISIBLE(static_cast<Entity>(ped),visible?TRUE:FALSE);
  return true;
 }
-void GamePresentationApi::RestorePlayerAppearance(PedHandle ped) noexcept {
+void GamePresentationApi::RestorePedAppearance(PedHandle ped) noexcept {
  if(ped==0||!ENTITY::DOES_ENTITY_EXIST(static_cast<Entity>(ped)))return;
  ENTITY::SET_ENTITY_VISIBLE(static_cast<Entity>(ped),TRUE);
  ENTITY::RESET_ENTITY_ALPHA(static_cast<Entity>(ped));
