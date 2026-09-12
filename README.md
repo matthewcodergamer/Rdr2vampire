@@ -6,6 +6,24 @@ Nightwalker is a native C++ Red Dead Redemption 2 Story Mode mod that expands th
 
 The signature boss movement is Shadowstep: a very short disappearance, validated instant reposition, compact dark arrival smoke, a small forward carry, and then a readable attack startup. It is a teleport/reposition mechanic, not extreme running speed.
 
+## Download compiled Windows build
+
+### **[Download Nightwalker-1.0.0-rc1-win64.zip](https://github.com/matthewcodergamer/Red-dead-redemption-2-vampire-/raw/refs/heads/main/Nightwalker-1.0.0-rc1-win64.zip)**
+
+This is the install-ready **Release x64** package built by the repository's **Build Nightwalker ASI** GitHub Actions workflow. The workflow acquires the Script Hook RDR2 developer SDK on the temporary Windows runner, builds the native plugin, and rejects the package unless `Nightwalker.asi` is a valid Windows PE image.
+
+The ZIP contains:
+
+- `Nightwalker.asi` — the compiled native Story Mode plugin;
+- `Nightwalker.ini` — configuration/default tuning;
+- `Nightwalker.dialogue` — original Nightwalker subtitle/narrative data;
+- `Nightwalker.asi.sha256.txt` — checksum for the compiled ASI;
+- `README.md` — the same installation, controls and troubleshooting guide included inside the ZIP;
+- `CHANGELOG.md`;
+- `THIRD_PARTY_NOTICES.md`.
+
+The repository-root ZIP is automatically refreshed after a successful **Build Nightwalker ASI** run on `main`, so phone users do not need to open Actions and hunt for an artifact.
+
 ## Release status
 
 `1.0.0-rc1` is a release candidate, not a final 1.0 declaration. The deterministic Windows/Linux regression suites and source/package policy checks are release-gated in CI, but the full Arthur/John, controller, wanted-level, terrain, mission-adjacent and low/high-frame-rate matrix still requires hands-on RDR2 Story Mode verification. See `docs/RELEASE_TEST_MATRIX.md`.
@@ -22,14 +40,25 @@ Nightwalker does not bundle Script Hook RDR2, Rockstar assets, LML, Dawnwalker a
 
 ## Installation
 
-1. Install and verify your compatible Script Hook RDR2 runtime/ASI loader.
-2. Extract `Nightwalker-1.0.0-rc1-win64.zip`.
-3. Open the included `Nightwalker/` folder.
-4. Copy `Nightwalker.asi`, `Nightwalker.ini`, `Nightwalker.dialogue`, `README.md`, `CHANGELOG.md`, and `THIRD_PARTY_NOTICES.md` into the RDR2 game directory used by your ASI loader.
-5. Launch **Story Mode**.
-6. Check `Nightwalker.log` after first launch if the mod does not initialize as expected.
+1. Install and verify a compatible Script Hook RDR2 runtime/ASI loader in your Red Dead Redemption 2 installation.
+2. Download `Nightwalker-1.0.0-rc1-win64.zip` using the link above.
+3. Extract the ZIP. The Nightwalker files are directly inside the archive; there is no extra installer.
+4. Copy `Nightwalker.asi`, `Nightwalker.ini`, `Nightwalker.dialogue`, `README.md`, `CHANGELOG.md`, `THIRD_PARTY_NOTICES.md`, and optionally the checksum text file into the RDR2 game directory scanned by your ASI loader — normally the same main folder that contains the game executable and Script Hook files.
+5. Launch **Red Dead Redemption 2 → Story Mode**. Do not use Nightwalker in RDR Online.
+6. Nightwalker creates `Nightwalker.log` beside the plugin when file logging is available. Check it if the mod does not initialize as expected.
 
 No LML package is required for this release candidate. If optional LML content is introduced later, it will be distributed separately and documented separately.
+
+## What Nightwalker changes in Red Dead Redemption 2
+
+- Expands the existing Saint Denis `cs_vampire` into a nighttime boss encounter.
+- Gives the encounter vampire safe Shadowstep vanish/reposition attacks, controlled supernatural movement and physical close-range combat behavior.
+- Adds feeding/combat support and Nightwalker-owned progression/persistence without modifying RDR2's proprietary save files.
+- Adds original subtitle-first Saint Denis narrative scaffolding.
+- Adds one restrained temporary red boss-health bar during active boss combat.
+- Keeps Story Mode cleanup/recovery paths for death, encounter aborts, mission/cutscene transitions, reloads and script shutdown.
+
+Nightwalker does **not** replace the player's normal RDR2 health/stamina HUD and does not add a blood meter, power wheel, cooldown bars, phase labels or move-list UI.
 
 ## Uninstall
 
@@ -126,7 +155,7 @@ See `THIRD_PARTY_NOTICES.md` for dependency and redistribution boundaries.
 ## Known limitations
 
 - This RC is not promoted to final 1.0 until the hands-on Story Mode release matrix is complete enough to support that claim.
-- The public repository/CI cannot link a genuine `Nightwalker.asi` because the Script Hook RDR2 developer SDK is intentionally not committed. A developer with the local SDK must perform the final Release x64 link/package step.
+- GitHub Actions can now build and PE-verify a genuine Release x64 `Nightwalker.asi` using the Script Hook RDR2 developer SDK staged only on the temporary runner. This proves the plugin links; it does **not** replace hands-on compatibility testing in the actual game.
 - Exact game-build/Script Hook compatibility must be rechecked when RDR2 or Script Hook RDR2 updates.
 - Dense ambient crowds remain a manual Shadowstep occupancy test because the current resolver intentionally avoids an expensive broad ped scan and does not guess unverified trace flags.
 - Optional audio remains subtitle-first/fallback-safe; this RC does not bundle proprietary game audio.
@@ -134,9 +163,11 @@ See `THIRD_PARTY_NOTICES.md` for dependency and redistribution boundaries.
 
 ## Building from source
 
-See `docs/BUILDING.md`. A local `Release | x64` build with the required developer SDK produces `bin/Release/Nightwalker.asi` and then packages the allowlisted release files as:
+See `docs/BUILDING.md` and `docs/BUILD_ASI_ON_GITHUB.md`.
 
-`artifacts/Nightwalker-1.0.0-rc1-win64.zip`
+A local `Release | x64` build with the required developer SDK produces `bin/Release/Nightwalker.asi` and packages the allowlisted release files as `artifacts/Nightwalker-1.0.0-rc1-win64.zip`.
+
+For a phone-only build, open **Actions → Build Nightwalker ASI → Run workflow**. A successful main-branch run PE-verifies the ASI, uploads the Actions artifact, and refreshes the repository-root `Nightwalker-1.0.0-rc1-win64.zip` used by the direct download link at the top of this README.
 
 The release packager rejects a missing/non-PE plugin and copies only the explicit release allowlist, preventing logs, PDBs, SDK files and general build junk from entering the ZIP.
 
