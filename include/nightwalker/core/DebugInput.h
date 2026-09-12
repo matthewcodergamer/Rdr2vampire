@@ -5,6 +5,7 @@ namespace nightwalker::core {
 struct DebugActions {
  bool reloadConfig{false};
  bool restoreState{false};
+ bool progressionGrant{false};
  bool spawnTestPed{false};
  bool despawnTestPed{false};
  bool shadowstepForward{false};
@@ -35,6 +36,7 @@ private:
  int despawnKey_{0x78};       // F9
  int reloadKey_{0x79};        // F10
  int restoreKey_{0x7A};       // F11
+ int progressionGrantKey_{0x7B}; // F12, debug-only save/progression step
  std::array<bool,256> wasDown_{};
 };
 }
