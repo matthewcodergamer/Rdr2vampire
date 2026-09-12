@@ -1,92 +1,55 @@
 # Source layout
 
-Nightwalker separates native calls, lifecycle ownership, pure math, presentation, gameplay AI, and encounter direction.
+Nightwalker separates native calls, lifecycle ownership, pure math, presentation, gameplay AI, encounter direction, and the single approved combat HUD.
 
-- `src/Plugin.cpp` — Script Hook registration boundary and shutdown signal only.
-- `src/core` — runtime composition, config parsing/reload, debug input, lifecycle and safety infrastructure.
-- `src/game` — narrow RDR2-native boundaries, game context, model streaming, and Phase 9 clock/camera queries.
-- `src/systems` — Shadowstep, movement, feeding, physical combat, authoritative boss ownership, and Saint Denis encounter direction.
-- `src/ui` — reserved for the later temporary red boss-health bar. Phase 9 draws no combat HUD.
-- `src/util` — logging and shared utilities.
-- `tests` — SDK-independent deterministic tests and test-only native signature fixtures.
+- `src/core` — runtime composition, config/reload, debug input and lifecycle infrastructure.
+- `src/game` — narrow RDR2-native boundaries.
+- `src/systems` — Shadowstep, movement, feeding, combat, boss registry and Saint Denis encounter direction.
+- `src/ui` — Phase 10 boss-health state/model/controller only. No player power HUD exists.
+- `src/util` — logging/shared utilities.
+- `tests` — deterministic SDK-independent suites plus test-only native signatures.
 
 ## Native boundaries
 
-- `GameApi` — entity/model/coordinates, ground/water/shape tests, relocation, local ped creation/deletion, world traces.
-- `GamePresentationApi` — visibility/alpha restoration, melee-input observation, compact smoke.
-- `GameCombatApi` — aimed-ped lookup, velocity, combat queries/tasks, owned task cleanup.
+- `GameApi` — entity/model/geometry/ground/water/relocation.
+- `GamePresentationApi` — visibility/alpha and compact smoke.
+- `GameCombatApi` — combat queries/tasks.
 - `GameMovementApi` — move-rate and locomotion restrictions.
-- `GameFeedingApi` — feed/grapple-facing ped state, LOS, health and participant tasks.
-- `GamePhysicalApi` — contact confirmation, ragdoll and bounded impulse boundary.
-- `GameEncounterApi` — Phase 9 clock hour, in-game seconds, and camera sphere-visibility queries.
+- `GameFeedingApi` — human/health/feed/grapple state.
+- `GamePhysicalApi` — damage-source/contact, ragdoll and bounded impulse.
+- `GameEncounterApi` — clock/game-time/camera visibility.
+- `GameBossBarApi` — Phase 10 screen resolution plus normalized rectangle/text drawing only.
 
-No controller embeds guessed animation/audio/effect hashes.
+No controller embeds raw native hashes or guessed animation/audio/effect names.
 
-## Boss ownership registry
+## Encounter and boss ownership
 
-`BossActorRegistry` is the single cross-system source of the current Nightwalker boss ped. It records one actor, one owner, and whether autonomous combat is armed.
+`BossActorRegistry` remains the single cross-system boss source. `SaintDenisDirector` is the real encounter owner; the F8 debug spawner may claim the registry only when it is free. The mature AI/movement/combat systems continue consuming the registered actor rather than maintaining another boss implementation.
 
-Owners are:
+Phase 10 does not scan the ped pool. `SaintDenisDirector` explicitly calls `BossHudController::BeginBoss` with its owned `cs_vampire` when Confrontation becomes Combat. Abort/cleanup calls the HUD cleanup path; boss death calls the death-hold path before encounter cleanup removes the ped.
 
-- `Debug` — F8/F9 development actor;
-- `Encounter` — the real Saint Denis Phase 9 actor.
+## Boss HUD split
 
-A second owner cannot claim the registry while it is occupied. This prevents duplicate Nightwalker bosses without broad ped-pool scanning.
+`BossHudModel` is pure/testable logic for:
 
-`DebugVampireSpawner` remains the legacy boss-source dependency used by the mature AI/movement/combat controllers, but its `OwnedPed()` accessor now proxies the registry. Its private local handle is used only so F9 can delete a ped that the debug spawner itself created. F9 cannot delete an encounter-owned boss.
+`Hidden -> FadeIn -> Visible -> FadeOut -> Hidden`
 
-## Phase 9 encounter ownership
+and:
 
-`SaintDenisDirector` fulfills the architecture's `EncounterDirector` responsibility. It owns the actual encounter actor handle and exposes `Name() == "EncounterDirector"` to the runtime lifecycle.
+`Visible/FadeIn/FadeOut -> DeathHold -> FadeOut -> Hidden`.
 
-State flow:
+It owns fade timing, idle timing, health clamping/smoothing and aspect-aware normalized layout math. It has no RDR2 dependency.
 
-`Dormant -> Eligible -> Omen -> SpawnPending -> Stalking -> Confrontation -> Combat -> Resolution -> Cleanup -> Cooldown`
+`BossHudController` owns one explicitly supplied boss handle. It refreshes activity from boss health loss, boss-caused player health loss, or confirmed close combat engagement. It never searches the world for a boss.
 
-Unsafe flow:
+`GameBossBarApi` isolates the verified native drawing surface (`DRAW_RECT`, screen-resolution query, current background-text functions). Drawing stays centered in the lower normalized safe area with deep red fill, dark backing and subdued title.
 
-`active -> Abort -> Cleanup -> Cooldown`
+Numeric boss HP is default-off. It appears only when the existing `[BossHUD] ShowNumericHealth=true` opt-in is set. No powers, phases, cooldowns, weaknesses, player resource meters, floating damage or icons are drawn.
 
-`EncounterMath` contains SDK-independent time-window, horizontal-radius, and cooldown calculations. `SaintDenisSettingsLoader` reads/clamps the expanded `[Encounter.SaintDenis]` settings without destabilizing the older core parser.
+## Runtime order and cleanup
 
-### Spawn ownership
+Forward order places `EncounterDirector` before boss AI and places `BossHudController` last so the HUD draws after gameplay state is updated. Reverse lifecycle cancellation therefore hides the HUD first, then restores combat/movement/AI, then the director removes the encounter actor.
 
-The director requests `cs_vampire` through the existing `ModelStreamRequest`, validates safe pedestrian/ground/water placement, prefers camera-hidden candidates, then claims `BossActorRegistry` as `Encounter`. A failed registry claim removes the just-created ped immediately.
+Unsafe Story Mode transitions, player death, F10/F11, encounter abort, feature disable and plugin shutdown converge on that cancellation path. Dormant/cooldown director cancellation no longer manufactures an abort cooldown when no encounter was active.
 
-### AI handoff
-
-During Omen, SpawnPending, Stalking and Confrontation the registry actor exists but `CombatEnabled=false`. `VampireAIController` therefore remains idle.
-
-Confrontation completion sets `CombatEnabled=true`. The existing AI then consumes the exact same registered ped; no second Shadowstep/melee implementation exists.
-
-`VampireAIController`, `MovementController`, and `VampireCombatController` still use the existing `DebugVampireSpawner` constructor seam, whose registry-backed `OwnedPed()` accessor makes the handoff transparent.
-
-### Runtime order
-
-Forward update order is:
-
-1. debug spawner;
-2. player Shadowstep harness;
-3. feeding;
-4. EncounterDirector;
-5. vampire AI;
-6. continuous movement;
-7. physical combat.
-
-This lets the director arm combat before AI runs on that frame.
-
-Reverse cancellation restores physical combat/movement/AI first, then EncounterDirector removes its ped. This is required for death, mission/cutscene/world transitions, F10/F11, feature disable, and shutdown.
-
-## Existing combat ownership
-
-`ShadowstepResolver` remains the single teleport landing-safety authority and `TargetedShadowstepPlanner` still generates intercept/flank/behind points. `VampireCombatController` still owns physical specials. `MovementController` remains continuous speed ownership. `FeedingController` retains ambient feeding and the hidden session resource.
-
-Phase 9 only stages and owns the encounter actor around those existing systems.
-
-## Cleanup and persistence boundary
-
-Encounter cleanup disables autonomous combat before clearing tasks/restoring appearance/deleting the encounter-owned ped. Registry ownership is released only after successful deletion; deletion failure remains in Cleanup and retries.
-
-Successful resolution starts the longer configured game-time cooldown. Abort starts a shorter cooldown. These values are session-owned in Phase 9 and do not patch RDR2's save structure. Persistent Nightwalker save data remains later work.
-
-Public CI now tests encounter time/radius/cooldown math, registry exclusivity, and settings clamps; syntax-compiles the split encounter director, Runtime composition, and `GameEncounterApi` native fixture. Actual Saint Denis staging/camera placement and full abort/restart soak remain Story Mode tests documented in `docs/ENCOUNTER.md`.
+Public CI includes deterministic boss-HUD timing/layout/config tests, syntax-compiles the HUD controller/runtime composition, and compiles `GameBossBarApi` against test-only verified declarations. Actual visual placement remains a Story Mode target-environment check.
