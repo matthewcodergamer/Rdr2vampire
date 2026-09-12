@@ -196,11 +196,11 @@ jobs:
           "## Nightwalker ASI build complete" >> $env:GITHUB_STEP_SUMMARY
           "Download the **Nightwalker-ASI** artifact below this workflow run." >> $env:GITHUB_STEP_SUMMARY
           "Inside it, use **Nightwalker-Windows-x64.zip** for the install-ready package." >> $env:GITHUB_STEP_SUMMARY
-          "SHA256: `$hash`" >> $env:GITHUB_STEP_SUMMARY
+          ("SHA256: " + $hash) >> $env:GITHUB_STEP_SUMMARY
 
           Write-Host 'Download payload:'
           Get-ChildItem $output -Recurse -File | ForEach-Object {
-            Write-Host " - $($_.FullName) ($($_.Length) bytes)"
+            Write-Host (" - " + $_.FullName + " (" + $_.Length + " bytes)")
           }
 
       - name: Upload Nightwalker ASI
