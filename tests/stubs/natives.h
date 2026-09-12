@@ -63,7 +63,6 @@ int _GET_SECONDS_SINCE_BASE_YEAR();
 namespace CAM { BOOL IS_SPHERE_VISIBLE(float x, float y, float z, float radius); }
 namespace PAD { BOOL IS_CONTROL_PRESSED(int padIndex, Hash control); }
 namespace MISC { Hash GET_HASH_KEY(const char* text); const char* VAR_STRING(int flags, const char* textTemplate, ...); }
-namespace HUD { void SET_TEXT_CENTRE(BOOL align); }
 namespace UIDEBUG {
 void _BG_SET_TEXT_SCALE(float scaleX, float scaleY);
 void _BG_SET_TEXT_COLOR(int red, int green, int blue, int alpha);
