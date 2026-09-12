@@ -14,24 +14,18 @@ jobs:
     name: Windows pure C++ tests
     runs-on: windows-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Set up MSBuild
-        uses: microsoft/setup-msbuild@v2
-
+      - uses: actions/checkout@v4
+      - uses: microsoft/setup-msbuild@v2
       - name: Build foundation tests
         run: msbuild Nightwalker.Tests.vcxproj /m /p:Configuration=Release /p:Platform=x64
-
       - name: Build Shadowstep safety tests
         run: msbuild Nightwalker.Shadowstep.Tests.vcxproj /m /p:Configuration=Release /p:Platform=x64
-
-      - name: Build Shadowstep presentation tests
+      - name: Build presentation tests
         run: msbuild Nightwalker.Presentation.Tests.vcxproj /m /p:Configuration=Release /p:Platform=x64
-
-      - name: Build targeted Shadowstep tests
+      - name: Build targeting tests
         run: msbuild Nightwalker.Targeting.Tests.vcxproj /m /p:Configuration=Release /p:Platform=x64
-
+      - name: Build movement tests
+        run: msbuild Nightwalker.Movement.Tests.vcxproj /m /p:Configuration=Release /p:Platform=x64
       - name: Run pure tests
         shell: pwsh
         run: |
@@ -39,72 +33,51 @@ jobs:
           & .\bin\tests\Release\Nightwalker.Shadowstep.Tests.exe
           & .\bin\tests\Release\Nightwalker.Presentation.Tests.exe
           & .\bin\tests\Release\Nightwalker.Targeting.Tests.exe
+          & .\bin\tests\Release\Nightwalker.Movement.Tests.exe
 
   linux-pure-tests:
     name: Linux compiler regression tests
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
+      - uses: actions/checkout@v4
       - name: Build and run foundation tests
         run: |
           mkdir -p build/ci
-          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core \
-            tests/RuntimeFoundationTests.cpp \
-            src/core/Config.cpp src/core/ConfigParse.cpp src/core/ConfigValidation.cpp \
-            src/core/SafetyWatchdog.cpp src/game/ModelStreamRequest.cpp \
-            -o build/ci/nightwalker-foundation-tests
-          ./build/ci/nightwalker-foundation-tests
-
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core tests/RuntimeFoundationTests.cpp src/core/Config.cpp src/core/ConfigParse.cpp src/core/ConfigValidation.cpp src/core/SafetyWatchdog.cpp src/game/ModelStreamRequest.cpp -o build/ci/foundation
+          ./build/ci/foundation
       - name: Build and run Shadowstep safety tests
         run: |
-          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core \
-            tests/ShadowstepV1Tests.cpp \
-            src/core/Config.cpp src/core/ConfigParse.cpp src/core/ConfigValidation.cpp \
-            src/systems/ShadowstepMath.cpp src/systems/ShadowstepResolver.cpp \
-            -o build/ci/nightwalker-shadowstep-tests
-          ./build/ci/nightwalker-shadowstep-tests
-
-      - name: Build and run presentation settings tests
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core tests/ShadowstepV1Tests.cpp src/core/Config.cpp src/core/ConfigParse.cpp src/core/ConfigValidation.cpp src/systems/ShadowstepMath.cpp src/systems/ShadowstepResolver.cpp -o build/ci/shadowstep
+          ./build/ci/shadowstep
+      - name: Build and run presentation tests
         run: |
-          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude \
-            tests/ShadowstepPresentationTests.cpp src/systems/ShadowstepPresentationSettings.cpp \
-            -o build/ci/nightwalker-presentation-tests
-          ./build/ci/nightwalker-presentation-tests
-
-      - name: Build and run targeted Shadowstep tests
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude tests/ShadowstepPresentationTests.cpp src/systems/ShadowstepPresentationSettings.cpp -o build/ci/presentation
+          ./build/ci/presentation
+      - name: Build and run targeting tests
         run: |
-          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core \
-            tests/TargetedShadowstepTests.cpp \
-            src/core/Config.cpp src/core/ConfigParse.cpp src/core/ConfigValidation.cpp \
-            src/systems/ShadowstepMath.cpp src/systems/ShadowstepResolver.cpp \
-            src/systems/TargetedShadowstepPlanner.cpp \
-            -o build/ci/nightwalker-targeting-tests
-          ./build/ci/nightwalker-targeting-tests
-
-      - name: Compile Phase 5 controller sources
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core tests/TargetedShadowstepTests.cpp src/core/Config.cpp src/core/ConfigParse.cpp src/core/ConfigValidation.cpp src/systems/ShadowstepMath.cpp src/systems/ShadowstepResolver.cpp src/systems/TargetedShadowstepPlanner.cpp -o build/ci/targeting
+          ./build/ci/targeting
+      - name: Build and run movement tests
         run: |
-          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core \
-            -c src/systems/ShadowstepController.cpp -o build/ci/ShadowstepController.o
-          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core \
-            -c src/systems/ShadowstepPresentation.cpp -o build/ci/ShadowstepPresentation.o
-          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core \
-            -c src/systems/VampireAIController.cpp -o build/ci/VampireAIController.o
-
-      - name: Compile native boundaries against verified signature fixture
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core tests/MovementTests.cpp src/core/Config.cpp src/core/ConfigParse.cpp src/core/ConfigValidation.cpp src/systems/MovementMath.cpp -o build/ci/movement
+          ./build/ci/movement
+      - name: Compile Phase 6 controllers
         run: |
-          g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude \
-            -c src/game/GamePresentationApi.cpp -o build/ci/GamePresentationApi.o
-          g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude \
-            -c src/game/GameCombatApi.cpp -o build/ci/GameCombatApi.o
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/ShadowstepController.cpp -o build/ci/ShadowstepController.o
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/ShadowstepPresentation.cpp -o build/ci/ShadowstepPresentation.o
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/VampireAIController.cpp -o build/ci/VampireAIController.o
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/MovementController.cpp -o build/ci/MovementController.o
+      - name: Compile native boundaries
+        run: |
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -c src/game/GamePresentationApi.cpp -o build/ci/GamePresentationApi.o
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -c src/game/GameCombatApi.cpp -o build/ci/GameCombatApi.o
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -c src/game/GameMovementApi.cpp -o build/ci/GameMovementApi.o
 
   sdk-boundary-note:
     name: Native plugin SDK boundary
     runs-on: ubuntu-latest
     steps:
-      - name: Explain native build boundary
-        run: |
+      - run: |
           echo "Nightwalker.asi is intentionally not linked in public CI."
-          echo "The native plugin requires the developer-local Script Hook RDR2 SDK and Windows/MSVC."
-          echo "CI validates deterministic code plus Phase 5 controller/native-boundary syntax; the full x64 plugin is built locally."
+          echo "The plugin requires the local Script Hook RDR2 SDK and Windows/MSVC."
+          echo "CI validates pure logic plus Phase 6 controller/native-boundary compilation."
