@@ -4,6 +4,11 @@
 
 namespace nightwalker::game {
 
+enum class StandingGrappleStyle {
+    FrontControl,
+    RearControl,
+};
+
 class IGameFeedingApi {
 public:
     virtual ~IGameFeedingApi() = default;
@@ -17,6 +22,18 @@ public:
     virtual bool FacePedToward(PedHandle ped, PedHandle target) noexcept = 0;
     virtual void StandStill(PedHandle ped, int durationMs) noexcept = 0;
     virtual bool StartGrapple(PedHandle attacker, PedHandle target) noexcept = 0;
+
+    // Reserved for a verified direct styled-grapple path. The current production
+    // implementation deliberately returns false so callers fall back to the
+    // already-proven TASK_GRAPPLE boundary instead of guessing native parameters.
+    virtual bool StartStyledGrapple(PedHandle attacker, PedHandle target,
+                                    StandingGrappleStyle style) noexcept {
+        (void)attacker;
+        (void)target;
+        (void)style;
+        return false;
+    }
+
     virtual void ClearTasks(PedHandle ped) noexcept = 0;
 };
 

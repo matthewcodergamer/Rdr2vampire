@@ -2,6 +2,22 @@
 
 All notable Nightwalker release-candidate changes are documented here.
 
+## Unreleased
+
+### Feeding presentation
+
+- Added a `VampireFeedPresentation` policy layer that prefers a Rockstar-owned paired grapple for standing human feeds and falls back to a bounded stationary hold instead of attaching entities.
+- Boss `CombatFeed` now keeps the paired grapple task alive through the feed hold instead of clearing the interaction and freezing both peds at the transition.
+- Preserved rear/front approach information for future styled-grapple research without guessing an unverified direct-grapple native contract.
+- Added deterministic front/rear orientation tests and native/controller compile coverage for the presentation seam.
+- A Sip target that dies from an outside cause during an already-active feed now follows the safe completion/release path rather than aborting and losing the completion result.
+- Documented the verified vanilla Saint Denis vampire corpse AnimScene/playback lists separately; Nightwalker does not force that corpse-authored scene onto arbitrary living ambient peds.
+
+### Maintenance
+
+- Simplified supported-schema save parsing so invalid individual known fields explicitly recover to defaults while valid sibling fields continue parsing; added a regression test for that contract.
+- Replaced the stale planned architecture layout with the current runtime/source architecture and moved the superseded original roadmap to `docs/ROADMAP_LEGACY.md`; the current roadmap now reflects the RC and `DESIGN_LOCKS.md` UI rules.
+
 ## 1.0.0-rc1 — 2026-09-12
 
 ### Release engineering

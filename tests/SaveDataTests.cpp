@@ -77,6 +77,21 @@ int main() {
     Check(!ParseSaveData("schemaVersion=99\nresource.blood=80\n", future),
           "future schema refuses downgrade parse");
 
+    std::string badFieldDiagnostics;
+    NightwalkerSaveData partial{};
+    Check(ParseSaveData(
+              "schemaVersion=1\nresource.blood=not-a-number\nprogression.points=4\n",
+              partial,
+              [&](std::string_view message) {
+                  badFieldDiagnostics.append(message);
+                  badFieldDiagnostics.push_back('\n');
+              }),
+          "invalid known field recovers within supported schema");
+    Check(Near(partial.hiddenBlood, 50.0), "invalid known field keeps default value");
+    Check(partial.progressionPoints == 4, "valid sibling field still parses");
+    Check(badFieldDiagnostics.find("Invalid save value") != std::string::npos,
+          "invalid known field emits diagnostic");
+
     Config config{};
     config.shadowstep.quickDistance = 6.0;
     config.shadowstep.aimDistance = 8.0;

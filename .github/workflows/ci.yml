@@ -109,7 +109,7 @@ jobs:
           ./build/ci/movement
       - name: Build and run feeding tests
         run: |
-          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core tests/FeedingTests.cpp src/core/Config.cpp src/core/ConfigParse.cpp src/core/ConfigValidation.cpp src/systems/FeedingMath.cpp src/systems/HiddenResource.cpp -o build/ci/feeding
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core tests/FeedingTests.cpp src/core/Config.cpp src/core/ConfigParse.cpp src/core/ConfigValidation.cpp src/systems/FeedingMath.cpp src/systems/HiddenResource.cpp src/systems/VampireFeedPresentation.cpp -o build/ci/feeding
           ./build/ci/feeding
       - name: Build and run combat tests
         run: |
@@ -151,6 +151,7 @@ jobs:
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/VampireAIControllerLifecycle.cpp -o build/ci/VampireAIControllerLifecycle.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/MovementController.cpp -o build/ci/MovementController.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/FeedingController.cpp -o build/ci/FeedingController.o
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/VampireFeedPresentation.cpp -o build/ci/VampireFeedPresentation.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/VampireCombatController.cpp -o build/ci/VampireCombatController.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/DebugVampireSpawnerCore.cpp -o build/ci/DebugVampireSpawnerCore.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/DebugVampireSpawnerSpawn.cpp -o build/ci/DebugVampireSpawnerSpawn.o
@@ -174,6 +175,7 @@ jobs:
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -c src/game/GameCombatApi.cpp -o build/ci/GameCombatApi.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -c src/game/GameMovementApi.cpp -o build/ci/GameMovementApi.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -c src/game/GameFeedingApi.cpp -o build/ci/GameFeedingApi.o
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -c src/game/GameFeedingStyled.cpp -o build/ci/GameFeedingStyled.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -c src/game/GamePhysicalApi.cpp -o build/ci/GamePhysicalApi.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -c src/game/GameEncounterApi.cpp -o build/ci/GameEncounterApi.o
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -c src/game/GameBossBarApi.cpp -o build/ci/GameBossBarApi.o
