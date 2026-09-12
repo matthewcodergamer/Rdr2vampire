@@ -11,6 +11,7 @@ on:
       - 'src/**'
       - 'include/**'
       - 'scripts/**'
+      - 'packaging/README.txt'
       - 'config/Nightwalker.example.ini'
       - 'content/Nightwalker.dialogue'
       - 'README.md'
@@ -20,6 +21,7 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/build-asi.yml'
+      - 'packaging/README.txt'
 
 permissions:
   contents: write
@@ -193,6 +195,9 @@ jobs:
           }
           if (Test-Path 'content\Nightwalker.dialogue') {
             Copy-Item 'content\Nightwalker.dialogue' "$package\Nightwalker.dialogue" -Force
+          }
+          if (Test-Path 'packaging\README.txt') {
+            Copy-Item 'packaging\README.txt' "$package\README.txt" -Force
           }
           foreach ($doc in @('README.md', 'CHANGELOG.md', 'THIRD_PARTY_NOTICES.md')) {
             if (Test-Path $doc) {

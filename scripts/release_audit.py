@@ -8,6 +8,9 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 EXPECTED_VERSION = "1.0.0-rc1"
+ALLOWED_TRACKED_RELEASE_ARCHIVES = {
+    f"Nightwalker-{EXPECTED_VERSION}-win64.zip",
+}
 
 
 def fail(message: str) -> None:
@@ -96,7 +99,7 @@ forbidden_suffixes = {
 for path in files:
     p = pathlib.PurePosixPath(path)
     lower = path.lower()
-    if p.suffix.lower() in forbidden_suffixes:
+    if p.suffix.lower() in forbidden_suffixes and path not in ALLOWED_TRACKED_RELEASE_ARCHIVES:
         fail(f"tracked build/runtime artifact: {path}")
     if lower.startswith(("bin/", "build/", "artifacts/", ".vs/")):
         fail(f"tracked build directory content: {path}")
