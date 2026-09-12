@@ -6,7 +6,7 @@
 
 namespace nightwalker::core {
 
-enum class Feature { Shadowstep, Movement, Feeding, Combat, Encounter, VampireAi, BossHud };
+enum class Feature { Shadowstep, Movement, Feeding, Combat, Encounter, VampireAi, Narrative, BossHud };
 
 struct DebugSettings {
     bool enabled{false};
@@ -119,6 +119,14 @@ struct VampireAiSettings {
     double retreatSpeedThreshold{0.55};
 };
 
+struct NarrativeSettings {
+    bool enabled{true};
+    int maxConfrontationHoldMs{6000};
+    int maxSequenceMs{9000};
+    int skipKey{0x0D}; // Enter; active only while a narrative sequence is playing.
+    bool optionalAudio{true};
+};
+
 struct BossHudSettings {
     bool enabled{true};
     std::string displayName{"THE VAMPIRE"};
@@ -138,6 +146,7 @@ struct Config final {
     CombatSettings combat{};
     EncounterSettings encounter{};
     VampireAiSettings vampireAi{};
+    NarrativeSettings narrative{};
     BossHudSettings bossHud{};
 
     [[nodiscard]] bool IsFeatureEnabled(Feature feature) const noexcept;
