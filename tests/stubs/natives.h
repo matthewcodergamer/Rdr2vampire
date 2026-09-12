@@ -43,6 +43,7 @@ BOOL IS_PED_SWIMMING(Ped ped);
 BOOL IS_PED_RAGDOLL(Ped ped);
 BOOL IS_PED_FALLING(Ped ped);
 BOOL IS_PED_ON_MOUNT(Ped ped);
+BOOL CAN_PED_RAGDOLL(Ped ped);
 BOOL SET_PED_TO_RAGDOLL(Ped ped, int time1, int time2, int ragdollType, BOOL p4, BOOL p5, BOOL p6);
 }
 
