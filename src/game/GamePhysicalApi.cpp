@@ -18,8 +18,13 @@ void GamePhysicalApi::ClearContactSource(EntityHandle entity) noexcept {
     ENTITY::CLEAR_ENTITY_LAST_DAMAGE_ENTITY(static_cast<Entity>(entity));
 }
 
-bool GamePhysicalApi::SetRagdoll(PedHandle ped, int durationMs) noexcept {
+bool GamePhysicalApi::CanRagdoll(PedHandle ped) const noexcept {
     if (ped == 0 || !ENTITY::DOES_ENTITY_EXIST(static_cast<Entity>(ped))) return false;
+    return PED::CAN_PED_RAGDOLL(static_cast<Ped>(ped)) == TRUE;
+}
+
+bool GamePhysicalApi::SetRagdoll(PedHandle ped, int durationMs) noexcept {
+    if (!CanRagdoll(ped)) return false;
     const int duration = std::clamp(durationMs, 100, 5000);
     return PED::SET_PED_TO_RAGDOLL(static_cast<Ped>(ped), duration, duration, 0, TRUE, TRUE, FALSE) == TRUE;
 }
