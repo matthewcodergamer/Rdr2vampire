@@ -63,8 +63,8 @@ struct CombatSettings {
     int shadowstepFollowupWindupMs{120};
     int strikeWindowMs{700};
     int recoveryMs{600};
-    int grabAlignMs{220};
-    int grabHoldMs{650};
+    int grabAlignMs{300};
+    int grabHoldMs{400};
     int feedHoldMs{500};
     int throwRagdollMs{1200};
     int stateTimeoutMs{4500};
