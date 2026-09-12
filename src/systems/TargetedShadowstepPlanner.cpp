@@ -15,14 +15,6 @@ float Dot2D(const game::Vec3& a, const game::Vec3& b) noexcept {
     return a.x * b.x + a.y * b.y;
 }
 
-game::Vec3 Add(const game::Vec3& a, const game::Vec3& b) noexcept {
-    return {a.x + b.x, a.y + b.y, a.z + b.z};
-}
-
-game::Vec3 Scale(const game::Vec3& value, float scale) noexcept {
-    return {value.x * scale, value.y * scale, value.z * scale};
-}
-
 game::Vec3 PredictedTargetPosition(const TargetedShadowstepRequest& request) noexcept {
     game::Vec3 velocityDirection{};
     const float speed = std::sqrt(
@@ -107,7 +99,7 @@ TargetedShadowstepPlan TargetedShadowstepPlanner::Plan(
     const bool hasMoveDirection = shadowstep_math::NormalizeHorizontal(
         request.targetVelocity, moveDirection);
     const game::Vec3 interceptDirection = hasMoveDirection ? moveDirection : targetForward;
-    const float range = std::clamp(request.strikingRange, 1.20F, 2.50F);
+    const float range = std::clamp(request.strikingRange, 1.20F, 4.00F);
 
     const std::array<std::pair<ShadowstepCandidateType, game::Vec3>, 4> requested{{
         {ShadowstepCandidateType::Intercept, shadowstep_math::AddScaled(predicted, interceptDirection, range)},
