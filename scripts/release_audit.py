@@ -122,17 +122,24 @@ for raw in manifest.splitlines():
         fail(f"unsafe audio path: {relative}")
     if pathlib.PurePosixPath(relative).suffix.lower() not in {".wav", ".mp3"}:
         fail(f"unsupported audio path: {relative}")
-    source = ROOT / "content" / pathlib.PurePosixPath(relative)
+    relative_path = pathlib.PurePosixPath(relative)
+    if len(relative_path.parts) != 2 or relative_path.parts[0] != "audio":
+        fail(f"audio mapping must target installed audio/ layout: {relative}")
+    source = ROOT / "content" / relative_path.name
     if not source.is_file():
-        fail(f"manifest audio path missing from content/: {relative}")
-    mapped_paths.add(f"content/{relative}")
+        fail(f"manifest audio source missing from content/: {relative_path.name}")
+    mapped_paths.add(f"content/{relative_path.name}")
 
-physical_audio = {p for p in files if p.startswith("content/audio/")}
+physical_audio = {p for p in files if p.startswith("content/Vam-") and p.endswith(".mp3")}
 unmapped = sorted(physical_audio - mapped_paths)
 if unmapped:
     fail(f"unmapped voice payload(s): {unmapped}")
-if len(mapped_paths) < 60:
-    fail(f"complete voice library unexpectedly small: {len(mapped_paths)} physical mappings")
+if len(physical_audio) != 64:
+    fail(f"expected 64 physical owner voice MP3s, found {len(physical_audio)}")
+if len(mapped_paths) != 64:
+    fail(f"expected 64 unique mapped voice files, found {len(mapped_paths)}")
+if manifest.count("asset=") != 67:
+    fail(f"expected 67 dialogue audio mappings, found {manifest.count('asset=')}")
 
 source_text = "\n".join(
     (ROOT / path).read_text(encoding="utf-8", errors="ignore")
@@ -160,7 +167,7 @@ if sorted(set(hud_hits)) != ["src/game/GameBossBarApi.cpp"]:
 packager = read("scripts/package-release.ps1")
 for marker in (
     "Nightwalker.asi", "Nightwalker.ini", "Nightwalker.dialogue",
-    "Nightwalker.voice.dialogue", "Nightwalker.audio", "content/audio",
+    "Nightwalker.voice.dialogue", "Nightwalker.audio", "Vam-*.mp3",
     "README.md", "CHANGELOG.md", "THIRD_PARTY_NOTICES.md", "Compress-Archive",
 ):
     if marker not in packager:
