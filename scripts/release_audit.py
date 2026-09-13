@@ -108,10 +108,14 @@ for path in files:
 for path in files:
     if not path.startswith("content/"):
         continue
-    suffix = pathlib.PurePosixPath(path).suffix.lower()
-    if path in {"content/Nightwalker.dialogue", "content/Nightwalker.audio"}:
+    if path in {
+        "content/Nightwalker.dialogue",
+        "content/Nightwalker.audio",
+        "content/Nightwalker.voicepack",
+    }:
         continue
-    if path.startswith("content/audio/") and suffix == ".wav":
+    suffix = pathlib.PurePosixPath(path).suffix.lower()
+    if path.startswith("content/audio/") and suffix in {".wav", ".mp3"}:
         continue
     fail(f"unreviewed release content payload under content/: {path}")
 
@@ -146,8 +150,9 @@ if sorted(set(hud_hits)) != ["src/game/GameBossBarApi.cpp"]:
 
 packager = read("scripts/package-release.ps1")
 for marker in (
-    "Nightwalker.asi", "Nightwalker.ini", "Nightwalker.dialogue", "README.md",
-    "CHANGELOG.md", "THIRD_PARTY_NOTICES.md", "Compress-Archive",
+    "Nightwalker.asi", "Nightwalker.ini", "Nightwalker.dialogue",
+    "Nightwalker.voice.dialogue", "Nightwalker.audio", "Nightwalker.voicepack",
+    "README.md", "CHANGELOG.md", "THIRD_PARTY_NOTICES.md", "Compress-Archive",
 ):
     if marker not in packager:
         fail(f"release packager allowlist/behavior missing: {marker}")
