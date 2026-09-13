@@ -43,6 +43,7 @@ BOOL IS_PED_SWIMMING(Ped ped);
 BOOL IS_PED_RAGDOLL(Ped ped);
 BOOL IS_PED_FALLING(Ped ped);
 BOOL IS_PED_ON_MOUNT(Ped ped);
+BOOL IS_PED_SHOOTING(Ped ped);
 BOOL CAN_PED_RAGDOLL(Ped ped);
 BOOL SET_PED_TO_RAGDOLL(Ped ped, int time1, int time2, int ragdollType, BOOL p4, BOOL p5, BOOL p6);
 }
@@ -63,7 +64,22 @@ int _GET_SECONDS_SINCE_BASE_YEAR();
 namespace CAM { BOOL IS_SPHERE_VISIBLE(float x, float y, float z, float radius); }
 namespace PAD { BOOL IS_CONTROL_PRESSED(int padIndex, Hash control); }
 namespace MISC { Hash GET_HASH_KEY(const char* text); const char* VAR_STRING(int flags, const char* textTemplate, ...); }
-namespace HUD { void SET_TEXT_CENTRE(BOOL align); }
+namespace HUD {
+void SET_TEXT_CENTRE(BOOL align);
+int _UI_PROMPT_REGISTER_BEGIN();
+void _UI_PROMPT_REGISTER_END(int prompt);
+int _UI_PROMPT_SET_CONTROL_ACTION(int prompt, Hash action);
+void _UI_PROMPT_SET_PRIORITY(int prompt, int priority);
+void _UI_PROMPT_SET_TEXT(int prompt, const char* text);
+void _UI_PROMPT_SET_STANDARD_MODE(int prompt, BOOL releaseMode);
+int _UI_PROMPT_GET_GROUP_ID_FOR_TARGET_ENTITY(Entity entity);
+void _UI_PROMPT_SET_GROUP(int prompt, int groupId, int tabIndex);
+void _UI_PROMPT_SET_VISIBLE(int prompt, BOOL visible);
+void _UI_PROMPT_SET_ENABLED(int prompt, BOOL enabled);
+BOOL _UI_PROMPT_HAS_STANDARD_MODE_COMPLETED(int prompt, int p1);
+BOOL _UI_PROMPT_IS_VALID(int prompt);
+void _UI_PROMPT_DELETE(int prompt);
+}
 namespace UIDEBUG {
 void _BG_SET_TEXT_SCALE(float scaleX, float scaleY);
 void _BG_SET_TEXT_COLOR(int red, int green, int blue, int alpha);
