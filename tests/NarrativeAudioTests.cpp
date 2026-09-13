@@ -4,6 +4,7 @@
 #include <string>
 #include <vector>
 
+#include "nightwalker/game/GameNarrativeAudioApi.h"
 #include "nightwalker/narrative/NarrativeAudioManifest.h"
 
 int main() {
@@ -47,6 +48,10 @@ int main() {
     NarrativeAudioManifest future;
     assert(!future.Parse("schema=2\nasset=a|audio/a.wav\n"));
     assert(future.Count() == 0);
+
+    nightwalker::game::SubtitleOnlyNarrativeAudioApi fallbackAudio;
+    assert(!fallbackAudio.TryPlay("nw.audio.sd.test"));
+    fallbackAudio.Stop();
 
     std::cout << "Nightwalker narrative audio manifest tests passed\n";
     return 0;
