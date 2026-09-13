@@ -22,7 +22,7 @@ void SaintDenisDirector::UpdateActive(const core::FrameContext& frame) {
             const float distance = encounter_math::Distance2D(api_.EntityCoords(player), api_.EntityCoords(actor_));
             if (aimed || distance <= static_cast<float>(config_.encounter.confrontationDistance) ||
                 frame.nowMs - stateStartedMs_ >= static_cast<std::uint64_t>(config_.encounter.stalkingMs)) {
-                narrative_.StartSequence(narrative::ids::kSaintDenisPreFight, frame.nowMs);
+                narrative_.StartSequenceFamily(narrative::ids::kSaintDenisPreFight, frame.nowMs);
                 const int holdMs = narrative_.Active()
                     ? std::max(config_.encounter.confrontationMs + 200, config_.narrative.maxConfrontationHoldMs + 200)
                     : config_.encounter.confrontationMs + 200;
@@ -37,7 +37,7 @@ void SaintDenisDirector::UpdateActive(const core::FrameContext& frame) {
             if (!PreCombatStillSafe()) { BeginAbort("confrontation became unsafe", frame.nowMs); return; }
             const auto elapsed = frame.nowMs - stateStartedMs_;
             const bool minimumTellDone = elapsed >= static_cast<std::uint64_t>(config_.encounter.confrontationMs);
-            const bool dialogueDone = !narrative_.IsPlaying(narrative::ids::kSaintDenisPreFight);
+            const bool dialogueDone = !narrative_.IsPlayingFamily(narrative::ids::kSaintDenisPreFight);
             const bool dialogueWatchdog = elapsed >= static_cast<std::uint64_t>(config_.narrative.maxConfrontationHoldMs);
             if (minimumTellDone && (dialogueDone || dialogueWatchdog)) {
                 if (dialogueWatchdog && !dialogueDone) {
