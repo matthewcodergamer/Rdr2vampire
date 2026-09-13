@@ -24,7 +24,9 @@ def parse_manifest() -> dict[str, pathlib.Path]:
         path = pathlib.PurePosixPath(relative)
         if path.is_absolute() or ".." in path.parts:
             raise SystemExit(f"unsafe audio path: {relative}")
-        mappings[audio_id] = ROOT / "content" / path
+        if len(path.parts) != 2 or path.parts[0] != "audio":
+            raise SystemExit(f"audio path must use installed audio/ layout: {relative}")
+        mappings[audio_id] = ROOT / "content" / path.name
     return mappings
 
 
@@ -66,8 +68,10 @@ if unused:
     raise SystemExit(f"manifest mappings not used by dialogue: {unused}")
 
 raw_uploads = sorted((ROOT / "content").glob("Vam-*.mp3"))
-if raw_uploads:
-    raise SystemExit(f"loose upload filenames remain in content/: {[p.name for p in raw_uploads]}")
+if len(raw_uploads) != 64:
+    raise SystemExit(f"expected 64 reviewed source MP3s, found {len(raw_uploads)}")
+if {p.resolve() for p in raw_uploads} != physical:
+    raise SystemExit("manifest/source MP3 coverage mismatch")
 if (ROOT / "content/Nightwalker.voicepack").exists():
     raise SystemExit("obsolete Nightwalker.voicepack remains tracked")
 
