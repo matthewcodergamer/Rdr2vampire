@@ -111,7 +111,7 @@ voice_parts = sorted(
 )
 expected_voice_parts = [
     f"content/voicepack/Nightwalker.voicepack.part{index:02d}.b64"
-    for index in range(1, 9)
+    for index in range(1, 35)
 ]
 if voice_parts != expected_voice_parts:
     fail(f"voicepack source chunk set changed: {voice_parts}")
@@ -172,5 +172,7 @@ for marker in (
 materializer = read("scripts/materialize-voicepack.ps1")
 if "b377d1ce81ac8c0f5b86f8fba15270721bba2ba430d5a5a940ea01f793fa4ba6" not in materializer:
     fail("voicepack materializer is missing the reviewed SHA-256 lock")
+if "Expected 34 Nightwalker voicepack source chunks" not in materializer:
+    fail("voicepack materializer chunk-count lock is missing")
 
 print(f"Nightwalker release audit passed for {EXPECTED_VERSION}")
