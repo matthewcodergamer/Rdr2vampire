@@ -6,16 +6,16 @@
 schema=1
 
 # Saint Denis opening soul family. Calm, old, metaphysical, predatory.
-line=saint_denis.pre_fight|sd_soul_01a|THE VAMPIRE|nw.sd.soul.01a|nw.audio.sd.soul.01a|1700|Do not ask what I am as though the world has only two answers.
-line=saint_denis.pre_fight|sd_soul_01b|THE VAMPIRE|nw.sd.soul.01b|nw.audio.sd.soul.01b|1700|I have stood where life ends and found no wall there.
-line=saint_denis.pre_fight|sd_soul_01c|THE VAMPIRE|nw.sd.soul.01c|nw.audio.sd.soul.01c|1500|Names are for things that stay on one side.
-line=saint_denis.pre_fight.soul_02|sd_soul_02a|THE VAMPIRE|nw.sd.soul.02a|nw.audio.sd.soul.02a|1700|Men pray for eternal life until eternity answers them.
-line=saint_denis.pre_fight.soul_02|sd_soul_02b|THE VAMPIRE|nw.sd.soul.02b|nw.audio.sd.soul.02b|1500|Then they call the answer cursed.
-line=saint_denis.pre_fight.soul_02|sd_soul_02c|THE VAMPIRE|nw.sd.soul.02c|nw.audio.sd.soul.02c|1600|I have had centuries to enjoy the joke.
-line=saint_denis.pre_fight.soul_03|sd_soul_03a|THE VAMPIRE|nw.sd.soul.03a|nw.audio.sd.soul.03a|1800|Death is not life's opposite. It is its oldest shadow.
-line=saint_denis.pre_fight.soul_03|sd_soul_03b|THE VAMPIRE|nw.sd.soul.03b|nw.audio.sd.soul.03b|1800|I have walked between them so long neither claims me.
+line=saint_denis.pre_fight|sd_soul_01a|THE VAMPIRE|nw.sd.soul.01a|nw.audio.sd.soul.01a|5750|Do not ask what I am as though the world has only two answers.
+line=saint_denis.pre_fight|sd_soul_01b|THE VAMPIRE|nw.sd.soul.01b|nw.audio.sd.soul.01b|5450|I have stood where life ends and found no wall there.
+line=saint_denis.pre_fight|sd_soul_01c|THE VAMPIRE|nw.sd.soul.01c|nw.audio.sd.soul.01c|3700|Names are for things that stay on one side.
+line=saint_denis.pre_fight.soul_02|sd_soul_02a|THE VAMPIRE|nw.sd.soul.02a|nw.audio.sd.soul.02a|5250|Men pray for eternal life until eternity answers them.
+line=saint_denis.pre_fight.soul_02|sd_soul_02b|THE VAMPIRE|nw.sd.soul.02b|nw.audio.sd.soul.02b|3050|Then they call the answer cursed.
+line=saint_denis.pre_fight.soul_02|sd_soul_02c|THE VAMPIRE|nw.sd.soul.02c|nw.audio.sd.soul.02c|3500|I have had centuries to enjoy the joke.
+line=saint_denis.pre_fight.soul_03|sd_soul_03a|THE VAMPIRE|nw.sd.soul.03a|nw.audio.sd.soul.03a|5900|Death is not life's opposite. It is its oldest shadow.
+line=saint_denis.pre_fight.soul_03|sd_soul_03b|THE VAMPIRE|nw.sd.soul.03b|nw.audio.sd.soul.03b|4800|I have walked between them so long neither claims me.
 line=saint_denis.pre_fight.soul_03|sd_soul_03c|THE VAMPIRE|nw.sd.soul.03c|nw.audio.sd.soul.03c|1400|And still you step closer.
-line=saint_denis.pre_fight.soul_04|sd_soul_04a|THE VAMPIRE|nw.sd.soul.04a|nw.audio.sd.soul.04a|1500|The grave was once a terror to me.
+line=saint_denis.pre_fight.soul_04|sd_soul_04a|THE VAMPIRE|nw.sd.soul.04a|nw.audio.sd.soul.04a|3500|The grave was once a terror to me.
 line=saint_denis.pre_fight.soul_04|sd_soul_04b|THE VAMPIRE|nw.sd.soul.04b|nw.audio.sd.soul.04b|2100|Then I learned it is only a door built by those afraid to look beyond it.
 line=saint_denis.pre_fight.soul_04|sd_soul_04c|THE VAMPIRE|nw.sd.soul.04c|nw.audio.sd.soul.04c|1600|I stopped knocking a very long time ago.
 line=saint_denis.pre_fight.soul_05|sd_soul_05a|THE VAMPIRE|nw.sd.soul.05a|nw.audio.sd.soul.05a|2100|You hear a heartbeat and call it life. You hear silence and call it death.
@@ -30,10 +30,10 @@ line=saint_denis.pre_fight.soul_07|sd_soul_07c|THE VAMPIRE|nw.sd.soul.07c|nw.aud
 line=saint_denis.pre_fight.soul_08|sd_soul_08a|THE VAMPIRE|nw.sd.soul.08a|nw.audio.sd.soul.08a|2200|I watched kings pile stone toward heaven because they feared the earth beneath them.
 line=saint_denis.pre_fight.soul_08|sd_soul_08b|THE VAMPIRE|nw.sd.soul.08b|nw.audio.sd.soul.08b|1700|Their crowns are dust. Their prayers are forgotten.
 line=saint_denis.pre_fight.soul_08|sd_soul_08c|THE VAMPIRE|nw.sd.soul.08c|nw.audio.sd.soul.08c|1200|I remain.
-line=saint_denis.pre_fight.first_contact_01|sd_fc_01a|THE VAMPIRE|nw.sd.first_contact.nearer.01|nw.audio.sd.first_contact.nearer.01|1942|Come no nearer.
-line=saint_denis.pre_fight.first_contact_01|sd_fc_01b|THE VAMPIRE|nw.sd.first_contact.wiser.01|nw.audio.sd.first_contact.wiser.01|4826|There. You have proven yourself wiser than the last.
-line=saint_denis.pre_fight.first_contact_02|sd_fc_02a|THE VAMPIRE|nw.sd.first_contact.nearer.02|nw.audio.sd.first_contact.nearer.01|1942|Come no nearer.
-line=saint_denis.pre_fight.first_contact_02|sd_fc_02b|THE VAMPIRE|nw.sd.first_contact.wiser.02|nw.audio.sd.first_contact.wiser.02|4839|There. You have proven yourself wiser than the last.
+line=saint_denis.pre_fight.first_contact_01|sd_fc_01a|THE VAMPIRE|nw.sd.first_contact.nearer.01|nw.audio.sd.first_contact.nearer.01|2300|Come no nearer.
+line=saint_denis.pre_fight.first_contact_01|sd_fc_01b|THE VAMPIRE|nw.sd.first_contact.wiser.01|nw.audio.sd.first_contact.wiser.01|5200|There. You have proven yourself wiser than the last.
+line=saint_denis.pre_fight.first_contact_02|sd_fc_02a|THE VAMPIRE|nw.sd.first_contact.nearer.02|nw.audio.sd.first_contact.nearer.01|2300|Come no nearer.
+line=saint_denis.pre_fight.first_contact_02|sd_fc_02b|THE VAMPIRE|nw.sd.first_contact.wiser.02|nw.audio.sd.first_contact.wiser.02|5200|There. You have proven yourself wiser than the last.
 
 # QUESTION: returns to the interaction choices when the answer finishes.
 line=saint_denis.choice.question|sd_q_01a|THE VAMPIRE|nw.sd.q.01a|nw.audio.sd.q.01a|1500|You want an answer that will fit inside a name.
@@ -44,10 +44,10 @@ line=saint_denis.choice.question.03|sd_q_03a|THE VAMPIRE|nw.sd.q.03a|nw.audio.sd
 line=saint_denis.choice.question.03|sd_q_03b|THE VAMPIRE|nw.sd.q.03b|nw.audio.sd.q.03b|1400|Very well. Ask.
 line=saint_denis.choice.question.04|sd_q_04a|THE VAMPIRE|nw.sd.q.04a|nw.audio.sd.q.04a|1800|The living always begin with questions.
 line=saint_denis.choice.question.04|sd_q_04b|THE VAMPIRE|nw.sd.q.04b|nw.audio.sd.q.04b|1800|The dead are usually more certain.
-line=saint_denis.choice.question.05|sd_q_05a|THE VAMPIRE|nw.sd.question.names.01|nw.audio.sd.question.names.01|2775|Men have given me many names.
-line=saint_denis.choice.question.05|sd_q_05b|THE VAMPIRE|nw.sd.question.none.01|nw.audio.sd.question.none.01|3620|None of those men lived long enough to make one matter.
-line=saint_denis.choice.question.06|sd_q_06a|THE VAMPIRE|nw.sd.question.names.02|nw.audio.sd.question.names.02|2410|Men have given me many names.
-line=saint_denis.choice.question.06|sd_q_06b|THE VAMPIRE|nw.sd.question.none.02|nw.audio.sd.question.none.02|3614|None of those men lived long enough to make one matter.
+line=saint_denis.choice.question.05|sd_q_05a|THE VAMPIRE|nw.sd.question.names.01|nw.audio.sd.question.names.01|3200|Men have given me many names.
+line=saint_denis.choice.question.05|sd_q_05b|THE VAMPIRE|nw.sd.question.none.01|nw.audio.sd.question.none.01|4000|None of those men lived long enough to make one matter.
+line=saint_denis.choice.question.06|sd_q_06a|THE VAMPIRE|nw.sd.question.names.02|nw.audio.sd.question.names.02|2900|Men have given me many names.
+line=saint_denis.choice.question.06|sd_q_06b|THE VAMPIRE|nw.sd.question.none.02|nw.audio.sd.question.none.02|4000|None of those men lived long enough to make one matter.
 
 # CHALLENGE: this authored response completes, then combat begins.
 line=saint_denis.choice.challenge|sd_ch_01a|THE VAMPIRE|nw.sd.challenge.01a|nw.audio.sd.challenge.01a|1500|You mistake my patience for permission.
