@@ -46,7 +46,7 @@ private:
  void ReloadConfig();void CancelSystems()noexcept;void RestoreOwnedState(std::string_view reason)noexcept;
  bool ValidateBossReference(std::uint64_t nowMs)noexcept;void UpdateSystems(const FrameContext& frame);void ResetPerformanceProfile()noexcept;void ReportPerformance(std::uint64_t nowMs);
  game::GameContext gameContext_{};util::Logger logger_{};Config config_{};SafetyWatchdog watchdog_{};LongSessionGuard sessionGuard_{};DebugInput debugInput_{};
- game::GameApi gameApi_{};game::GameBossBarApi gameBossBarApi_{};game::GameCombatApi gameCombatApi_{};game::GameConversationApi gameConversationApi_{};game::GameEncounterApi gameEncounterApi_{};game::GameFeedingApi gameFeedingApi_{};game::GameMovementApi gameMovementApi_{};game::SubtitleOnlyNarrativeAudioApi gameNarrativeAudioApi_{};game::GamePhysicalApi gamePhysicalApi_{};game::GamePresentationApi gamePresentationApi_{};
+ game::GameApi gameApi_{};game::GameBossBarApi gameBossBarApi_{};game::GameCombatApi gameCombatApi_{};game::GameConversationApi gameConversationApi_{};game::GameEncounterApi gameEncounterApi_{};game::GameFeedingApi gameFeedingApi_{};game::GameMovementApi gameMovementApi_{};game::GameNarrativeAudioApi gameNarrativeAudioApi_{};game::GamePhysicalApi gamePhysicalApi_{};game::GamePresentationApi gamePresentationApi_{};
  systems::BossActorRegistry bossRegistry_{};
  ui::BossHudController bossHudController_;
  narrative::NarrativeController narrativeController_;
