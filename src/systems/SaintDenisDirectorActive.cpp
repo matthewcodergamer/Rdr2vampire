@@ -36,10 +36,7 @@ void SaintDenisDirector::UpdateActive(const core::FrameContext& frame) {
             const float distance = encounter_math::Distance2D(api_.EntityCoords(player), api_.EntityCoords(actor_));
             if (aimed || distance <= static_cast<float>(config_.encounter.confrontationDistance) ||
                 frame.nowMs - stateStartedMs_ >= static_cast<std::uint64_t>(config_.encounter.stalkingMs)) {
-                const auto openingFamily = narrative_.HasSequenceFamily(narrative::ids::kSaintDenisRecordedOpening)
-                    ? narrative::ids::kSaintDenisRecordedOpening
-                    : narrative::ids::kSaintDenisPreFight;
-                narrative_.StartSequenceFamily(openingFamily, frame.nowMs);
+                narrative_.StartSequenceFamily(narrative::ids::kSaintDenisPreFight, frame.nowMs);
                 const int holdMs = std::max(config_.narrative.conversationWindowMs + 1000,
                     config_.encounter.confrontationMs + 1000);
                 combatApi_.TaskStandStill(actor_, holdMs);
@@ -74,9 +71,7 @@ void SaintDenisDirector::UpdateActive(const core::FrameContext& frame) {
             }
 
             const auto elapsed = frame.nowMs - stateStartedMs_;
-            const bool initialDialogueDone =
-                !narrative_.IsPlayingFamily(narrative::ids::kSaintDenisRecordedOpening) &&
-                !narrative_.IsPlayingFamily(narrative::ids::kSaintDenisPreFight);
+            const bool initialDialogueDone = !narrative_.IsPlayingFamily(narrative::ids::kSaintDenisPreFight);
             if (initialDialogueDone && elapsed >= static_cast<std::uint64_t>(config_.narrative.conversationWindowMs) &&
                 pendingConversationIntent_ == narrative::ConversationIntent::None && !narrative_.Active()) {
                 EnterCombat(frame.nowMs, "conversation window expired");
