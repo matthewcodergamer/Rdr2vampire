@@ -1,0 +1,16 @@
+# Nightwalker owner-recorded supplemental dialogue
+# schema 1
+# Loaded after Nightwalker.dialogue. Complete exchanges stay together.
+schema=1
+
+# First approach: one shared warning followed by one of two alternate performances.
+line=saint_denis.recorded_opening.take_a|sd_recorded_open_a_01|THE VAMPIRE|nw.sd.opening.warning|nw.audio.sd.opening.warning|2250|Come no nearer.
+line=saint_denis.recorded_opening.take_a|sd_recorded_open_a_02|THE VAMPIRE|nw.sd.opening.wiser.a|nw.audio.sd.opening.wiser.a|5200|There. You have proven yourself wiser than the last.
+line=saint_denis.recorded_opening.take_b|sd_recorded_open_b_01|THE VAMPIRE|nw.sd.opening.warning.b|nw.audio.sd.opening.warning|2250|Come no nearer.
+line=saint_denis.recorded_opening.take_b|sd_recorded_open_b_02|THE VAMPIRE|nw.sd.opening.wiser.b|nw.audio.sd.opening.wiser.b|5200|There. You have proven yourself wiser than the last.
+
+# QUESTION: two complete alternate answers. Individual takes are never mixed.
+line=saint_denis.recorded_question.take_a|sd_recorded_question_a_01|THE VAMPIRE|nw.sd.opening.names.a|nw.audio.sd.opening.names.a|2800|Men have given me many names.
+line=saint_denis.recorded_question.take_a|sd_recorded_question_a_02|THE VAMPIRE|nw.sd.opening.name_matter.a|nw.audio.sd.opening.name_matter.a|4000|None of those men lived long enough to make one matter.
+line=saint_denis.recorded_question.take_b|sd_recorded_question_b_01|THE VAMPIRE|nw.sd.opening.names.b|nw.audio.sd.opening.names.b|3150|Men have given me many names.
+line=saint_denis.recorded_question.take_b|sd_recorded_question_b_02|THE VAMPIRE|nw.sd.opening.name_matter.b|nw.audio.sd.opening.name_matter.b|4000|None of those men lived long enough to make one matter.
