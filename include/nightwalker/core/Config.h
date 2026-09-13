@@ -123,6 +123,7 @@ struct VampireAiSettings {
 struct NarrativeSettings {
     bool enabled{true};
     int maxConfrontationHoldMs{6000};
+    int conversationWindowMs{22000};
     int maxSequenceMs{9000};
     int skipKey{0x0D}; // Enter; active only while a narrative sequence is playing.
     bool optionalAudio{true};

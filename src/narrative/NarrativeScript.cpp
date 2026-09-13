@@ -19,6 +19,43 @@ void Add(NarrativeCatalog& c,NarrativeLine line){SequenceFor(c,line.sequenceId).
 
 const NarrativeSequence* NarrativeCatalog::Find(std::string_view id)const noexcept{for(const auto& s:sequences)if(s.id==id)return &s;return nullptr;}
 
+bool SequenceBelongsToFamily(std::string_view sequenceId,std::string_view familyId) noexcept {
+ if(sequenceId==familyId)return true;
+ if(sequenceId.size()<=familyId.size()||sequenceId.substr(0,familyId.size())!=familyId)return false;
+ return sequenceId[familyId.size()]=='.';
+}
+
+std::vector<const NarrativeSequence*> NarrativeCatalog::FindFamily(std::string_view familyId)const{
+ std::vector<const NarrativeSequence*> out;
+ for(const auto& sequence:sequences)if(SequenceBelongsToFamily(sequence.id,familyId))out.push_back(&sequence);
+ return out;
+}
+
+const NarrativeSequence* NarrativeVariantSelector::Choose(const NarrativeCatalog& catalog,
+                                                            std::string_view familyId,
+                                                            std::uint64_t entropy){
+ auto stateIt=std::find_if(families_.begin(),families_.end(),[&](const FamilyState& state){return state.familyId==familyId;});
+ if(stateIt==families_.end()){families_.push_back({std::string(familyId),{}, {}});stateIt=std::prev(families_.end());}
+ auto& state=*stateIt;
+ const auto candidates=catalog.FindFamily(familyId);
+ if(candidates.empty())return nullptr;
+ if(state.remainingIds.empty()){
+  state.remainingIds.reserve(candidates.size());
+  for(const auto* sequence:candidates)state.remainingIds.push_back(sequence->id);
+ }
+ state.remainingIds.erase(std::remove_if(state.remainingIds.begin(),state.remainingIds.end(),[&](const std::string& id){return catalog.Find(id)==nullptr;}),state.remainingIds.end());
+ if(state.remainingIds.empty())return nullptr;
+ std::size_t index=static_cast<std::size_t>(entropy%state.remainingIds.size());
+ if(state.remainingIds.size()>1&&!state.lastId.empty()&&state.remainingIds[index]==state.lastId){
+  const auto offset=1U+static_cast<std::size_t>((entropy>>32U)%(state.remainingIds.size()-1U));
+  index=(index+offset)%state.remainingIds.size();
+ }
+ const std::string selectedId=state.remainingIds[index];
+ state.remainingIds.erase(state.remainingIds.begin()+static_cast<std::ptrdiff_t>(index));
+ state.lastId=selectedId;
+ return catalog.Find(selectedId);
+}
+
 bool ParseNarrativeScript(std::string_view text,NarrativeCatalog& catalog,NarrativeDiagnosticSink diagnostics){
  NarrativeCatalog parsed{};bool schemaSeen=false;std::istringstream in{std::string(text)};std::string raw;std::size_t lineNo=0;
  while(std::getline(in,raw)){
@@ -45,8 +82,38 @@ bool ParseNarrativeScript(std::string_view text,NarrativeCatalog& catalog,Narrat
 
 NarrativeCatalog BuiltInNarrativeCatalog(){
  NarrativeCatalog c{};
- Add(c,{"sd_pre_01",std::string(ids::kSaintDenisPreFight),"THE VAMPIRE","nw.sd.pre.01","You followed the dead all this way. Did you think they were leading you home?","nw.audio.sd.pre.01",2500});
- Add(c,{"sd_pre_02",std::string(ids::kSaintDenisPreFight),"THE VAMPIRE","nw.sd.pre.02","You should have left Saint Denis to its hungers.","nw.audio.sd.pre.02",2200});
+ Add(c,{"sd_soul_01a",std::string(ids::kSaintDenisPreFight),"THE VAMPIRE","nw.sd.soul.01a","Do not ask what I am as though the world has only two answers.","nw.audio.sd.soul.01a",1700});
+ Add(c,{"sd_soul_01b",std::string(ids::kSaintDenisPreFight),"THE VAMPIRE","nw.sd.soul.01b","I have stood where life ends and found no wall there.","nw.audio.sd.soul.01b",1700});
+ Add(c,{"sd_soul_01c",std::string(ids::kSaintDenisPreFight),"THE VAMPIRE","nw.sd.soul.01c","Names are for things that stay on one side.","nw.audio.sd.soul.01c",1500});
+
+ Add(c,{"sd_soul_02a","saint_denis.pre_fight.soul_02","THE VAMPIRE","nw.sd.soul.02a","Men pray for eternal life until eternity answers them.","nw.audio.sd.soul.02a",1700});
+ Add(c,{"sd_soul_02b","saint_denis.pre_fight.soul_02","THE VAMPIRE","nw.sd.soul.02b","Then they call the answer cursed.","nw.audio.sd.soul.02b",1500});
+ Add(c,{"sd_soul_02c","saint_denis.pre_fight.soul_02","THE VAMPIRE","nw.sd.soul.02c","I have had centuries to enjoy the joke.","nw.audio.sd.soul.02c",1600});
+
+ Add(c,{"sd_soul_03a","saint_denis.pre_fight.soul_03","THE VAMPIRE","nw.sd.soul.03a","Death is not life's opposite. It is its oldest shadow.","nw.audio.sd.soul.03a",1800});
+ Add(c,{"sd_soul_03b","saint_denis.pre_fight.soul_03","THE VAMPIRE","nw.sd.soul.03b","I have walked between them so long neither claims me.","nw.audio.sd.soul.03b",1800});
+ Add(c,{"sd_soul_03c","saint_denis.pre_fight.soul_03","THE VAMPIRE","nw.sd.soul.03c","And still you step closer.","nw.audio.sd.soul.03c",1400});
+
+ Add(c,{"sd_soul_04a","saint_denis.pre_fight.soul_04","THE VAMPIRE","nw.sd.soul.04a","The grave was once a terror to me.","nw.audio.sd.soul.04a",1500});
+ Add(c,{"sd_soul_04b","saint_denis.pre_fight.soul_04","THE VAMPIRE","nw.sd.soul.04b","Then I learned it is only a door built by those afraid to look beyond it.","nw.audio.sd.soul.04b",2100});
+ Add(c,{"sd_soul_04c","saint_denis.pre_fight.soul_04","THE VAMPIRE","nw.sd.soul.04c","I stopped knocking a very long time ago.","nw.audio.sd.soul.04c",1600});
+
+ Add(c,{"sd_soul_05a","saint_denis.pre_fight.soul_05","THE VAMPIRE","nw.sd.soul.05a","You hear a heartbeat and call it life. You hear silence and call it death.","nw.audio.sd.soul.05a",2100});
+ Add(c,{"sd_soul_05b","saint_denis.pre_fight.soul_05","THE VAMPIRE","nw.sd.soul.05b","Small words for a world that has never obeyed them.","nw.audio.sd.soul.05b",1800});
+ Add(c,{"sd_soul_05c","saint_denis.pre_fight.soul_05","THE VAMPIRE","nw.sd.soul.05c","I learned that before this city had a name.","nw.audio.sd.soul.05c",1600});
+
+ Add(c,{"sd_soul_06a","saint_denis.pre_fight.soul_06","THE VAMPIRE","nw.sd.soul.06a","Hunger is not beneath reason. Hunger is reason without manners.","nw.audio.sd.soul.06a",1900});
+ Add(c,{"sd_soul_06b","saint_denis.pre_fight.soul_06","THE VAMPIRE","nw.sd.soul.06b","Men call theirs duty, love, ambition.","nw.audio.sd.soul.06b",1600});
+ Add(c,{"sd_soul_06c","saint_denis.pre_fight.soul_06","THE VAMPIRE","nw.sd.soul.06c","I have only been more honest with mine.","nw.audio.sd.soul.06c",1600});
+
+ Add(c,{"sd_soul_07a","saint_denis.pre_fight.soul_07","THE VAMPIRE","nw.sd.soul.07a","Every church promises another world.","nw.audio.sd.soul.07a",1500});
+ Add(c,{"sd_soul_07b","saint_denis.pre_fight.soul_07","THE VAMPIRE","nw.sd.soul.07b","I merely returned from mine.","nw.audio.sd.soul.07b",1400});
+ Add(c,{"sd_soul_07c","saint_denis.pre_fight.soul_07","THE VAMPIRE","nw.sd.soul.07c","You seem disappointed that it has teeth.","nw.audio.sd.soul.07c",1600});
+
+ Add(c,{"sd_soul_08a","saint_denis.pre_fight.soul_08","THE VAMPIRE","nw.sd.soul.08a","I watched kings pile stone toward heaven because they feared the earth beneath them.","nw.audio.sd.soul.08a",2200});
+ Add(c,{"sd_soul_08b","saint_denis.pre_fight.soul_08","THE VAMPIRE","nw.sd.soul.08b","Their crowns are dust. Their prayers are forgotten.","nw.audio.sd.soul.08b",1700});
+ Add(c,{"sd_soul_08c","saint_denis.pre_fight.soul_08","THE VAMPIRE","nw.sd.soul.08c","I remain.","nw.audio.sd.soul.08c",1200});
+
  Add(c,{"sd_post_01",std::string(ids::kSaintDenisPostDefeat),"","nw.sd.post.01","Inside the vampire's coat is a strip of paper bearing the same cut mark seen near the church.","",3200});
  Add(c,{"sd_clue_body_01",std::string(ids::kSaintDenisClueBloodlessBody),"","nw.sd.clue.body.01","The corpse is pale and nearly bloodless. The mud shows it was carried here.","",3000});
  Add(c,{"sd_clue_mark_01",std::string(ids::kSaintDenisClueStoneMark),"","nw.sd.clue.mark.01","A narrow sigil has been cut beneath the old writing. The edges are fresh.","",3000});

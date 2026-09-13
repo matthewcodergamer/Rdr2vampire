@@ -1,0 +1,42 @@
+name: Reactive Dialogue CI
+
+on:
+  push:
+    branches: [phase-12-dialogue-variation]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  reactive-dialogue:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and run narrative reaction tests
+        run: |
+          mkdir -p build/reactive-ci
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude \
+            tests/NarrativeTests.cpp \
+            src/narrative/NarrativeScript.cpp \
+            src/narrative/NarrativePlayback.cpp \
+            src/narrative/NarrativeSettingsLoader.cpp \
+            src/narrative/ReactiveDialogueModel.cpp \
+            -o build/reactive-ci/narrative
+          ./build/reactive-ci/narrative
+      - name: Compile reactive conversation controllers
+        run: |
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -Isrc/core -c src/narrative/ReactiveConversationLifecycle.cpp -o build/reactive-ci/ReactiveConversationLifecycle.o
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -Isrc/core -c src/narrative/ReactiveConversationEvents.cpp -o build/reactive-ci/ReactiveConversationEvents.o
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -Isrc/core -c src/narrative/ReactiveConversationUpdate.cpp -o build/reactive-ci/ReactiveConversationUpdate.o
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/SaintDenisDirectorCore.cpp -o build/reactive-ci/SaintDenisDirectorCore.o
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/SaintDenisDirectorActive.cpp -o build/reactive-ci/SaintDenisDirectorActive.o
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude -Isrc/core -c src/systems/SaintDenisDirectorLifecycle.cpp -o build/reactive-ci/SaintDenisDirectorLifecycle.o
+      - name: Compile runtime composition
+        run: |
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -Isrc/core -c src/core/RuntimeLifecycle.cpp -o build/reactive-ci/RuntimeLifecycle.o
+      - name: Compile prompt native boundary
+        run: |
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Itests/stubs -Iinclude -c src/game/GameConversationApi.cpp -o build/reactive-ci/GameConversationApi.o

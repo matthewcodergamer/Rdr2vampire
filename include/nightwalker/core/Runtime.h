@@ -15,6 +15,7 @@
 #include "nightwalker/game/GameBossBarApi.h"
 #include "nightwalker/game/GameCombatApi.h"
 #include "nightwalker/game/GameContext.h"
+#include "nightwalker/game/GameConversationApi.h"
 #include "nightwalker/game/GameEncounterApi.h"
 #include "nightwalker/game/GameFeedingApi.h"
 #include "nightwalker/game/GameMovementApi.h"
@@ -22,6 +23,7 @@
 #include "nightwalker/game/GamePhysicalApi.h"
 #include "nightwalker/game/GamePresentationApi.h"
 #include "nightwalker/narrative/NarrativeController.h"
+#include "nightwalker/narrative/ReactiveConversationController.h"
 #include "nightwalker/systems/BossActorRegistry.h"
 #include "nightwalker/systems/DebugVampireSpawner.h"
 #include "nightwalker/systems/FeedingController.h"
@@ -44,10 +46,11 @@ private:
  void ReloadConfig();void CancelSystems()noexcept;void RestoreOwnedState(std::string_view reason)noexcept;
  bool ValidateBossReference(std::uint64_t nowMs)noexcept;void UpdateSystems(const FrameContext& frame);void ResetPerformanceProfile()noexcept;void ReportPerformance(std::uint64_t nowMs);
  game::GameContext gameContext_{};util::Logger logger_{};Config config_{};SafetyWatchdog watchdog_{};LongSessionGuard sessionGuard_{};DebugInput debugInput_{};
- game::GameApi gameApi_{};game::GameBossBarApi gameBossBarApi_{};game::GameCombatApi gameCombatApi_{};game::GameEncounterApi gameEncounterApi_{};game::GameFeedingApi gameFeedingApi_{};game::GameMovementApi gameMovementApi_{};game::SubtitleOnlyNarrativeAudioApi gameNarrativeAudioApi_{};game::GamePhysicalApi gamePhysicalApi_{};game::GamePresentationApi gamePresentationApi_{};
+ game::GameApi gameApi_{};game::GameBossBarApi gameBossBarApi_{};game::GameCombatApi gameCombatApi_{};game::GameConversationApi gameConversationApi_{};game::GameEncounterApi gameEncounterApi_{};game::GameFeedingApi gameFeedingApi_{};game::GameMovementApi gameMovementApi_{};game::SubtitleOnlyNarrativeAudioApi gameNarrativeAudioApi_{};game::GamePhysicalApi gamePhysicalApi_{};game::GamePresentationApi gamePresentationApi_{};
  systems::BossActorRegistry bossRegistry_{};
  ui::BossHudController bossHudController_;
  narrative::NarrativeController narrativeController_;
+ narrative::ReactiveConversationController reactiveConversationController_;
  systems::DebugVampireSpawner debugVampireSpawner_;
  systems::ShadowstepController shadowstepController_;
  systems::FeedingController feedingController_;

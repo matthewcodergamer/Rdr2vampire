@@ -26,10 +26,11 @@ SaintDenisDirector::SaintDenisDirector(
     game::IGameApi& api, game::IGameCombatApi& combatApi,
     game::IGameEncounterApi& encounterApi, game::IGamePresentationApi& presentationApi,
     BossActorRegistry& registry, narrative::NarrativeController& narrative,
+    narrative::ReactiveConversationController& conversation,
     ui::BossHudController& bossHud, util::Logger& logger, const core::Config& config) noexcept
     : api_(api), combatApi_(combatApi), encounterApi_(encounterApi),
       presentationApi_(presentationApi), registry_(registry), narrative_(narrative),
-      bossHud_(bossHud), logger_(logger), config_(config) {}
+      conversation_(conversation), bossHud_(bossHud), logger_(logger), config_(config) {}
 
 bool SaintDenisDirector::Initialize() {
     modelRequest_.Release(api_);
@@ -42,6 +43,7 @@ bool SaintDenisDirector::Initialize() {
     nextSpawnRetryMs_ = 0;
     outsideSinceMs_ = 0;
     cooldownUntilGameSeconds_ = 0;
+    pendingConversationIntent_ = narrative::ConversationIntent::None;
     cleanupResolved_ = false;
     resolvedThisSession_ = false;
     logger_.Write(util::LogLevel::Info,

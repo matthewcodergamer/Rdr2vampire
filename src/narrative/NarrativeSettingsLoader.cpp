@@ -24,6 +24,7 @@ void LoadNarrativeSettings(const std::filesystem::path& path,core::NarrativeSett
   if(section!="narrative")continue;auto eq=line.find('=');if(eq==std::string::npos)continue;auto key=Lower(Trim(line.substr(0,eq)));auto value=Trim(line.substr(eq+1));bool ok=true;
   if(key=="enabled")ok=ParseBool(value,settings.enabled);
   else if(key=="maxconfrontationholdms")ok=ParseInt(value,settings.maxConfrontationHoldMs);
+  else if(key=="conversationwindowms")ok=ParseInt(value,settings.conversationWindowMs);
   else if(key=="maxsequencems")ok=ParseInt(value,settings.maxSequenceMs);
   else if(key=="skipkey")ok=ParseKey(value,settings.skipKey);
   else if(key=="optionalaudio")ok=ParseBool(value,settings.optionalAudio);
@@ -31,6 +32,7 @@ void LoadNarrativeSettings(const std::filesystem::path& path,core::NarrativeSett
   if(!ok)Warn(diagnostics,"Invalid [Narrative] value at line "+std::to_string(lineNo)+"; previous/default value retained.");
  }
  const int beforeHold=settings.maxConfrontationHoldMs;settings.maxConfrontationHoldMs=std::clamp(settings.maxConfrontationHoldMs,900,10000);if(beforeHold!=settings.maxConfrontationHoldMs)Warn(diagnostics,"Narrative.MaxConfrontationHoldMs was clamped to a safe range.");
+ const int beforeConversation=settings.conversationWindowMs;settings.conversationWindowMs=std::clamp(settings.conversationWindowMs,6000,45000);if(beforeConversation!=settings.conversationWindowMs)Warn(diagnostics,"Narrative.ConversationWindowMs was clamped to a safe range.");
  const int beforeSequence=settings.maxSequenceMs;settings.maxSequenceMs=std::clamp(settings.maxSequenceMs,1000,20000);if(beforeSequence!=settings.maxSequenceMs)Warn(diagnostics,"Narrative.MaxSequenceMs was clamped to a safe range.");
  if(settings.skipKey<=0||settings.skipKey>255){settings.skipKey=0x0D;Warn(diagnostics,"Narrative.SkipKey was invalid; Enter was restored.");}
 }
