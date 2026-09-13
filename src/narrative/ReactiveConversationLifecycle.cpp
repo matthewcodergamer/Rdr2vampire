@@ -48,7 +48,7 @@ void ReactiveConversationController::SetPrompts(bool enabled) noexcept {
 
 void ReactiveConversationController::SetEncounterConversationEnabled(bool enabled) noexcept {
     enabled_ = enabled;
-    if (!enabled_) { SetPrompts(false); model_.Reset(); intent_ = ConversationIntent::None; }
+    if (!enabled_) ReleaseActor();
 }
 
 ConversationIntent ReactiveConversationController::ConsumeIntent() noexcept {

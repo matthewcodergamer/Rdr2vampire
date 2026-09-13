@@ -7,7 +7,6 @@
 namespace nightwalker::systems {
 
 bool SaintDenisDirector::EnterCombat(std::uint64_t nowMs, std::string_view reason) noexcept {
-    conversation_.SetEncounterConversationEnabled(false);
     pendingConversationIntent_ = narrative::ConversationIntent::None;
     if (!registry_.SetCombatEnabled(actor_, BossOwner::Encounter, true)) {
         BeginAbort("could not arm encounter combat ownership", nowMs);
@@ -27,6 +26,7 @@ void SaintDenisDirector::UpdateActive(const core::FrameContext& frame) {
             if (!api_.PedAlive(actor_)) {
                 resolvedThisSession_ = true; cleanupResolved_ = true;
                 registry_.SetCombatEnabled(actor_, BossOwner::Encounter, false);
+                conversation_.SetEncounterConversationEnabled(false);
                 narrative_.StartSequence(narrative::ids::kSaintDenisPostDefeat, frame.nowMs);
                 Transition(SaintDenisState::Resolution, frame.nowMs); return;
             }
@@ -79,10 +79,10 @@ void SaintDenisDirector::UpdateActive(const core::FrameContext& frame) {
             return;
         }
         case SaintDenisState::Combat: {
-            conversation_.SetEncounterConversationEnabled(false);
-            if (!ActorValid(false)) { bossHud_.ForceHide(); BeginAbort("combat actor became invalid", frame.nowMs); return; }
+            if (!ActorValid(false)) { conversation_.SetEncounterConversationEnabled(false); bossHud_.ForceHide(); BeginAbort("combat actor became invalid", frame.nowMs); return; }
             if (!api_.PedAlive(actor_)) {
                 registry_.SetCombatEnabled(actor_, BossOwner::Encounter, false);
+                conversation_.SetEncounterConversationEnabled(false);
                 bossHud_.EndBoss(true, frame.nowMs);
                 narrative_.StartSequence(narrative::ids::kSaintDenisPostDefeat, frame.nowMs);
                 resolvedThisSession_ = true; cleanupResolved_ = true;
