@@ -42,24 +42,42 @@ foreach ($source in $files.Keys) {
   Copy-Item $full (Join-Path $package $files[$source])
 }
 
-# Canonical owner-provided voice assets live directly in source control under
-# content/audio/. The release package copies those exact stable-id WAVs beside
-# the plugin; no separate voice-pack materialization step is required.
+# Canonical owner-provided Saint Denis vampire voice assets live directly in
+# content/audio/. Keep the historical fixed-count validation on those root WAVs.
 $voiceSource=Join-Path $root "content/audio"
 if (-not (Test-Path $voiceSource -PathType Container)) { throw "Missing canonical voice directory: content/audio" }
 $voiceDestination=Join-Path $package "audio"
 New-Item -ItemType Directory -Path $voiceDestination -Force | Out-Null
 $voiceFiles=@(Get-ChildItem $voiceSource -File -Filter "*.wav" | Sort-Object Name)
-if ($voiceFiles.Count -ne 59) { throw "Expected 59 canonical voice WAVs, found $($voiceFiles.Count)." }
+if ($voiceFiles.Count -ne 59) { throw "Expected 59 canonical vampire voice WAVs, found $($voiceFiles.Count)." }
 foreach ($voiceFile in $voiceFiles) {
   if ($voiceFile.Name -match 'voice_batch_1') { throw "Fallback voice filename survived cleanup: $($voiceFile.Name)" }
   Copy-Item $voiceFile.FullName (Join-Path $voiceDestination $voiceFile.Name)
 }
 $packagedVoiceFiles=@(Get-ChildItem $voiceDestination -File)
-if ($packagedVoiceFiles.Count -ne 59) { throw "Expected 59 packaged voice WAVs, found $($packagedVoiceFiles.Count)." }
+if ($packagedVoiceFiles.Count -ne 59) { throw "Expected 59 packaged vampire voice WAVs, found $($packagedVoiceFiles.Count)." }
 foreach ($voiceFile in $packagedVoiceFiles) {
   if ($voiceFile.Extension.ToLowerInvariant() -ne ".wav") {
     throw "Unsupported voice payload in release package: $($voiceFile.FullName)"
+  }
+}
+
+# Player-character dialogue has its own source-controlled drop directory.
+# It is intentionally not part of the fixed Saint Denis vampire count. Any WAV
+# uploaded here is copied to audio/player/ so nw.audio.player.* fallback ids are
+# release-ready without flattening or mixing the two voice libraries.
+$playerVoiceSource=Join-Path $voiceSource "player"
+if (Test-Path $playerVoiceSource -PathType Container) {
+  $playerVoiceDestination=Join-Path $voiceDestination "player"
+  New-Item -ItemType Directory -Path $playerVoiceDestination -Force | Out-Null
+  $playerVoiceFiles=@(Get-ChildItem $playerVoiceSource -File -Filter "*.wav" | Sort-Object Name)
+  foreach ($playerVoiceFile in $playerVoiceFiles) {
+    Copy-Item $playerVoiceFile.FullName (Join-Path $playerVoiceDestination $playerVoiceFile.Name)
+  }
+  foreach ($playerVoiceFile in Get-ChildItem $playerVoiceDestination -File) {
+    if ($playerVoiceFile.Extension.ToLowerInvariant() -ne ".wav") {
+      throw "Unsupported player voice payload in release package: $($playerVoiceFile.FullName)"
+    }
   }
 }
 
