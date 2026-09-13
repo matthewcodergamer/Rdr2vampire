@@ -18,9 +18,9 @@ PromptHandle GameConversationApi::CreateEntityPrompt(EntityHandle entity, std::s
     HUD::_UI_PROMPT_SET_PRIORITY(prompt, 2);
     HUD::_UI_PROMPT_SET_TEXT(prompt, MISC::VAR_STRING(10, "LITERAL_STRING", text.c_str()));
     HUD::_UI_PROMPT_SET_STANDARD_MODE(prompt, TRUE);
-    HUD::_UI_PROMPT_REGISTER_END(prompt);
     const int group = HUD::_UI_PROMPT_GET_GROUP_ID_FOR_TARGET_ENTITY(entity);
     if (group != 0) HUD::_UI_PROMPT_SET_GROUP(prompt, group, 0);
+    HUD::_UI_PROMPT_REGISTER_END(prompt);
     HUD::_UI_PROMPT_SET_VISIBLE(prompt, FALSE);
     HUD::_UI_PROMPT_SET_ENABLED(prompt, FALSE);
     return static_cast<PromptHandle>(prompt);
