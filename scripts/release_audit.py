@@ -24,9 +24,7 @@ def read(path: str) -> str:
 
 def tracked_files() -> list[str]:
     try:
-        output = subprocess.check_output(
-            ["git", "ls-files", "-z"], cwd=ROOT, stderr=subprocess.STDOUT
-        )
+        output = subprocess.check_output(["git", "ls-files", "-z"], cwd=ROOT)
         return [item for item in output.decode("utf-8").split("\0") if item]
     except Exception as exc:
         fail(f"could not enumerate tracked files: {exc}")
@@ -51,20 +49,12 @@ if "package-release.ps1" not in project:
     fail("Release x64 build is not wired to the deterministic packager")
 
 readme = read("README.md")
-required_readme = [
-    "Story Mode only",
-    "## Dependencies",
-    "## Installation",
-    "## Uninstall",
-    "## Default controls",
-    "## Configuration",
-    "## Troubleshooting",
-    "## Compatibility notes",
-    "## Copyright and original-asset statement",
-    "## Known limitations",
-    "Nightwalker-1.0.0-rc1-win64.zip",
-]
-for marker in required_readme:
+for marker in (
+    "Story Mode only", "## Dependencies", "## Installation", "## Uninstall",
+    "## Default controls", "## Configuration", "## Troubleshooting",
+    "## Compatibility notes", "## Copyright and original-asset statement",
+    "## Known limitations", "Nightwalker-1.0.0-rc1-win64.zip",
+):
     if marker not in readme:
         fail(f"README release requirement missing: {marker}")
 
@@ -105,74 +95,75 @@ for path in files:
     if "dawnwalker" in p.name.lower():
         fail(f"Dawnwalker-named payload is tracked: {path}")
 
-voice_parts = sorted(
-    path for path in files
-    if path.startswith("content/voicepack/Nightwalker.voicepack.part") and path.endswith(".b64")
-)
-expected_voice_parts = [
-    f"content/voicepack/Nightwalker.voicepack.part{index:02d}.b64"
-    for index in range(1, 35)
-]
-if voice_parts != expected_voice_parts:
-    fail(f"voicepack source chunk set changed: {voice_parts}")
-
+allowed_content = {"content/Nightwalker.dialogue", "content/Nightwalker.audio"}
 for path in files:
     if not path.startswith("content/"):
         continue
-    if path in {
-        "content/Nightwalker.dialogue",
-        "content/Nightwalker.audio",
-    }:
-        continue
-    if path in expected_voice_parts:
+    if path in allowed_content:
         continue
     suffix = pathlib.PurePosixPath(path).suffix.lower()
-    if path.startswith("content/audio/") and suffix in {".wav", ".mp3"}:
+    if path.startswith("content/Vam-") and suffix == ".mp3":
         continue
     fail(f"unreviewed release content payload under content/: {path}")
 
+manifest = read("content/Nightwalker.audio")
+mapped_paths: set[str] = set()
+for raw in manifest.splitlines():
+    line = raw.strip()
+    if not line.startswith("asset="):
+        continue
+    fields = line[6:].split("|", 1)
+    if len(fields) != 2 or not fields[0] or not fields[1]:
+        fail(f"malformed Nightwalker.audio mapping: {line}")
+    asset_id, relative = fields
+    if not re.fullmatch(r"[A-Za-z0-9._-]+", asset_id):
+        fail(f"unsafe audio id: {asset_id}")
+    if ".." in relative or relative.startswith(("/", "\\")):
+        fail(f"unsafe audio path: {relative}")
+    if pathlib.PurePosixPath(relative).suffix.lower() not in {".wav", ".mp3"}:
+        fail(f"unsupported audio path: {relative}")
+    source = ROOT / "content" / pathlib.PurePosixPath(relative)
+    if not source.is_file():
+        fail(f"manifest audio path missing from content/: {relative}")
+    mapped_paths.add(f"content/{relative}")
+
+physical_audio = {p for p in files if p.startswith("content/audio/")}
+unmapped = sorted(physical_audio - mapped_paths)
+if unmapped:
+    fail(f"unmapped voice payload(s): {unmapped}")
+if len(mapped_paths) < 60:
+    fail(f"complete voice library unexpectedly small: {len(mapped_paths)} physical mappings")
+
 source_text = "\n".join(
     (ROOT / path).read_text(encoding="utf-8", errors="ignore")
-    for path in files
-    if path.startswith(("src/", "include/"))
+    for path in files if path.startswith(("src/", "include/"))
 )
 for pattern in (r"\bNETWORK::", r"\bNETWORK_[A-Z0-9_]+"):
     if re.search(pattern, source_text):
         fail(f"network-native token found in Story Mode source: {pattern}")
-
-collision_tokens = ("SET_ENTITY_COLLISION", "SET_ENTITY_COMPLETELY_DISABLE_COLLISION")
-for token in collision_tokens:
+for token in ("SET_ENTITY_COLLISION", "SET_ENTITY_COMPLETELY_DISABLE_COLLISION"):
     if token in source_text:
         fail(f"collision-changing native introduced without release-matrix ownership update: {token}")
-
-attachment_tokens = ("ATTACH_ENTITY_TO_ENTITY", "DETACH_ENTITY")
-for token in attachment_tokens:
+for token in ("ATTACH_ENTITY_TO_ENTITY", "DETACH_ENTITY"):
     if token in source_text:
         fail(f"persistent entity-attachment native introduced without release-matrix ownership update: {token}")
 
 hud_hits: list[str] = []
 for path in files:
-    if not path.startswith("src/"):
-        continue
-    text = (ROOT / path).read_text(encoding="utf-8", errors="ignore")
-    if "DRAW_RECT" in text or "_BG_DISPLAY_TEXT" in text:
-        hud_hits.append(path)
+    if path.startswith("src/"):
+        text = (ROOT / path).read_text(encoding="utf-8", errors="ignore")
+        if "DRAW_RECT" in text or "_BG_DISPLAY_TEXT" in text:
+            hud_hits.append(path)
 if sorted(set(hud_hits)) != ["src/game/GameBossBarApi.cpp"]:
     fail(f"custom draw-native boundary changed: {sorted(set(hud_hits))}")
 
 packager = read("scripts/package-release.ps1")
 for marker in (
     "Nightwalker.asi", "Nightwalker.ini", "Nightwalker.dialogue",
-    "Nightwalker.voice.dialogue", "Nightwalker.audio", "materialize-voicepack.ps1",
+    "Nightwalker.voice.dialogue", "Nightwalker.audio", "content/audio",
     "README.md", "CHANGELOG.md", "THIRD_PARTY_NOTICES.md", "Compress-Archive",
 ):
     if marker not in packager:
         fail(f"release packager allowlist/behavior missing: {marker}")
 
-materializer = read("scripts/materialize-voicepack.ps1")
-if "b377d1ce81ac8c0f5b86f8fba15270721bba2ba430d5a5a940ea01f793fa4ba6" not in materializer:
-    fail("voicepack materializer is missing the reviewed SHA-256 lock")
-if "Expected 34 Nightwalker voicepack source chunks" not in materializer:
-    fail("voicepack materializer chunk-count lock is missing")
-
-print(f"Nightwalker release audit passed for {EXPECTED_VERSION}")
+print(f"Nightwalker release audit passed for {EXPECTED_VERSION} with {len(mapped_paths)} voice files")

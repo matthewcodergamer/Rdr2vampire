@@ -17,6 +17,8 @@ The ZIP contains:
 - `Nightwalker.asi` — the compiled native Story Mode plugin;
 - `Nightwalker.ini` — configuration/default tuning;
 - `Nightwalker.dialogue` — original Nightwalker subtitle/narrative data;
+- `Nightwalker.voice.dialogue` — supplemental recorded conversation variants;
+- `Nightwalker.audio` and `audio/` — the owner-created vampire voice library;
 - `Nightwalker.asi.sha256.txt` — checksum for the compiled ASI;
 - `README.md` — the same installation, controls and troubleshooting guide included inside the ZIP;
 - `CHANGELOG.md`;
@@ -43,7 +45,7 @@ Nightwalker does not bundle Script Hook RDR2, Rockstar assets, LML, Dawnwalker a
 1. Install and verify a compatible Script Hook RDR2 runtime/ASI loader in your Red Dead Redemption 2 installation.
 2. Download `Nightwalker-1.0.0-rc1-win64.zip` using the link above.
 3. Extract the ZIP. The Nightwalker files are directly inside the archive; there is no extra installer.
-4. Copy `Nightwalker.asi`, `Nightwalker.ini`, `Nightwalker.dialogue`, `README.md`, `CHANGELOG.md`, `THIRD_PARTY_NOTICES.md`, and optionally the checksum text file into the RDR2 game directory scanned by your ASI loader — normally the same main folder that contains the game executable and Script Hook files.
+4. Copy the complete extracted Nightwalker package into the RDR2 game directory scanned by your ASI loader. Keep `Nightwalker.asi`, `Nightwalker.ini`, both dialogue catalogs, `Nightwalker.audio`, and the complete `audio` folder together.
 5. Launch **Red Dead Redemption 2 → Story Mode**. Do not use Nightwalker in RDR Online.
 6. Nightwalker creates `Nightwalker.log` beside the plugin when file logging is available. Check it if the mod does not initialize as expected.
 
@@ -73,6 +75,13 @@ Nightwalker does not modify RDR2's own save files or overwrite vanilla game file
 Production gameplay requires no custom ability keybinds. The Saint Denis encounter and boss behavior run automatically when their Story Mode conditions are met.
 
 - **Enter** — while a Nightwalker narrative subtitle sequence is active, advance/skip the current subtitle line.
+
+
+### Vampire conversation controls
+
+During the Saint Denis confrontation, hold **L2 / LT** to focus the vampire. The entity-linked RDR2 prompts offer **TALK**, **ANTAGONIZE**, and **LEAVE**. **R2 / RT remains the normal fire/hostile trigger**: aiming, holding aim, firing, drawing weapons, punching, melee attacks, lasso posture, approaching and backing away all feed the reactive dialogue system.
+
+Dialogue is randomized by complete authored sequence through a non-repeating shuffle bag. Individual sentences from different performances are never mixed.
 
 Development/debug keys are disabled by default and only work when `[Debug] Enabled=true`:
 
@@ -158,7 +167,7 @@ See `THIRD_PARTY_NOTICES.md` for dependency and redistribution boundaries.
 - GitHub Actions can now build and PE-verify a genuine Release x64 `Nightwalker.asi` using the Script Hook RDR2 developer SDK staged only on the temporary runner. This proves the plugin links; it does **not** replace hands-on compatibility testing in the actual game.
 - Exact game-build/Script Hook compatibility must be rechecked when RDR2 or Script Hook RDR2 updates.
 - Dense ambient crowds remain a manual Shadowstep occupancy test because the current resolver intentionally avoids an expensive broad ped scan and does not guess unverified trace flags.
-- Optional audio remains subtitle-first/fallback-safe; this RC does not bundle proprietary game audio.
+- Owner-created Nightwalker MP3 voice assets are bundled with subtitle-first fallback. Spatial 3D mouth-positioned audio and phoneme lip-sync remain future upgrades.
 - No optional LML content pack is included in `1.0.0-rc1`.
 
 ## Building from source

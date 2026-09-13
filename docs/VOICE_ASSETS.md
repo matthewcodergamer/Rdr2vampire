@@ -1,10 +1,34 @@
-# Nightwalker voice assets
+# Nightwalker voice and interaction system
 
-Nightwalker narrative lines carry stable `audio-id` values such as `nw.audio.sd.aim.04`. The runtime resolves those IDs through `Nightwalker.audio` and plays the matching reviewed WAV or MP3 asset when the authored line starts.
+Nightwalker uses authored dialogue families, stable audio IDs, and project-owned AI voice recordings. The game never generates dialogue at runtime.
+
+## In-game interaction
+
+The Saint Denis vampire uses RDR2 entity-linked prompts:
+
+- hold **L2 / LT** to focus on the vampire;
+- choose **TALK** to hear a randomized non-hostile response;
+- choose **ANTAGONIZE** to hear a randomized hostile response and begin combat after it finishes;
+- choose **LEAVE** to hear a randomized withdrawal line and disengage;
+- **R2 / RT** remains the normal weapon/fire trigger. Aiming, sustained aim, lowering the weapon, firing, hitting, missing, drawing melee/lasso weapons, punching, and backing away feed the reactive dialogue state machine.
+
+The prompt is Arthur/John's intent. Nightwalker does not clone or synthesize the Rockstar protagonists' actors.
+
+## Randomization contract
+
+Randomization happens at the complete-sequence level. Individual sentences from different speeches are never shuffled together.
+
+Each family uses a non-repeating shuffle bag:
+
+1. collect every eligible authored sequence in the context family;
+2. randomly select one complete sequence;
+3. remove it from the current bag;
+4. exhaust the family before refilling;
+5. avoid immediately repeating the final sequence when the bag refills.
+
+Families include opening/soul speeches, TALK, ANTAGONIZE, LEAVE, aiming, sustained aim, lowered weapon, shot hit/miss, weapon posture, unarmed/melee contact, and movement reactions.
 
 ## Runtime layout
-
-Installed voice content lives beside `Nightwalker.asi`:
 
 ```text
 Nightwalker.asi
@@ -14,103 +38,35 @@ Nightwalker.voice.dialogue
 Nightwalker.audio
 audio/
   nw.audio.sd.first_contact.nearer.01.mp3
-  nw.audio.sd.soul.recorded.01.mp3
+  nw.audio.sd.soul.03a1.mp3
+  nw.audio.sd.shot.hit.04.mp3
   ...
 ```
 
-`Nightwalker.dialogue` remains the authoritative base catalog. `Nightwalker.voice.dialogue` is the reviewed supplemental catalog added by the owner voice batches. Runtime appends only new sequence IDs; malformed or duplicate supplemental entries cannot replace base dialogue.
+`Nightwalker.audio` maps stable IDs to relative MP3/WAV files. `Nightwalker.dialogue` is the authoritative base script. `Nightwalker.voice.dialogue` appends reviewed extra sequences without replacing base sequence IDs.
 
-The repository stores the reviewed physical audio payload in `content/Nightwalker.voicepack`. It is a deterministic archive containing 25 unique MP3 files plus its checksum/duration inventory. The manifest exposes 26 stable audio IDs because `nw.audio.sd.soul.01a` intentionally reuses the same owner-recorded `Do not ask what I am...` performance as `nw.audio.sd.soul.recorded.01` rather than storing a duplicate.
+The Windows backend uses asynchronous MCI playback for MP3 and `PlaySoundW` for WAV. Missing or failed files always fall back to the exact subtitle and never block combat or cleanup.
 
-## Voice Batch 1
+## Complete uploaded library
 
-Batch 1 supplies seven owner-created AI voice takes:
+The complete pass maps **67 dialogue IDs** to **64 physical MP3 files**. Three pairs intentionally share one recording:
 
-- `Come no nearer.`
-- `There. You have proven yourself wiser than the last.` — two alternate performances
-- `Men have given me many names.` — two alternate performances
-- `None of those men lived long enough to make one matter.` — two alternate performances
+- `nw.audio.sd.soul.01a` reuses the identical `nw.audio.sd.soul.recorded.01` performance;
+- shot-hit `Good.` and unarmed-hit `Good.` share one neutral performance;
+- lowered-weapon `Better.` and melee-hit `Better.` share one neutral performance.
 
-The complete first-contact and QUESTION exchanges stay paired when randomized.
+Long sentences recorded as separate clips are authored as separate consecutive lines inside the same sequence. This applies to:
 
-## Voice Batch 2
+- `Death is not life's opposite.` → `It is its oldest shadow.`
+- `You hear a heartbeat and call it life.` → `You hear silence and call it death.`
+- `Their crowns are dust.` → `Their prayers are forgotten.`
 
-Batch 2 supplies ten unique performances:
+This preserves natural timing and future per-line lip-sync data.
 
-- `Do not ask what I am, as though the world has only two answers.`
-- `A thousand souls pressed together behind brick and iron.` → `Look around you.` → `Keep it.`
-- three alternate `A rare wisdom.` LEAVE responses
-- `Choose your next words with greater care.` for sustained aim
-- `He has gone farther from you than I ever could.` → `From him.`
+## Cleanup and interruption
 
-The additional uploaded `None of those men lived long enough to make one matter.` take matched Batch 1 exactly and is intentionally not stored twice.
+Starting a new line stops the previous clip. Skip, combat interruption, encounter abort, F10/F11 cleanup, player death, script shutdown, and invalid actor ownership all stop voice playback and clear conversation prompts.
 
-## Voice Batch 3
+## Current limitation
 
-Batch 3 completes the currently supplied soul performances:
-
-- `I have stood where life ends and found no wall there.`
-- `Names are for things that stay on one side.`
-- `Men pray for eternal life until eternity answers them.`
-- `Then they call the answer cursed.`
-- `I have had centuries to enjoy the joke.`
-- `Death is not life's opposite. It is its oldest shadow.` — assembled from the owner's two consecutive recorded clauses as one authored line
-- `I have walked between them so long neither claims me.`
-- `The grave was once a terror to me.`
-
-The newly uploaded `Do not ask what I am...` performance matched the already-reviewed Batch 2 asset, so the base Soul 01 opening aliases that existing recording instead of adding another physical copy.
-
-## Audio format and playback
-
-The committed distribution assets are mono 44.1 kHz MP3 voice files. The backend still supports legacy WAV mappings. MP3 playback uses the Windows MCI API through `winmm`; WAV playback uses asynchronous `PlaySoundW`.
-
-Playback remains interruption-safe:
-
-- a new narrative line stops the previous clip;
-- skipping a line stops its clip immediately;
-- combat/encounter cancellation stops the active clip;
-- script shutdown closes both WAV and MP3 playback;
-- missing or rejected audio never blocks subtitles, interaction prompts, or combat;
-- failures are warned once in `Nightwalker.log`.
-
-The voice is still non-positional Windows playback. True 3D emission from the vampire and phoneme/viseme lip-sync are separate follow-up systems.
-
-## Installing all batches
-
-CI publishes `Nightwalker-Voice-Assets-All-Batches.zip`. Extract its contents beside `Nightwalker.asi`; the ZIP contains:
-
-- `Nightwalker.audio`
-- `Nightwalker.voice.dialogue`
-- `audio/` with all 25 unique physical voice files
-
-Keep `OptionalAudio=true` under `[Narrative]` in `Nightwalker.ini`, then restart RDR2/Nightwalker.
-
-For a source build, run:
-
-```powershell
-./scripts/package-voice-assets.ps1
-```
-
-To build the normal Nightwalker release ZIP with the voice assets already embedded, call:
-
-```powershell
-./scripts/package-release.ps1 -PluginPath <path-to-Nightwalker.asi> -IncludeVoiceAssets
-```
-
-The ordinary release packager remains compatible with a voice-free package when `-IncludeVoiceAssets` is omitted.
-
-## Validation contract
-
-`Voice Batch CI` verifies:
-
-- 26 stable manifest IDs resolve to 25 reviewed physical assets;
-- every physical file in `Nightwalker.voicepack` matches its stored byte count and SHA-256;
-- every mapped audio ID is referenced by authored base or supplemental dialogue;
-- authored subtitle timing is never shorter than the corresponding recording;
-- timing tails remain bounded;
-- the supplemental catalog still uses coherent whole-sequence randomization;
-- the installable all-batches ZIP can be produced from the committed repository.
-
-## Original/licensed audio only
-
-Only owner-created or properly licensed performances may ship. Nightwalker does not package extracted RDR2 dialogue, Dawnwalker production audio, or cloned proprietary actor recordings.
+The voice is audible and event-correct but is not yet positioned in true 3D at the vampire's mouth, and the mouth does not yet use phoneme/viseme lip-sync. Those remain separate presentation upgrades.

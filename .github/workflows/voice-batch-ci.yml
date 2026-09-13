@@ -1,8 +1,21 @@
-name: Voice Batch CI
+name: Complete Voice Library CI
 
 on:
   push:
-    branches: [phase-12-voice-batch-1, phase-12-voice-batch-2, phase-12-voice-batch-3-complete]
+    branches: [phase-12-complete-voice-library, main]
+    paths:
+      - 'content/Nightwalker.audio'
+      - 'content/Nightwalker.dialogue'
+      - 'content/audio/**'
+      - 'Nightwalker.voice.dialogue'
+      - 'include/nightwalker/game/GameNarrativeAudioApi.h'
+      - 'include/nightwalker/narrative/**'
+      - 'src/narrative/**'
+      - 'scripts/package-release.ps1'
+      - 'scripts/release_audit.py'
+      - 'tests/VoiceBatchTests.cpp'
+      - 'tests/validate_complete_voice_library.py'
+      - '.github/workflows/voice-batch-ci.yml'
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -11,46 +24,37 @@ permissions:
   contents: read
 
 jobs:
-  voice-batch-routing:
+  complete-voice-library:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Build and run voice batch routing tests
+      - name: Validate all uploaded voice assets and mappings
+        run: python3 tests/validate_complete_voice_library.py
+      - name: Build and run coherent random-family tests
         run: |
-          mkdir -p build/voice-batch-ci
+          mkdir -p build/voice-library-ci
           g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude \
             tests/VoiceBatchTests.cpp \
             src/narrative/NarrativeScript.cpp \
-            -o build/voice-batch-ci/voice-batch-tests
-          ./build/voice-batch-ci/voice-batch-tests
-      - name: Compile supplemental catalog loader
+            -o build/voice-library-ci/voice-library-tests
+          ./build/voice-library-ci/voice-library-tests
+      - name: Compile narrative controller with supplemental catalog loader
         run: |
           g++ -std=c++20 -Wall -Wextra -Wpedantic \
             -Itests/stubs -Iinclude -Isrc/core \
             -c src/narrative/NarrativeController.cpp \
-            -o build/voice-batch-ci/NarrativeController.o
-      - name: Validate all committed voice batches
-        run: python3 tests/validate_voice_batch.py
-      - name: Parse voice and release packagers
+            -o build/voice-library-ci/NarrativeController.o
+      - name: Run release policy audit
+        run: python3 scripts/release_audit.py
+      - name: Parse release packager
         shell: pwsh
         run: |
-          foreach ($script in @("scripts/package-release.ps1", "scripts/package-voice-assets.ps1")) {
-            $errors = $null
-            [void][System.Management.Automation.Language.Parser]::ParseFile(
-              (Resolve-Path $script),
-              [ref]$null,
-              [ref]$errors)
-            if ($errors.Count -gt 0) {
-              $errors | ForEach-Object { Write-Error $_ }
-              exit 1
-            }
+          $errors = $null
+          [void][System.Management.Automation.Language.Parser]::ParseFile(
+            (Resolve-Path "scripts/package-release.ps1"),
+            [ref]$null,
+            [ref]$errors)
+          if ($errors.Count -gt 0) {
+            $errors | ForEach-Object { Write-Error $_ }
+            exit 1
           }
-      - name: Build installable all-batches voice ZIP
-        shell: pwsh
-        run: ./scripts/package-voice-assets.ps1 -OutputDirectory build/voice-pack
-      - name: Upload complete Nightwalker voice pack
-        uses: actions/upload-artifact@v4
-        with:
-          name: Nightwalker-Voice-Assets-All-Batches
-          path: build/voice-pack/Nightwalker-Voice-Assets-All-Batches.zip
-          if-no-files-found: error

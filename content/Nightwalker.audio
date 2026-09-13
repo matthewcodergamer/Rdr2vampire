@@ -1,42 +1,75 @@
 # Nightwalker narrative voice manifest
 # schema 1
-# asset=<audio-id>|<relative audio path>
+# asset=<audio-id>|<relative MP3 path>
 #
-# Reviewed voice assets may be WAV or MP3. If an audio id is not listed here,
-# Nightwalker still tries the legacy fallback: audio/<audio-id>.wav
-#
-# Paths must remain relative to the Nightwalker plugin directory and may not contain '..'.
+# Owner-created AI voice files are stored under their original upload names in the release audio folder.
+# Multiple dialogue IDs may deliberately resolve to the same physical performance.
 schema=1
 
-# Voice Batch 1 — first contact and recorded QUESTION performances.
-asset=nw.audio.sd.first_contact.nearer.01|audio/nw.audio.sd.first_contact.nearer.01.mp3
-asset=nw.audio.sd.first_contact.wiser.01|audio/nw.audio.sd.first_contact.wiser.01.mp3
-asset=nw.audio.sd.first_contact.wiser.02|audio/nw.audio.sd.first_contact.wiser.02.mp3
-asset=nw.audio.sd.question.names.01|audio/nw.audio.sd.question.names.01.mp3
-asset=nw.audio.sd.question.names.02|audio/nw.audio.sd.question.names.02.mp3
-asset=nw.audio.sd.question.none.01|audio/nw.audio.sd.question.none.01.mp3
-asset=nw.audio.sd.question.none.02|audio/nw.audio.sd.question.none.02.mp3
-
-# Voice Batch 2 — Saint Denis, leave, aim-hold and church performances.
-asset=nw.audio.sd.soul.recorded.01|audio/nw.audio.sd.soul.recorded.01.mp3
-asset=nw.audio.sd.question.city.01a|audio/nw.audio.sd.question.city.01a.mp3
-asset=nw.audio.sd.question.city.01b|audio/nw.audio.sd.question.city.01b.mp3
-asset=nw.audio.sd.question.city.01c|audio/nw.audio.sd.question.city.01c.mp3
-asset=nw.audio.sd.leave.rare_wisdom.01|audio/nw.audio.sd.leave.rare_wisdom.01.mp3
-asset=nw.audio.sd.leave.rare_wisdom.02|audio/nw.audio.sd.leave.rare_wisdom.02.mp3
-asset=nw.audio.sd.leave.rare_wisdom.03|audio/nw.audio.sd.leave.rare_wisdom.03.mp3
-asset=nw.audio.sd.aimhold.care.01|audio/nw.audio.sd.aimhold.care.01.mp3
-asset=nw.audio.sd.question.church.01a|audio/nw.audio.sd.question.church.01a.mp3
-asset=nw.audio.sd.question.church.01b|audio/nw.audio.sd.question.church.01b.mp3
-
-# Voice Batch 3 — soul conversations. Soul 01a intentionally reuses the
-# identical owner-recorded performance already stored by Batch 2.
-asset=nw.audio.sd.soul.01a|audio/nw.audio.sd.soul.recorded.01.mp3
-asset=nw.audio.sd.soul.01b|audio/nw.audio.sd.soul.01b.mp3
-asset=nw.audio.sd.soul.01c|audio/nw.audio.sd.soul.01c.mp3
-asset=nw.audio.sd.soul.02a|audio/nw.audio.sd.soul.02a.mp3
-asset=nw.audio.sd.soul.02b|audio/nw.audio.sd.soul.02b.mp3
-asset=nw.audio.sd.soul.02c|audio/nw.audio.sd.soul.02c.mp3
-asset=nw.audio.sd.soul.03a|audio/nw.audio.sd.soul.03a.mp3
-asset=nw.audio.sd.soul.03b|audio/nw.audio.sd.soul.03b.mp3
-asset=nw.audio.sd.soul.04a|audio/nw.audio.sd.soul.04a.mp3
+asset=nw.audio.sd.first_contact.nearer.01|audio/Vam-2026-09-12-20-44-Come-no-nearer.mp3
+asset=nw.audio.sd.first_contact.wiser.01|audio/Vam-2026-09-12-20-45-There.-You-have-proven-yourself-wiser-than-the-l.mp3
+asset=nw.audio.sd.first_contact.wiser.02|audio/Vam-2026-09-12-20-46-There.-You-have-proven-yourself-wiser-than-the-l.mp3
+asset=nw.audio.sd.question.names.01|audio/Vam-2026-09-12-20-47-Men-have-given-me-many-names.mp3
+asset=nw.audio.sd.question.names.02|audio/Vam-2026-09-12-20-47-Men-have-given-me-many-names 2.mp3
+asset=nw.audio.sd.question.none.01|audio/Vam-2026-09-12-20-48-None-of-those-men-lived-long-enough-to-make-one.mp3
+asset=nw.audio.sd.question.none.02|audio/Vam-2026-09-12-20-48-None-of-those-men-lived-long-enough-to-make-one 2.mp3
+asset=nw.audio.sd.question.church.01b|audio/Vam-2026-09-12-20-49-From-him.mp3
+asset=nw.audio.sd.question.church.01a|audio/Vam-2026-09-12-20-50-He-has-gone-farther-from-you-than-I-ever-could.mp3
+asset=nw.audio.sd.leave.rare_wisdom.03|audio/Vam-2026-09-12-20-51-A-rare-wisdom.mp3
+asset=nw.audio.sd.aimhold.care.01|audio/Vam-2026-09-12-20-51-Choose-your-next-words-with-greater-care.mp3
+asset=nw.audio.sd.leave.rare_wisdom.01|audio/Vam-2026-09-12-20-52-A-rare-wisdom 2.mp3
+asset=nw.audio.sd.leave.rare_wisdom.02|audio/Vam-2026-09-12-20-52-A-rare-wisdom.mp3
+asset=nw.audio.sd.question.city.01c|audio/Vam-2026-09-12-20-53-Keep-it.mp3
+asset=nw.audio.sd.question.city.01b|audio/Vam-2026-09-12-20-54-Look-around-you.mp3
+asset=nw.audio.sd.question.city.01a|audio/Vam-2026-09-12-20-55-A-thousand-souls-pressed-together-behind-brick-a.mp3
+asset=nw.audio.sd.soul.recorded.01|audio/Vam-2026-09-13-04-33-Do-not-ask-what-I-am-as-though-the-world-has-onl.mp3
+asset=nw.audio.sd.soul.01a|audio/Vam-2026-09-13-04-33-Do-not-ask-what-I-am-as-though-the-world-has-onl.mp3
+asset=nw.audio.sd.soul.01b|audio/Vam-2026-09-13-04-34-I-have-stood-where-life-ends-and-found-no-wall-t.mp3
+asset=nw.audio.sd.soul.01c|audio/Vam-2026-09-13-04-34-Names-are-for-things-that-stay-on-one-side.mp3
+asset=nw.audio.sd.soul.02a|audio/Vam-2026-09-13-04-35-Men-pray-for-eternal-life-until-eternity-answers.mp3
+asset=nw.audio.sd.soul.02b|audio/Vam-2026-09-13-04-35-Then-they-call-the-answer-cursed.mp3
+asset=nw.audio.sd.soul.02c|audio/Vam-2026-09-13-04-36-I-have-had-centuries-to-enjoy-the-joke.mp3
+asset=nw.audio.sd.soul.03a1|audio/Vam-2026-09-13-04-36-Death-is-not-life's-opposite.mp3
+asset=nw.audio.sd.soul.03a2|audio/Vam-2026-09-13-04-37-It-is-its-oldest-shadow.mp3
+asset=nw.audio.sd.soul.03b|audio/Vam-2026-09-13-04-37-I-have-walked-between-them-so-long-neither-claim.mp3
+asset=nw.audio.sd.soul.03c|audio/Vam-2026-09-13-05-45-And-still-you-step-closer.mp3
+asset=nw.audio.sd.soul.04a|audio/Vam-2026-09-13-04-38-The-grave-was-once-a-terror-to-me.mp3
+asset=nw.audio.sd.soul.04b|audio/Vam-2026-09-13-04-38-Then-I-learned-it-is-only-a-door-built-by-those.mp3
+asset=nw.audio.sd.soul.04c|audio/Vam-2026-09-13-04-38-I-stopped-knocking-a-very-long-time-ago.mp3
+asset=nw.audio.sd.soul.05a1|audio/Vam-2026-09-13-04-39-You-hear-a-heartbeat-and-call-it-life.mp3
+asset=nw.audio.sd.soul.05a2|audio/Vam-2026-09-13-04-40-You-hear-silence-and-call-it-death.mp3
+asset=nw.audio.sd.soul.05b|audio/Vam-2026-09-13-04-40-Small-words-for-a-world-that-has-never-obeyed-th.mp3
+asset=nw.audio.sd.soul.05c|audio/Vam-2026-09-13-04-40-I-learned-that-before-this-city-had-a-name.mp3
+asset=nw.audio.sd.soul.08a|audio/Vam-2026-09-13-04-41-I-watched-kings-pile-stone-toward-heaven-because.mp3
+asset=nw.audio.sd.soul.08b1|audio/Vam-2026-09-13-04-41-Their-crowns-are-dust.mp3
+asset=nw.audio.sd.soul.08b2|audio/Vam-2026-09-13-04-42-Their-prayers-are-forgotten.mp3
+asset=nw.audio.sd.soul.08c|audio/Vam-2026-09-13-04-42-I-remain.mp3
+asset=nw.audio.sd.aimhold.02|audio/Vam-2026-09-13-05-21-How-long-do-you-intend-to-rehearse-my-death.mp3
+asset=nw.audio.sd.aim.04|audio/Vam-2026-09-13-05-21-Your-hand-speaks-before-you-do.mp3
+asset=nw.audio.sd.shot.hit.04|audio/Vam-2026-09-13-05-22-At-last,-an-honest-sentence.mp3
+asset=nw.audio.sd.lower.02|audio/Vam-2026-09-13-05-22-Restraint-becomes-you.mp3
+asset=nw.audio.sd.shot.miss.04|audio/Vam-2026-09-13-05-22-You-chose-violence-and-still-found-empty-air.mp3
+asset=nw.audio.sd.leave.03|audio/Vam-2026-09-13-05-23-Take-your-heartbeat-somewhere-I-cannot-hear-it.mp3
+asset=nw.audio.sd.challenge.recorded.01|audio/Vam-2026-09-13-05-23-You-mistake-my-patience-for-permission.-Let-us-c.mp3
+asset=nw.audio.sd.challenge.02b|audio/Vam-2026-09-13-05-46-Keep-yours.mp3
+asset=nw.audio.sd.challenge.02a|audio/Vam-2026-09-13-05-46-Threats-are-promises-made-by-frightened-men.mp3
+asset=nw.audio.sd.challenge.03a|audio/Vam-2026-09-13-05-47-Then-let-us-dispense-with-courtesy.mp3
+asset=nw.audio.sd.aim.01|audio/Vam-2026-09-13-05-48-Careful.-Steel-makes-men-confuse-courage-with-di.mp3
+asset=nw.audio.sd.aim.02|audio/Vam-2026-09-13-05-48-You-have-raised-the-weapon.-Not-yet-the-nerve.mp3
+asset=nw.audio.sd.lower.01|audio/Vam-2026-09-13-05-49-Better.mp3
+asset=nw.audio.sd.melee.hit.02|audio/Vam-2026-09-13-05-49-Better.mp3
+asset=nw.audio.sd.aimhold.03|audio/Vam-2026-09-13-05-49-Either-lower-it-or-learn-what-follows.mp3
+asset=nw.audio.sd.lower.03|audio/Vam-2026-09-13-05-50-For-a-moment,-instinct-has-learned-manners.mp3
+asset=nw.audio.sd.lower.04|audio/Vam-2026-09-13-05-50-Restraint-becomes-you.mp3
+asset=nw.audio.sd.shot.hit.01|audio/Vam-2026-09-13-05-51-Good.mp3
+asset=nw.audio.sd.unarmed.hit.01|audio/Vam-2026-09-13-05-51-Good.mp3
+asset=nw.audio.sd.shot.hit.02|audio/Vam-2026-09-13-05-51-There-you-are.mp3
+asset=nw.audio.sd.shot.hit.03|audio/Vam-2026-09-13-05-52-Blood-answers-blood.-How-very-human.mp3
+asset=nw.audio.sd.shot.miss.01|audio/Vam-2026-09-13-05-52-You-fired-at-your-fear.mp3
+asset=nw.audio.sd.melee.draw.01|audio/Vam-2026-09-13-05-53-A-blade.-Intimate.-Honest.mp3
+asset=nw.audio.sd.shot.miss.02|audio/Vam-2026-09-13-05-53-The-night-was-not-your-enemy.mp3
+asset=nw.audio.sd.holster.01|audio/Vam-2026-09-13-05-56-Good.-Let-it-be-metal-again.mp3
+asset=nw.audio.sd.unarmed.start.01|audio/Vam-2026-09-13-05-56-With-your-hands-How-devoutly-human.mp3
+asset=nw.audio.sd.lasso.draw.01|audio/Vam-2026-09-13-05-57-A-rope.-You-would-bind-what-death-could-not-keep.mp3
+asset=nw.audio.sd.lasso.draw.02|audio/Vam-2026-09-13-05-57-You-mistake-a-body-for-the-thing-that-inhabits-i.mp3
+asset=nw.audio.sd.lasso.draw.03|audio/Vam-2026-09-13-05-58-Try-the-rope,-if-symbolism-comforts-you.mp3

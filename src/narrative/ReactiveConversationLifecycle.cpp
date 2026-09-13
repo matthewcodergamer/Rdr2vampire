@@ -12,7 +12,7 @@ ReactiveConversationController::ReactiveConversationController(game::IGameApi& a
 bool ReactiveConversationController::Initialize() {
     Cancel();
     logger_.Write(util::LogLevel::Info,
-        "Reactive conversation initialized; entity prompts and weapon reactions are confrontation-only.");
+        "Reactive conversation initialized; hold L2/LT to focus, then use TALK, ANTAGONIZE or LEAVE. R2/RT remains hostile fire.");
     return true;
 }
 
@@ -21,8 +21,8 @@ bool ReactiveConversationController::BindActor(game::PedHandle actor) noexcept {
     ReleaseActor();
     if (actor == 0 || !api_.EntityExists(actor) || !api_.PedAlive(actor)) return false;
     actor_ = actor;
-    questionPrompt_ = conversationApi_.CreateEntityPrompt(actor_, "INPUT_CONTEXT_X", "QUESTION");
-    challengePrompt_ = conversationApi_.CreateEntityPrompt(actor_, "INPUT_CONTEXT_Y", "CHALLENGE");
+    questionPrompt_ = conversationApi_.CreateEntityPrompt(actor_, "INPUT_CONTEXT_X", "TALK");
+    challengePrompt_ = conversationApi_.CreateEntityPrompt(actor_, "INPUT_CONTEXT_Y", "ANTAGONIZE");
     leavePrompt_ = conversationApi_.CreateEntityPrompt(actor_, "INPUT_CONTEXT_B", "LEAVE");
     if (questionPrompt_ == 0 || challengePrompt_ == 0 || leavePrompt_ == 0)
         logger_.Write(util::LogLevel::Warning,

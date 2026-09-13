@@ -13,6 +13,9 @@ on:
       - 'scripts/**'
       - 'config/Nightwalker.example.ini'
       - 'content/Nightwalker.dialogue'
+      - 'content/Nightwalker.audio'
+      - 'content/Vam-*.mp3'
+      - 'Nightwalker.voice.dialogue'
       - 'README.md'
       - 'CHANGELOG.md'
       - 'THIRD_PARTY_NOTICES.md'
@@ -20,13 +23,19 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/build-asi.yml'
+      - 'Nightwalker.vcxproj'
+      - 'src/**'
+      - 'include/**'
+      - 'scripts/**'
+      - 'content/**'
+      - 'Nightwalker.voice.dialogue'
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
   build-nightwalker-asi:
-    name: Build Nightwalker ASI
+    name: Build install-ready Nightwalker
     runs-on: windows-2022
 
     steps:
@@ -48,7 +57,6 @@ jobs:
           if ([string]::IsNullOrWhiteSpace($officialUrl)) {
             $officialUrl = 'https://www.dev-c.com/files/ScriptHookRDR2_SDK_1.0.1207.73.zip'
           }
-
           if (-not $officialUrl.StartsWith('https://')) {
             throw 'The Script Hook RDR2 SDK URL must use HTTPS.'
           }
@@ -58,16 +66,10 @@ jobs:
           Remove-Item $zip -Force -ErrorAction SilentlyContinue
           Remove-Item $extract -Recurse -Force -ErrorAction SilentlyContinue
 
-          Write-Host "Trying Script Hook RDR2 SDK source: $officialUrl"
-          & curl.exe `
-            --fail `
-            --location `
-            --retry 2 `
-            --retry-delay 2 `
+          & curl.exe --fail --location --retry 2 --retry-delay 2 `
             --user-agent 'Mozilla/5.0' `
             --referer 'https://www.dev-c.com/scripthookrdr2/' `
-            --output $zip `
-            "$officialUrl"
+            --output $zip "$officialUrl"
           $curlExit = $LASTEXITCODE
 
           $isZip = $false
@@ -77,180 +79,78 @@ jobs:
           }
 
           if ($isZip) {
-            Write-Host 'Official/override SDK download is a valid ZIP; using it.'
             New-Item -ItemType Directory -Force -Path $extract | Out-Null
             Expand-Archive -Path $zip -DestinationPath $extract -Force
           } else {
-            Write-Warning 'The official/override SDK URL did not return a ZIP on this GitHub runner.'
-            Write-Host 'Falling back to the pinned public Director''s Suite SDK copy (credited there to Alexander Blade).'
-            Remove-Item $extract -Recurse -Force -ErrorAction SilentlyContinue
+            Write-Warning 'Official SDK download was unavailable; using the pinned public Director''s Suite SDK copy.'
             New-Item -ItemType Directory -Force -Path $extract | Out-Null
-
             git -C $extract init
-            if ($LASTEXITCODE -ne 0) { throw 'Could not initialize SDK fallback repository.' }
             git -C $extract remote add origin https://github.com/VideoTechUK/DirectorsSuite.git
-            if ($LASTEXITCODE -ne 0) { throw 'Could not configure SDK fallback repository.' }
             git -C $extract fetch --depth 1 origin 2bf299ec2264302f5f89403c779899f7f1616896
-            if ($LASTEXITCODE -ne 0) { throw 'Could not fetch pinned SDK fallback commit.' }
             git -C $extract checkout --detach FETCH_HEAD
-            if ($LASTEXITCODE -ne 0) { throw 'Could not check out pinned SDK fallback commit.' }
           }
 
       - name: Install Script Hook RDR2 SDK for this runner
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-
           $extract = Join-Path $env:RUNNER_TEMP 'ScriptHookRDR2_SDK'
           $target = 'third_party\ScriptHookRDR2'
-
           $includeDir = Get-ChildItem $extract -Recurse -Directory | Where-Object {
             (Test-Path (Join-Path $_.FullName 'main.h')) -and
             (Test-Path (Join-Path $_.FullName 'natives.h'))
           } | Select-Object -First 1
-
-          $library = Get-ChildItem $extract -Recurse -File -Filter ScriptHookRDR2.lib |
-            Select-Object -First 1
-
-          if (!$includeDir) {
-            throw 'SDK include directory containing main.h and natives.h was not found.'
-          }
-          if (!$library) {
-            throw 'ScriptHookRDR2.lib was not found in the acquired SDK files.'
-          }
-
+          $library = Get-ChildItem $extract -Recurse -File -Filter ScriptHookRDR2.lib | Select-Object -First 1
+          if (!$includeDir) { throw 'SDK include directory containing main.h and natives.h was not found.' }
+          if (!$library) { throw 'ScriptHookRDR2.lib was not found.' }
           New-Item -ItemType Directory -Force "$target\inc" | Out-Null
           New-Item -ItemType Directory -Force "$target\lib" | Out-Null
           Copy-Item "$($includeDir.FullName)\*" "$target\inc\" -Recurse -Force
           Copy-Item $library.FullName "$target\lib\ScriptHookRDR2.lib" -Force
 
-          if (!(Test-Path "$target\inc\main.h" -PathType Leaf)) {
-            throw 'Installed main.h verification failed.'
-          }
-          if (!(Test-Path "$target\inc\natives.h" -PathType Leaf)) {
-            throw 'Installed natives.h verification failed.'
-          }
-          if (!(Test-Path "$target\lib\ScriptHookRDR2.lib" -PathType Leaf)) {
-            throw 'Installed ScriptHookRDR2.lib verification failed.'
-          }
-
-          Write-Host 'Script Hook RDR2 developer SDK staged successfully.'
+      - name: Validate complete voice library
+        run: python tests/validate_complete_voice_library.py
 
       - name: Build Nightwalker Release x64
         shell: pwsh
         run: |
-          $ErrorActionPreference = 'Stop'
-
-          msbuild Nightwalker.vcxproj `
-            /m `
-            /p:Configuration=Release `
-            /p:Platform=x64
-
-          if ($LASTEXITCODE -ne 0) {
-            exit $LASTEXITCODE
-          }
+          msbuild Nightwalker.vcxproj /m /p:Configuration=Release /p:Platform=x64
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
       - name: Verify Nightwalker ASI
         shell: pwsh
         run: |
-          $ErrorActionPreference = 'Stop'
           $path = 'bin\Release\Nightwalker.asi'
-
-          if (!(Test-Path $path -PathType Leaf)) {
-            throw 'BUILD FAILED: Nightwalker.asi was not produced.'
-          }
-
+          if (!(Test-Path $path -PathType Leaf)) { throw 'Nightwalker.asi was not produced.' }
           $asi = Get-Item $path
-          if ($asi.Length -lt 4096) {
-            throw "BUILD FAILED: Nightwalker.asi is unexpectedly small ($($asi.Length) bytes)."
-          }
-
+          if ($asi.Length -lt 4096) { throw "Nightwalker.asi is unexpectedly small ($($asi.Length) bytes)." }
           $bytes = [System.IO.File]::ReadAllBytes($asi.FullName)
-          if ($bytes[0] -ne 0x4D -or $bytes[1] -ne 0x5A) {
-            throw 'BUILD FAILED: Nightwalker.asi is not a Windows PE image.'
-          }
+          if ($bytes[0] -ne 0x4D -or $bytes[1] -ne 0x5A) { throw 'Nightwalker.asi is not a Windows PE image.' }
 
-          Write-Host '====================================='
-          Write-Host ' NIGHTWALKER ASI BUILD SUCCESSFUL'
-          Write-Host '====================================='
-          Write-Host "File: $($asi.FullName)"
-          Write-Host "Size: $($asi.Length) bytes"
-
-      - name: Prepare downloadable Nightwalker build
+      - name: Build install-ready package with all voice assets
         shell: pwsh
         run: |
-          $ErrorActionPreference = 'Stop'
           $output = 'github-build'
-          $package = Join-Path $output 'Nightwalker'
-
           Remove-Item $output -Recurse -Force -ErrorAction SilentlyContinue
-          New-Item -ItemType Directory -Force -Path $package | Out-Null
-
-          Copy-Item 'bin\Release\Nightwalker.asi' "$package\Nightwalker.asi" -Force
-
-          if (Test-Path 'config\Nightwalker.example.ini') {
-            Copy-Item 'config\Nightwalker.example.ini' "$package\Nightwalker.ini" -Force
-          }
-          if (Test-Path 'content\Nightwalker.dialogue') {
-            Copy-Item 'content\Nightwalker.dialogue' "$package\Nightwalker.dialogue" -Force
-          }
-          foreach ($doc in @('README.md', 'CHANGELOG.md', 'THIRD_PARTY_NOTICES.md')) {
-            if (Test-Path $doc) {
-              Copy-Item $doc (Join-Path $package $doc) -Force
-            }
-          }
-
-          $hash = (Get-FileHash "$package\Nightwalker.asi" -Algorithm SHA256).Hash
-          "SHA256 Nightwalker.asi: $hash" | Set-Content "$package\Nightwalker.asi.sha256.txt"
-
-          $zipPath = Join-Path $output 'Nightwalker-Windows-x64.zip'
-          Compress-Archive -Path "$package\*" -DestinationPath $zipPath -Force
-
-          "## Nightwalker ASI build complete" >> $env:GITHUB_STEP_SUMMARY
-          "Download the **Nightwalker-ASI** artifact below this workflow run." >> $env:GITHUB_STEP_SUMMARY
-          "Inside it, use **Nightwalker-Windows-x64.zip** for the install-ready package." >> $env:GITHUB_STEP_SUMMARY
+          New-Item -ItemType Directory -Force -Path $output | Out-Null
+          & .\scripts\package-release.ps1 `
+            -PluginPath .\bin\Release\Nightwalker.asi `
+            -Version 1.0.0-rc1 `
+            -RepositoryRoot . `
+            -OutputDirectory $output
+          $source = Join-Path $output 'Nightwalker-1.0.0-rc1-win64.zip'
+          $destination = Join-Path $output 'Nightwalker-Windows-x64.zip'
+          Copy-Item $source $destination -Force
+          $hash = (Get-FileHash .\bin\Release\Nightwalker.asi -Algorithm SHA256).Hash
+          "SHA256 Nightwalker.asi: $hash" | Set-Content (Join-Path $output 'Nightwalker.asi.sha256.txt')
+          "## Nightwalker build complete" >> $env:GITHUB_STEP_SUMMARY
+          "The artifact contains the ASI, dialogue catalogs, manifest, and every mapped MP3 voice asset." >> $env:GITHUB_STEP_SUMMARY
           ("SHA256: " + $hash) >> $env:GITHUB_STEP_SUMMARY
 
-          Write-Host 'Download payload:'
-          Get-ChildItem $output -Recurse -File | ForEach-Object {
-            Write-Host (" - " + $_.FullName + " (" + $_.Length + " bytes)")
-          }
-
-      - name: Upload Nightwalker ASI
+      - name: Upload Nightwalker install package
         uses: actions/upload-artifact@v4
         with:
           name: Nightwalker-ASI
           path: github-build/
           if-no-files-found: error
           retention-days: 30
-
-      - name: Publish install ZIP on main repository page
-        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
-        shell: pwsh
-        run: |
-          $ErrorActionPreference = 'Stop'
-          $source = 'github-build\Nightwalker-Windows-x64.zip'
-          $destination = 'Nightwalker-1.0.0-rc1-win64.zip'
-
-          if (!(Test-Path $source -PathType Leaf)) {
-            throw 'Install-ready ZIP was not produced.'
-          }
-
-          Copy-Item $source $destination -Force
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add -- $destination
-          git diff --cached --quiet
-          $diffExit = $LASTEXITCODE
-
-          if ($diffExit -eq 0) {
-            Write-Host 'Published ZIP is already current; no repository update needed.'
-          } elseif ($diffExit -eq 1) {
-            git commit -m 'Update compiled Nightwalker RC package [skip ci]'
-            if ($LASTEXITCODE -ne 0) { throw 'Could not commit compiled package.' }
-            git push origin HEAD:main
-            if ($LASTEXITCODE -ne 0) { throw 'Could not publish compiled package to main.' }
-            Write-Host "Published $destination to the repository root."
-          } else {
-            throw 'Could not determine whether the published ZIP changed.'
-          }

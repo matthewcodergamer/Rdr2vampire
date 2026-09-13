@@ -13,6 +13,7 @@ $pluginInfo=Get-Item $plugin
 if ($pluginInfo.Length -lt 4096) { throw "Nightwalker.asi is too small for release packaging." }
 $bytes=[System.IO.File]::ReadAllBytes($plugin)
 if ($bytes[0] -ne 0x4D -or $bytes[1] -ne 0x5A) { throw "Nightwalker.asi is not a Windows PE image." }
+
 if ([string]::IsNullOrWhiteSpace($OutputDirectory)) {
   $OutputDirectory=Join-Path $root "artifacts"
 } elseif (-not [System.IO.Path]::IsPathRooted($OutputDirectory)) {
@@ -42,26 +43,30 @@ foreach ($source in $files.Keys) {
   Copy-Item $full (Join-Path $package $files[$source])
 }
 
-# Voice assets are part of the normal Nightwalker release. The repository stores
-# the reviewed archive as deterministic base64 source chunks to keep connector
-# writes safe; materialization verifies the exact archive SHA before extraction.
-$voicePack=Join-Path $stage "Nightwalker.voicepack"
-& (Join-Path $PSScriptRoot "materialize-voicepack.ps1") -RepositoryRoot $root -OutputPath $voicePack
-Add-Type -AssemblyName System.IO.Compression.FileSystem
-$voiceStage=Join-Path $stage "voicepack"
-New-Item -ItemType Directory -Path $voiceStage -Force | Out-Null
-[System.IO.Compression.ZipFile]::ExtractToDirectory($voicePack, $voiceStage)
-$voiceSource=Join-Path $voiceStage "audio"
-if (-not (Test-Path $voiceSource -PathType Container)) { throw "Nightwalker.voicepack is missing its audio directory." }
+$voiceSources=@(Get-ChildItem (Join-Path $root "content") -File -Filter "Vam-*.mp3" | Sort-Object Name)
+if ($voiceSources.Count -ne 64) { throw "Expected 64 owner voice MP3 uploads, found $($voiceSources.Count)." }
 $voiceDestination=Join-Path $package "audio"
 New-Item -ItemType Directory -Path $voiceDestination -Force | Out-Null
-Copy-Item (Join-Path $voiceSource "*") $voiceDestination -Recurse -Force
-$voiceFiles=@(Get-ChildItem $voiceDestination -Recurse -File)
-if ($voiceFiles.Count -ne 25) { throw "Expected 25 physical voice assets, found $($voiceFiles.Count)." }
-foreach ($voiceFile in $voiceFiles) {
-  $extension=$voiceFile.Extension.ToLowerInvariant()
-  if ($extension -ne ".wav" -and $extension -ne ".mp3") {
-    throw "Unsupported voice payload in release package: $($voiceFile.FullName)"
+foreach ($voiceFile in $voiceSources) {
+  Copy-Item $voiceFile.FullName (Join-Path $voiceDestination $voiceFile.Name) -Force
+}
+$voiceFiles=@(Get-ChildItem $voiceDestination -File -Filter "*.mp3")
+if ($voiceFiles.Count -ne 64) { throw "Expected 64 packaged voice assets, found $($voiceFiles.Count)." }
+
+# Every explicit manifest mapping must resolve inside the install-ready package.
+$manifest=Get-Content (Join-Path $package "Nightwalker.audio")
+foreach ($raw in $manifest) {
+  $line=$raw.Trim()
+  if (-not $line.StartsWith("asset=")) { continue }
+  $fields=$line.Substring(6).Split('|',2)
+  if ($fields.Count -ne 2) { throw "Malformed Nightwalker.audio mapping: $line" }
+  $relative=$fields[1].Replace('/','\')
+  if ($relative.Contains('..') -or [System.IO.Path]::IsPathRooted($relative)) {
+    throw "Unsafe Nightwalker.audio mapping: $line"
+  }
+  $resolved=Join-Path $package $relative
+  if (-not (Test-Path $resolved -PathType Leaf)) {
+    throw "Nightwalker.audio references missing packaged asset: $($fields[1])"
   }
 }
 
@@ -85,3 +90,4 @@ try { Compress-Archive -Path "Nightwalker" -DestinationPath $zip -CompressionLev
 finally { Pop-Location }
 Remove-Item $stage -Recurse -Force
 Write-Host "ARTIFACT_NAME=Nightwalker-$Version-win64.zip"
+Write-Host "VOICE_ASSET_COUNT=$($voiceFiles.Count)"
