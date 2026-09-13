@@ -14,10 +14,9 @@ if ([string]::IsNullOrWhiteSpace($OutputDirectory)) {
 $OutputDirectory=[System.IO.Path]::GetFullPath($OutputDirectory)
 New-Item -ItemType Directory -Path $OutputDirectory -Force | Out-Null
 
-$sourcePack=Join-Path $root "content/Nightwalker.voicepack"
 $manifest=Join-Path $root "content/Nightwalker.audio"
 $dialogue=Join-Path $root "Nightwalker.voice.dialogue"
-foreach ($required in @($sourcePack,$manifest,$dialogue)) {
+foreach ($required in @($manifest,$dialogue)) {
   if (-not (Test-Path $required -PathType Leaf)) { throw "Missing voice-pack input: $required" }
 }
 
@@ -28,6 +27,9 @@ New-Item -ItemType Directory -Path $package -Force | Out-Null
 
 Copy-Item $manifest (Join-Path $package "Nightwalker.audio")
 Copy-Item $dialogue (Join-Path $package "Nightwalker.voice.dialogue")
+
+$sourcePack=Join-Path $stage "Nightwalker.voicepack"
+& (Join-Path $PSScriptRoot "materialize-voicepack.ps1") -RepositoryRoot $root -OutputPath $sourcePack
 
 Add-Type -AssemblyName System.IO.Compression.FileSystem
 $expanded=Join-Path $stage "expanded"
