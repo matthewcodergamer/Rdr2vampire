@@ -2,7 +2,7 @@ name: Voice Batch CI
 
 on:
   push:
-    branches: [phase-12-voice-batch-1, phase-12-voice-batch-2]
+    branches: [phase-12-voice-batch-1, phase-12-voice-batch-2, phase-12-voice-batch-3-complete]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -29,17 +29,28 @@ jobs:
             -Itests/stubs -Iinclude -Isrc/core \
             -c src/narrative/NarrativeController.cpp \
             -o build/voice-batch-ci/NarrativeController.o
-      - name: Validate reviewed Batch 2 inventory
+      - name: Validate all committed voice batches
         run: python3 tests/validate_voice_batch.py
-      - name: Parse release packager
+      - name: Parse voice and release packagers
         shell: pwsh
         run: |
-          $errors = $null
-          [void][System.Management.Automation.Language.Parser]::ParseFile(
-            (Resolve-Path "scripts/package-release.ps1"),
-            [ref]$null,
-            [ref]$errors)
-          if ($errors.Count -gt 0) {
-            $errors | ForEach-Object { Write-Error $_ }
-            exit 1
+          foreach ($script in @("scripts/package-release.ps1", "scripts/package-voice-assets.ps1")) {
+            $errors = $null
+            [void][System.Management.Automation.Language.Parser]::ParseFile(
+              (Resolve-Path $script),
+              [ref]$null,
+              [ref]$errors)
+            if ($errors.Count -gt 0) {
+              $errors | ForEach-Object { Write-Error $_ }
+              exit 1
+            }
           }
+      - name: Build installable all-batches voice ZIP
+        shell: pwsh
+        run: ./scripts/package-voice-assets.ps1 -OutputDirectory build/voice-pack
+      - name: Upload complete Nightwalker voice pack
+        uses: actions/upload-artifact@v4
+        with:
+          name: Nightwalker-Voice-Assets-All-Batches
+          path: build/voice-pack/Nightwalker-Voice-Assets-All-Batches.zip
+          if-no-files-found: error
