@@ -1,0 +1,24 @@
+# Nightwalker owner-recorded supplemental dialogue
+# schema 1
+# Loaded after Nightwalker.dialogue. Complete exchanges stay together.
+schema=1
+
+# Standalone recorded soul answer. Kept separate from the partially voiced base exchange.
+line=saint_denis.pre_fight.recorded_soul_01|sd_vb2_soul_01|THE VAMPIRE|nw.sd.vb2.soul.01|nw.audio.sd.soul.recorded.01|5700|Do not ask what I am, as though the world has only two answers.
+
+# QUESTION — Saint Denis itself. The complete three-line answer is selected as one unit.
+line=saint_denis.choice.question.city_01|sd_vb2_city_01a|THE VAMPIRE|nw.sd.vb2.city.01a|nw.audio.sd.question.city.01a|4800|A thousand souls pressed together behind brick and iron.
+line=saint_denis.choice.question.city_01|sd_vb2_city_01b|THE VAMPIRE|nw.sd.vb2.city.01b|nw.audio.sd.question.city.01b|2200|Look around you.
+line=saint_denis.choice.question.city_01|sd_vb2_city_01c|THE VAMPIRE|nw.sd.vb2.city.01c|nw.audio.sd.question.city.01c|1900|Keep it.
+
+# LEAVE — three distinct performances. Only one is selected per withdrawal.
+line=saint_denis.choice.leave.rare_wisdom_01|sd_vb2_leave_01|THE VAMPIRE|nw.sd.vb2.leave.01|nw.audio.sd.leave.rare_wisdom.01|2400|A rare wisdom.
+line=saint_denis.choice.leave.rare_wisdom_02|sd_vb2_leave_02|THE VAMPIRE|nw.sd.vb2.leave.02|nw.audio.sd.leave.rare_wisdom.02|3700|A rare wisdom.
+line=saint_denis.choice.leave.rare_wisdom_03|sd_vb2_leave_03|THE VAMPIRE|nw.sd.vb2.leave.03|nw.audio.sd.leave.rare_wisdom.03|2350|A rare wisdom.
+
+# Sustained aim warning. Physical posture acts as the player's next "word."
+line=saint_denis.react.aim_hold.care_01|sd_vb2_aimhold_01|THE VAMPIRE|nw.sd.vb2.aimhold.01|nw.audio.sd.aimhold.care.01|4150|Choose your next words with greater care.
+
+# QUESTION — church/faith answer. The two cryptic clauses remain paired.
+line=saint_denis.choice.question.church_01|sd_vb2_church_01a|THE VAMPIRE|nw.sd.vb2.church.01a|nw.audio.sd.question.church.01a|3700|He has gone farther from you than I ever could.
+line=saint_denis.choice.question.church_01|sd_vb2_church_01b|THE VAMPIRE|nw.sd.vb2.church.01b|nw.audio.sd.question.church.01b|1650|From him.

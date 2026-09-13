@@ -29,6 +29,7 @@ New-Item -ItemType Directory -Path $package -Force | Out-Null
 $files=@{
   "config/Nightwalker.example.ini"="Nightwalker.ini";
   "content/Nightwalker.dialogue"="Nightwalker.dialogue";
+  "Nightwalker.voice.dialogue"="Nightwalker.voice.dialogue";
   "content/Nightwalker.audio"="Nightwalker.audio";
   "README.md"="README.md";
   "CHANGELOG.md"="CHANGELOG.md";
@@ -53,7 +54,7 @@ if (Test-Path $voiceSource -PathType Container) {
   }
 }
 
-$expected=@("CHANGELOG.md","Nightwalker.asi","Nightwalker.audio","Nightwalker.dialogue","Nightwalker.ini","README.md","THIRD_PARTY_NOTICES.md") | Sort-Object
+$expected=@("CHANGELOG.md","Nightwalker.asi","Nightwalker.audio","Nightwalker.dialogue","Nightwalker.ini","Nightwalker.voice.dialogue","README.md","THIRD_PARTY_NOTICES.md") | Sort-Object
 $actual=Get-ChildItem $package -File | ForEach-Object Name | Sort-Object
 if (($expected -join "|") -ne ($actual -join "|")) { throw "Release package allowlist mismatch." }
 

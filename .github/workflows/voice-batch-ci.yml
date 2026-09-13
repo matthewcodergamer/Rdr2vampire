@@ -2,7 +2,7 @@ name: Voice Batch CI
 
 on:
   push:
-    branches: [phase-12-voice-batch-1]
+    branches: [phase-12-voice-batch-1, phase-12-voice-batch-2]
   pull_request:
     branches: [main]
   workflow_dispatch:
@@ -23,6 +23,14 @@ jobs:
             src/narrative/NarrativeScript.cpp \
             -o build/voice-batch-ci/voice-batch-tests
           ./build/voice-batch-ci/voice-batch-tests
+      - name: Compile supplemental catalog loader
+        run: |
+          g++ -std=c++20 -Wall -Wextra -Wpedantic \
+            -Itests/stubs -Iinclude -Isrc/core \
+            -c src/narrative/NarrativeController.cpp \
+            -o build/voice-batch-ci/NarrativeController.o
+      - name: Validate reviewed Batch 2 inventory
+        run: python3 tests/validate_voice_batch.py
       - name: Parse release packager
         shell: pwsh
         run: |
