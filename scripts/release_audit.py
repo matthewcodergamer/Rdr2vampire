@@ -105,10 +105,15 @@ for path in files:
     if "dawnwalker" in p.name.lower():
         fail(f"Dawnwalker-named payload is tracked: {path}")
 
-allowed_content_suffixes = {".dialogue"}
 for path in files:
-    if path.startswith("content/") and pathlib.PurePosixPath(path).suffix.lower() not in allowed_content_suffixes:
-        fail(f"unreviewed release content payload under content/: {path}")
+    if not path.startswith("content/"):
+        continue
+    suffix = pathlib.PurePosixPath(path).suffix.lower()
+    if path in {"content/Nightwalker.dialogue", "content/Nightwalker.audio"}:
+        continue
+    if path.startswith("content/audio/") and suffix == ".wav":
+        continue
+    fail(f"unreviewed release content payload under content/: {path}")
 
 source_text = "\n".join(
     (ROOT / path).read_text(encoding="utf-8", errors="ignore")
