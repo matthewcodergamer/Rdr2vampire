@@ -1,19 +1,34 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import base64
 import hashlib
+import io
 import json
 import pathlib
 import zipfile
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-VOICEPACK = ROOT / "content/Nightwalker.voicepack"
+VOICEPARTS = ROOT / "content/voicepack"
 MANIFEST = ROOT / "content/Nightwalker.audio"
 BASE_DIALOGUE = ROOT / "content/Nightwalker.dialogue"
 SUPPLEMENT_DIALOGUE = ROOT / "Nightwalker.voice.dialogue"
+EXPECTED_PACK_SHA256 = "b377d1ce81ac8c0f5b86f8fba15270721bba2ba430d5a5a940ea01f793fa4ba6"
 
-if not VOICEPACK.is_file():
-    raise SystemExit("Missing content/Nightwalker.voicepack")
+
+def materialize_voicepack() -> bytes:
+    parts = sorted(VOICEPARTS.glob("Nightwalker.voicepack.part*.b64"))
+    if len(parts) != 8:
+        raise SystemExit(f"Expected 8 voicepack source chunks, found {len(parts)}")
+    encoded = "".join(part.read_text(encoding="ascii").strip() for part in parts)
+    try:
+        payload = base64.b64decode(encoded, validate=True)
+    except Exception as exc:
+        raise SystemExit(f"Voicepack source chunks are not valid base64: {exc}") from exc
+    digest = hashlib.sha256(payload).hexdigest()
+    if digest != EXPECTED_PACK_SHA256:
+        raise SystemExit(f"Voicepack SHA-256 mismatch: {digest}")
+    return payload
 
 
 def parse_manifest() -> dict[str, str]:
@@ -51,7 +66,11 @@ mappings = parse_manifest()
 if len(mappings) != 26:
     raise SystemExit(f"Expected 26 stable audio-id mappings, found {len(mappings)}")
 
-with zipfile.ZipFile(VOICEPACK) as archive:
+voicepack = materialize_voicepack()
+with zipfile.ZipFile(io.BytesIO(voicepack)) as archive:
+    bad = archive.testzip()
+    if bad:
+        raise SystemExit(f"Voicepack ZIP integrity failed at {bad}")
     names = set(archive.namelist())
     audio_names = sorted(
         name for name in names
@@ -115,5 +134,5 @@ for audio_id, relative in mappings.items():
 
 print(
     f"Validated Nightwalker voice archive: {len(mappings)} IDs, "
-    f"{len(physical_paths)} physical assets, SHA-256 and timing contract OK"
+    f"{len(physical_paths)} physical assets, pack SHA-256 and timing contract OK"
 )
