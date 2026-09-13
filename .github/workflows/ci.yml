@@ -73,8 +73,10 @@ jobs:
             $expected = @(
               'Nightwalker/CHANGELOG.md',
               'Nightwalker/Nightwalker.asi',
+              'Nightwalker/Nightwalker.audio',
               'Nightwalker/Nightwalker.dialogue',
               'Nightwalker/Nightwalker.ini',
+              'Nightwalker/Nightwalker.voice.dialogue',
               'Nightwalker/README.md',
               'Nightwalker/THIRD_PARTY_NOTICES.md'
             ) | Sort-Object
