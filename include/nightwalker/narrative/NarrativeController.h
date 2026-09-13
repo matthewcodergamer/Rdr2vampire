@@ -34,6 +34,9 @@ public:
     void RequestSkip(std::uint64_t nowMs) noexcept;
 
     [[nodiscard]] bool Active() const noexcept { return playback_.Active(); }
+    [[nodiscard]] bool HasSequenceFamily(std::string_view familyId) const {
+        return !catalog_.FindFamily(familyId).empty();
+    }
     [[nodiscard]] bool IsPlaying(std::string_view sequenceId) const noexcept {
         return playback_.IsPlaying(sequenceId);
     }
