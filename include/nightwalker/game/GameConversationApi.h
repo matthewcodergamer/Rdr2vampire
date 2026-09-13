@@ -8,6 +8,15 @@ namespace nightwalker::game {
 
 using PromptHandle = int;
 
+enum class PlayerWeaponKind {
+    Unknown,
+    Unarmed,
+    Melee,
+    Lasso,
+    Thrown,
+    Ranged
+};
+
 class IGameConversationApi {
 public:
     virtual ~IGameConversationApi() = default;
@@ -17,6 +26,8 @@ public:
     [[nodiscard]] virtual bool PromptActivated(PromptHandle prompt) const noexcept = 0;
     virtual void DeletePrompt(PromptHandle& prompt) noexcept = 0;
     [[nodiscard]] virtual bool IsPedShooting(PedHandle ped) const noexcept = 0;
+    [[nodiscard]] virtual PlayerWeaponKind CurrentWeaponKind(PedHandle ped) const noexcept = 0;
+    [[nodiscard]] virtual bool IsMeleeEngagedWith(PedHandle ped, PedHandle target) const noexcept = 0;
 };
 
 class GameConversationApi final : public IGameConversationApi {
@@ -27,6 +38,8 @@ public:
     [[nodiscard]] bool PromptActivated(PromptHandle prompt) const noexcept override;
     void DeletePrompt(PromptHandle& prompt) noexcept override;
     [[nodiscard]] bool IsPedShooting(PedHandle ped) const noexcept override;
+    [[nodiscard]] PlayerWeaponKind CurrentWeaponKind(PedHandle ped) const noexcept override;
+    [[nodiscard]] bool IsMeleeEngagedWith(PedHandle ped, PedHandle target) const noexcept override;
 };
 
 } // namespace nightwalker::game
