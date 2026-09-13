@@ -1,6 +1,8 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+# One-shot migration: validates the uploaded owner MP3 library, writes the final
+# runtime catalogs/build wiring, then removes itself from the completed branch.
 import base64
 import json
 import pathlib
