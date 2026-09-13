@@ -1,8 +1,9 @@
-# Nightwalker audio library
+# Nightwalker voice assets
 
-Final, canonical Nightwalker voice assets live directly in this folder.
+This folder contains 59 canonical owner-provided vampire voice WAVs.
 
-- Final filenames must use the stable `nw.audio.*` IDs already referenced by `content/Nightwalker.dialogue` and `content/Nightwalker.audio`.
-- Do not place export-bundle dialogue/manifest copies here.
-- Raw, unreviewed uploads belong under `content/audio/incoming/voice_batch_1/` first.
-- After cleanup/remapping, reviewed files are moved/renamed into this folder and the manifest is updated to match.
+- 44.1 kHz, mono, 16-bit PCM WAV
+- Filenames are stable `nw.audio.*` gameplay ids.
+- `content/Nightwalker.audio` maps those ids to these files.
+- Dialogue families randomize complete authored interactions; filenames must not be shuffled manually.
+- The original upload staging/export files were removed after canonical remapping.

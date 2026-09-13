@@ -1,0 +1,69 @@
+name: Patch Release Voice Smoke Test
+
+on:
+  push:
+    branches: [phase-12-clean-voice-library]
+    paths: [.github/workflows/patch-release-smoke.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Update release ZIP assertion
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('.github/workflows/ci.yml')
+          text = p.read_text(encoding='utf-8')
+          old = '''            $expected = @(
+              'Nightwalker/CHANGELOG.md',
+              'Nightwalker/Nightwalker.asi',
+              'Nightwalker/Nightwalker.audio',
+              'Nightwalker/Nightwalker.dialogue',
+              'Nightwalker/Nightwalker.ini',
+              'Nightwalker/Nightwalker.voice.dialogue',
+              'Nightwalker/README.md',
+              'Nightwalker/THIRD_PARTY_NOTICES.md'
+            ) | Sort-Object
+            if (($names -join '|') -ne ($expected -join '|')) { throw "Unexpected release ZIP entries: $($names -join ', ')" }
+'''
+          new = '''            $expectedCore = @(
+              'Nightwalker/CHANGELOG.md',
+              'Nightwalker/Nightwalker.asi',
+              'Nightwalker/Nightwalker.audio',
+              'Nightwalker/Nightwalker.dialogue',
+              'Nightwalker/Nightwalker.ini',
+              'Nightwalker/Nightwalker.voice.dialogue',
+              'Nightwalker/README.md',
+              'Nightwalker/THIRD_PARTY_NOTICES.md'
+            ) | Sort-Object
+            $actualCore = $names | Where-Object { -not $_.StartsWith('Nightwalker/audio/') } | Sort-Object
+            if (($actualCore -join '|') -ne ($expectedCore -join '|')) { throw "Unexpected release core entries: $($actualCore -join ', ')" }
+            $audioEntries = @($names | Where-Object { $_.StartsWith('Nightwalker/audio/') })
+            if ($audioEntries.Count -ne 59) { throw "Expected 59 packaged voice WAVs, found $($audioEntries.Count)." }
+            foreach ($audioEntry in $audioEntries) {
+              if (-not $audioEntry.EndsWith('.wav')) { throw "Unexpected non-WAV voice payload: $audioEntry" }
+              if ($audioEntry -match 'voice_batch_1') { throw "Fallback voice filename survived release packaging: $audioEntry" }
+            }
+'''
+          if old not in text:
+              raise SystemExit('release smoke block not found')
+          p.write_text(text.replace(old, new), encoding='utf-8')
+          PY
+      - name: Remove one-shot workflow
+        run: rm .github/workflows/patch-release-smoke.yml
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git diff --cached --check
+          git commit -m "Validate packaged canonical voice WAVs"
+          git push origin HEAD:${GITHUB_REF_NAME}

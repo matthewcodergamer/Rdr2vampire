@@ -8,6 +8,7 @@ import sys
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
 EXPECTED_VERSION = "1.0.0-rc1"
+EXPECTED_VOICE_WAVS = 59
 
 
 def fail(message: str) -> None:
@@ -105,16 +106,14 @@ for path in files:
     if "dawnwalker" in p.name.lower():
         fail(f"Dawnwalker-named payload is tracked: {path}")
 
-voice_parts = sorted(
+voice_wavs = sorted(
     path for path in files
-    if path.startswith("content/voicepack/Nightwalker.voicepack.part") and path.endswith(".b64")
+    if path.startswith("content/audio/") and pathlib.PurePosixPath(path).suffix.lower() == ".wav"
 )
-expected_voice_parts = [
-    f"content/voicepack/Nightwalker.voicepack.part{index:02d}.b64"
-    for index in range(1, 35)
-]
-if voice_parts != expected_voice_parts:
-    fail(f"voicepack source chunk set changed: {voice_parts}")
+if len(voice_wavs) != EXPECTED_VOICE_WAVS:
+    fail(f"canonical voice WAV set changed: expected {EXPECTED_VOICE_WAVS}, found {len(voice_wavs)}")
+if any("voice_batch_1" in pathlib.PurePosixPath(path).name for path in voice_wavs):
+    fail("fallback voice_batch_1 filename remains in canonical voice library")
 
 for path in files:
     if not path.startswith("content/"):
@@ -122,12 +121,11 @@ for path in files:
     if path in {
         "content/Nightwalker.dialogue",
         "content/Nightwalker.audio",
+        "content/audio/README.md",
     }:
         continue
-    if path in expected_voice_parts:
-        continue
     suffix = pathlib.PurePosixPath(path).suffix.lower()
-    if path.startswith("content/audio/") and suffix in {".wav", ".mp3"}:
+    if path.startswith("content/audio/") and suffix == ".wav":
         continue
     fail(f"unreviewed release content payload under content/: {path}")
 
@@ -163,16 +161,27 @@ if sorted(set(hud_hits)) != ["src/game/GameBossBarApi.cpp"]:
 packager = read("scripts/package-release.ps1")
 for marker in (
     "Nightwalker.asi", "Nightwalker.ini", "Nightwalker.dialogue",
-    "Nightwalker.voice.dialogue", "Nightwalker.audio", "materialize-voicepack.ps1",
-    "README.md", "CHANGELOG.md", "THIRD_PARTY_NOTICES.md", "Compress-Archive",
+    "Nightwalker.voice.dialogue", "Nightwalker.audio", "content/audio",
+    "Expected 59 canonical voice WAVs", "README.md", "CHANGELOG.md",
+    "THIRD_PARTY_NOTICES.md", "Compress-Archive",
 ):
     if marker not in packager:
         fail(f"release packager allowlist/behavior missing: {marker}")
+if "materialize-voicepack.ps1" in packager:
+    fail("release packager still depends on obsolete materialized voicepack")
 
-materializer = read("scripts/materialize-voicepack.ps1")
-if "b377d1ce81ac8c0f5b86f8fba15270721bba2ba430d5a5a940ea01f793fa4ba6" not in materializer:
-    fail("voicepack materializer is missing the reviewed SHA-256 lock")
-if "Expected 34 Nightwalker voicepack source chunks" not in materializer:
-    fail("voicepack materializer chunk-count lock is missing")
+voice_packager = read("scripts/package-voice-assets.ps1")
+for marker in ("content/audio", "Expected 59 canonical voice WAVs", "Nightwalker.audio"):
+    if marker not in voice_packager:
+        fail(f"voice packager missing canonical-library behavior: {marker}")
+if "materialize-voicepack.ps1" in voice_packager:
+    fail("voice-only packager still depends on obsolete materialized voicepack")
+
+if "scripts/materialize-voicepack.ps1" in files:
+    fail("obsolete voicepack materializer is still tracked")
+if "content/Nightwalker.voicepack" in files:
+    fail("obsolete Nightwalker.voicepack archive is still tracked")
+if any(path.startswith("content/voicepack/") for path in files):
+    fail("obsolete base64 voicepack chunks are still tracked")
 
 print(f"Nightwalker release audit passed for {EXPECTED_VERSION}")
