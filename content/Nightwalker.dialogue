@@ -2,50 +2,82 @@
 # schema 1
 # line=<sequence>|<line-id>|<speaker>|<text-id>|<audio-id>|<duration-ms>|<subtitle text>
 # The pipe character is reserved as a field separator in schema 1.
-# Sequence-family rule: saint_denis.pre_fight and any saint_denis.pre_fight.* sequence
-# form one non-repeating variation pool. Whole sequences are selected; individual lines are never shuffled.
+# Sequence families randomize whole authored exchanges, never individual lines.
 schema=1
 
-# Saint Denis confrontation family. Calm, old, metaphysical, predatory.
+# Saint Denis opening soul family. Calm, old, metaphysical, predatory.
 line=saint_denis.pre_fight|sd_soul_01a|THE VAMPIRE|nw.sd.soul.01a|nw.audio.sd.soul.01a|1700|Do not ask what I am as though the world has only two answers.
 line=saint_denis.pre_fight|sd_soul_01b|THE VAMPIRE|nw.sd.soul.01b|nw.audio.sd.soul.01b|1700|I have stood where life ends and found no wall there.
 line=saint_denis.pre_fight|sd_soul_01c|THE VAMPIRE|nw.sd.soul.01c|nw.audio.sd.soul.01c|1500|Names are for things that stay on one side.
-
 line=saint_denis.pre_fight.soul_02|sd_soul_02a|THE VAMPIRE|nw.sd.soul.02a|nw.audio.sd.soul.02a|1700|Men pray for eternal life until eternity answers them.
 line=saint_denis.pre_fight.soul_02|sd_soul_02b|THE VAMPIRE|nw.sd.soul.02b|nw.audio.sd.soul.02b|1500|Then they call the answer cursed.
 line=saint_denis.pre_fight.soul_02|sd_soul_02c|THE VAMPIRE|nw.sd.soul.02c|nw.audio.sd.soul.02c|1600|I have had centuries to enjoy the joke.
-
 line=saint_denis.pre_fight.soul_03|sd_soul_03a|THE VAMPIRE|nw.sd.soul.03a|nw.audio.sd.soul.03a|1800|Death is not life's opposite. It is its oldest shadow.
 line=saint_denis.pre_fight.soul_03|sd_soul_03b|THE VAMPIRE|nw.sd.soul.03b|nw.audio.sd.soul.03b|1800|I have walked between them so long neither claims me.
 line=saint_denis.pre_fight.soul_03|sd_soul_03c|THE VAMPIRE|nw.sd.soul.03c|nw.audio.sd.soul.03c|1400|And still you step closer.
-
 line=saint_denis.pre_fight.soul_04|sd_soul_04a|THE VAMPIRE|nw.sd.soul.04a|nw.audio.sd.soul.04a|1500|The grave was once a terror to me.
 line=saint_denis.pre_fight.soul_04|sd_soul_04b|THE VAMPIRE|nw.sd.soul.04b|nw.audio.sd.soul.04b|2100|Then I learned it is only a door built by those afraid to look beyond it.
 line=saint_denis.pre_fight.soul_04|sd_soul_04c|THE VAMPIRE|nw.sd.soul.04c|nw.audio.sd.soul.04c|1600|I stopped knocking a very long time ago.
-
 line=saint_denis.pre_fight.soul_05|sd_soul_05a|THE VAMPIRE|nw.sd.soul.05a|nw.audio.sd.soul.05a|2100|You hear a heartbeat and call it life. You hear silence and call it death.
 line=saint_denis.pre_fight.soul_05|sd_soul_05b|THE VAMPIRE|nw.sd.soul.05b|nw.audio.sd.soul.05b|1800|Small words for a world that has never obeyed them.
 line=saint_denis.pre_fight.soul_05|sd_soul_05c|THE VAMPIRE|nw.sd.soul.05c|nw.audio.sd.soul.05c|1600|I learned that before this city had a name.
-
 line=saint_denis.pre_fight.soul_06|sd_soul_06a|THE VAMPIRE|nw.sd.soul.06a|nw.audio.sd.soul.06a|1900|Hunger is not beneath reason. Hunger is reason without manners.
 line=saint_denis.pre_fight.soul_06|sd_soul_06b|THE VAMPIRE|nw.sd.soul.06b|nw.audio.sd.soul.06b|1600|Men call theirs duty, love, ambition.
 line=saint_denis.pre_fight.soul_06|sd_soul_06c|THE VAMPIRE|nw.sd.soul.06c|nw.audio.sd.soul.06c|1600|I have only been more honest with mine.
-
 line=saint_denis.pre_fight.soul_07|sd_soul_07a|THE VAMPIRE|nw.sd.soul.07a|nw.audio.sd.soul.07a|1500|Every church promises another world.
 line=saint_denis.pre_fight.soul_07|sd_soul_07b|THE VAMPIRE|nw.sd.soul.07b|nw.audio.sd.soul.07b|1400|I merely returned from mine.
 line=saint_denis.pre_fight.soul_07|sd_soul_07c|THE VAMPIRE|nw.sd.soul.07c|nw.audio.sd.soul.07c|1600|You seem disappointed that it has teeth.
-
 line=saint_denis.pre_fight.soul_08|sd_soul_08a|THE VAMPIRE|nw.sd.soul.08a|nw.audio.sd.soul.08a|2200|I watched kings pile stone toward heaven because they feared the earth beneath them.
 line=saint_denis.pre_fight.soul_08|sd_soul_08b|THE VAMPIRE|nw.sd.soul.08b|nw.audio.sd.soul.08b|1700|Their crowns are dust. Their prayers are forgotten.
 line=saint_denis.pre_fight.soul_08|sd_soul_08c|THE VAMPIRE|nw.sd.soul.08c|nw.audio.sd.soul.08c|1200|I remain.
 
-# Defeat text. This remains valid even if no audio is supplied.
-line=saint_denis.post_defeat|sd_post_01||nw.sd.post.01||3200|Inside the vampire's coat is a strip of paper bearing the same cut mark seen near the church.
+# QUESTION: returns to the interaction choices when the answer finishes.
+line=saint_denis.choice.question|sd_q_01a|THE VAMPIRE|nw.sd.q.01a|nw.audio.sd.q.01a|1500|You want an answer that will fit inside a name.
+line=saint_denis.choice.question|sd_q_01b|THE VAMPIRE|nw.sd.q.01b|nw.audio.sd.q.01b|1700|I have outlived too many names to offer you another.
+line=saint_denis.choice.question.02|sd_q_02a|THE VAMPIRE|nw.sd.q.02a|nw.audio.sd.q.02a|1500|Ask carefully.
+line=saint_denis.choice.question.02|sd_q_02b|THE VAMPIRE|nw.sd.q.02b|nw.audio.sd.q.02b|2100|Some truths are only ignorance with the door opened wider.
+line=saint_denis.choice.question.03|sd_q_03a|THE VAMPIRE|nw.sd.q.03a|nw.audio.sd.q.03a|1800|You have lived a handful of winters and already demand an account of eternity.
+line=saint_denis.choice.question.03|sd_q_03b|THE VAMPIRE|nw.sd.q.03b|nw.audio.sd.q.03b|1400|Very well. Ask.
+line=saint_denis.choice.question.04|sd_q_04a|THE VAMPIRE|nw.sd.q.04a|nw.audio.sd.q.04a|1800|The living always begin with questions.
+line=saint_denis.choice.question.04|sd_q_04b|THE VAMPIRE|nw.sd.q.04b|nw.audio.sd.q.04b|1800|The dead are usually more certain.
 
-# Future clue hooks; not automatically spawned in Phase 12.
+# CHALLENGE: this authored response completes, then combat begins.
+line=saint_denis.choice.challenge|sd_ch_01a|THE VAMPIRE|nw.sd.challenge.01a|nw.audio.sd.challenge.01a|1500|You mistake my patience for permission.
+line=saint_denis.choice.challenge|sd_ch_01b|THE VAMPIRE|nw.sd.challenge.01b|nw.audio.sd.challenge.01b|1400|Let us correct that.
+line=saint_denis.choice.challenge.02|sd_ch_02a|THE VAMPIRE|nw.sd.challenge.02a|nw.audio.sd.challenge.02a|1600|Threats are promises made by frightened men.
+line=saint_denis.choice.challenge.02|sd_ch_02b|THE VAMPIRE|nw.sd.challenge.02b|nw.audio.sd.challenge.02b|1200|Keep yours.
+line=saint_denis.choice.challenge.03|sd_ch_03a|THE VAMPIRE|nw.sd.challenge.03a|nw.audio.sd.challenge.03a|1500|Then let us dispense with courtesy.
+
+# LEAVE: the encounter disengages after the line finishes.
+line=saint_denis.choice.leave|sd_leave_01|THE VAMPIRE|nw.sd.leave.01|nw.audio.sd.leave.01|1300|Go. Wisdom should be rewarded when it appears.
+line=saint_denis.choice.leave.02|sd_leave_02a|THE VAMPIRE|nw.sd.leave.02a|nw.audio.sd.leave.02a|1200|Turn around.
+line=saint_denis.choice.leave.02|sd_leave_02b|THE VAMPIRE|nw.sd.leave.02b|nw.audio.sd.leave.02b|1700|Tonight need not remember your name.
+line=saint_denis.choice.leave.03|sd_leave_03|THE VAMPIRE|nw.sd.leave.03|nw.audio.sd.leave.03|1500|Take your heartbeat somewhere I cannot hear it.
+
+# Weapon reactions. Aiming does not force combat; firing does.
+line=saint_denis.react.aim|sd_aim_01|THE VAMPIRE|nw.sd.aim.01|nw.audio.sd.aim.01|1200|Careful. Steel makes men confuse courage with distance.
+line=saint_denis.react.aim.02|sd_aim_02|THE VAMPIRE|nw.sd.aim.02|nw.audio.sd.aim.02|1200|You have raised the weapon. Not yet the nerve.
+line=saint_denis.react.aim.03|sd_aim_03|THE VAMPIRE|nw.sd.aim.03|nw.audio.sd.aim.03|1300|Point it if you must. The grave has seen worse instruments.
+line=saint_denis.react.aim.04|sd_aim_04|THE VAMPIRE|nw.sd.aim.04|nw.audio.sd.aim.04|1100|Your hand speaks before you do.
+line=saint_denis.react.aim_hold|sd_aimhold_01|THE VAMPIRE|nw.sd.aimhold.01|nw.audio.sd.aimhold.01|1500|If you mean to kill me, do not make hesitation part of the ceremony.
+line=saint_denis.react.aim_hold.02|sd_aimhold_02|THE VAMPIRE|nw.sd.aimhold.02|nw.audio.sd.aimhold.02|1300|How long do you intend to rehearse my death?
+line=saint_denis.react.aim_hold.03|sd_aimhold_03|THE VAMPIRE|nw.sd.aimhold.03|nw.audio.sd.aimhold.03|1200|Either lower it or learn what follows.
+line=saint_denis.react.lowered|sd_lower_01|THE VAMPIRE|nw.sd.lower.01|nw.audio.sd.lower.01|900|Better.
+line=saint_denis.react.lowered.02|sd_lower_02|THE VAMPIRE|nw.sd.lower.02|nw.audio.sd.lower.02|1200|Restraint becomes you.
+line=saint_denis.react.lowered.03|sd_lower_03|THE VAMPIRE|nw.sd.lower.03|nw.audio.sd.lower.03|1300|For a moment, instinct has learned manners.
+
+# First gunshot classification can bark over the opening of combat.
+line=saint_denis.react.shot_hit|sd_hit_01|THE VAMPIRE|nw.sd.shot.hit.01|nw.audio.sd.shot.hit.01|900|Good.
+line=saint_denis.react.shot_hit.02|sd_hit_02|THE VAMPIRE|nw.sd.shot.hit.02|nw.audio.sd.shot.hit.02|1100|There you are.
+line=saint_denis.react.shot_hit.03|sd_hit_03|THE VAMPIRE|nw.sd.shot.hit.03|nw.audio.sd.shot.hit.03|1400|Blood answers blood. How very human.
+line=saint_denis.react.shot_hit.04|sd_hit_04|THE VAMPIRE|nw.sd.shot.hit.04|nw.audio.sd.shot.hit.04|1200|At last, an honest sentence.
+line=saint_denis.react.shot_miss|sd_miss_01|THE VAMPIRE|nw.sd.shot.miss.01|nw.audio.sd.shot.miss.01|1100|You fired at your fear.
+line=saint_denis.react.shot_miss.02|sd_miss_02|THE VAMPIRE|nw.sd.shot.miss.02|nw.audio.sd.shot.miss.02|1100|The night was not your enemy.
+line=saint_denis.react.shot_miss.03|sd_miss_03|THE VAMPIRE|nw.sd.shot.miss.03|nw.audio.sd.shot.miss.03|1000|Again, if pride requires it.
+line=saint_denis.react.shot_miss.04|sd_miss_04|THE VAMPIRE|nw.sd.shot.miss.04|nw.audio.sd.shot.miss.04|1300|You chose violence and still found empty air.
+
+line=saint_denis.post_defeat|sd_post_01||nw.sd.post.01||3200|Inside the vampire's coat is a strip of paper bearing the same cut mark seen near the church.
 line=saint_denis.clue.bloodless_body|sd_clue_body_01||nw.sd.clue.body.01||3000|The corpse is pale and nearly bloodless. The mud shows it was carried here.
 line=saint_denis.clue.stone_mark|sd_clue_mark_01||nw.sd.clue.mark.01||3000|A narrow sigil has been cut beneath the old writing. The edges are fresh.
-
-# Future alternate-outcome hooks. Phase 12 does not add a choice mechanic.
 line=saint_denis.outcome.spared|sd_spared_01|THE VAMPIRE|nw.sd.outcome.spared.01|nw.audio.sd.spared.01|2600|Mercy is a debt, hunter. Pray I never come to collect.
 line=saint_denis.outcome.withdrawn|sd_withdrawn_01||nw.sd.outcome.withdrawn.01||2600|The vampire recedes into the dark, leaving the bells to answer for him.
