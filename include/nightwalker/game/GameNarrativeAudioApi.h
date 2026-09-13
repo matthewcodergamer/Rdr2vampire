@@ -58,6 +58,10 @@ public:
 };
 
 #ifdef _WIN32
+namespace detail {
+inline constexpr wchar_t kNightwalkerNarrativeMciAlias[] = L"NightwalkerNarrativeVoice";
+}
+
 inline bool GameNarrativeAudioApi::Initialize(
     const std::filesystem::path& pluginDirectory,
     util::Logger& logger) noexcept {
@@ -69,7 +73,7 @@ inline bool GameNarrativeAudioApi::Initialize(
         warned_.clear();
         Reload();
         logger_->Write(util::LogLevel::Info,
-            "Narrative WAV backend initialized; missing voice assets fall back to subtitles.");
+            "Narrative WAV/MP3 backend initialized; missing voice assets fall back to subtitles.");
         return true;
     } catch (...) {
         pluginDirectory_.clear();
@@ -77,7 +81,7 @@ inline bool GameNarrativeAudioApi::Initialize(
         manifest_.Clear();
         logger_ = &logger;
         logger_->Write(util::LogLevel::Error,
-            "Narrative WAV backend initialization failed; subtitle fallback remains active.");
+            "Narrative audio backend initialization failed; subtitle fallback remains active.");
         return false;
     }
 }
@@ -137,12 +141,36 @@ inline bool GameNarrativeAudioApi::TryPlay(std::string_view assetId) noexcept {
                 "'; expected " + resolved->string());
             return false;
         }
+
         Stop();
+        const auto extension = narrative::LowerNarrativeAudioText(resolved->extension().string());
+        if (extension == ".mp3") {
+            const std::wstring alias = detail::kNightwalkerNarrativeMciAlias;
+            const std::wstring openCommand =
+                L"open \"" + resolved->wstring() + L"\" type mpegvideo alias " + alias;
+            const MCIERROR opened = ::mciSendStringW(openCommand.c_str(), nullptr, 0, nullptr);
+            if (opened != 0) {
+                WarnOnce(assetId,
+                    std::string("Windows MP3 playback open failed for '") + std::string(assetId) + "'.");
+                return false;
+            }
+            const std::wstring playCommand = L"play " + alias;
+            const MCIERROR played = ::mciSendStringW(playCommand.c_str(), nullptr, 0, nullptr);
+            if (played != 0) {
+                const std::wstring closeCommand = L"close " + alias;
+                ::mciSendStringW(closeCommand.c_str(), nullptr, 0, nullptr);
+                WarnOnce(assetId,
+                    std::string("Windows MP3 playback failed for '") + std::string(assetId) + "'.");
+                return false;
+            }
+            return true;
+        }
+
         const BOOL played = ::PlaySoundW(
             resolved->c_str(), nullptr, SND_ASYNC | SND_FILENAME | SND_NODEFAULT);
         if (!played) {
             WarnOnce(assetId,
-                std::string("Windows audio playback failed for '") + std::string(assetId) + "'.");
+                std::string("Windows WAV playback failed for '") + std::string(assetId) + "'.");
             return false;
         }
         return true;
@@ -154,6 +182,11 @@ inline bool GameNarrativeAudioApi::TryPlay(std::string_view assetId) noexcept {
 
 inline void GameNarrativeAudioApi::Stop() noexcept {
     ::PlaySoundW(nullptr, nullptr, 0);
+    const std::wstring alias = detail::kNightwalkerNarrativeMciAlias;
+    const std::wstring stopCommand = L"stop " + alias;
+    const std::wstring closeCommand = L"close " + alias;
+    ::mciSendStringW(stopCommand.c_str(), nullptr, 0, nullptr);
+    ::mciSendStringW(closeCommand.c_str(), nullptr, 0, nullptr);
 }
 
 inline void GameNarrativeAudioApi::WarnOnce(std::string_view key, std::string_view message) noexcept {
