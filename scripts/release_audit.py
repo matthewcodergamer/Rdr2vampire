@@ -105,14 +105,26 @@ for path in files:
     if "dawnwalker" in p.name.lower():
         fail(f"Dawnwalker-named payload is tracked: {path}")
 
+voice_parts = sorted(
+    path for path in files
+    if path.startswith("content/voicepack/Nightwalker.voicepack.part") and path.endswith(".b64")
+)
+expected_voice_parts = [
+    f"content/voicepack/Nightwalker.voicepack.part{index:02d}.b64"
+    for index in range(1, 9)
+]
+if voice_parts != expected_voice_parts:
+    fail(f"voicepack source chunk set changed: {voice_parts}")
+
 for path in files:
     if not path.startswith("content/"):
         continue
     if path in {
         "content/Nightwalker.dialogue",
         "content/Nightwalker.audio",
-        "content/Nightwalker.voicepack",
     }:
+        continue
+    if path in expected_voice_parts:
         continue
     suffix = pathlib.PurePosixPath(path).suffix.lower()
     if path.startswith("content/audio/") and suffix in {".wav", ".mp3"}:
@@ -151,10 +163,14 @@ if sorted(set(hud_hits)) != ["src/game/GameBossBarApi.cpp"]:
 packager = read("scripts/package-release.ps1")
 for marker in (
     "Nightwalker.asi", "Nightwalker.ini", "Nightwalker.dialogue",
-    "Nightwalker.voice.dialogue", "Nightwalker.audio", "Nightwalker.voicepack",
+    "Nightwalker.voice.dialogue", "Nightwalker.audio", "materialize-voicepack.ps1",
     "README.md", "CHANGELOG.md", "THIRD_PARTY_NOTICES.md", "Compress-Archive",
 ):
     if marker not in packager:
         fail(f"release packager allowlist/behavior missing: {marker}")
+
+materializer = read("scripts/materialize-voicepack.ps1")
+if "b377d1ce81ac8c0f5b86f8fba15270721bba2ba430d5a5a940ea01f793fa4ba6" not in materializer:
+    fail("voicepack materializer is missing the reviewed SHA-256 lock")
 
 print(f"Nightwalker release audit passed for {EXPECTED_VERSION}")
