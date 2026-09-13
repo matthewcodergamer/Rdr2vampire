@@ -2,11 +2,42 @@
 # schema 1
 # line=<sequence>|<line-id>|<speaker>|<text-id>|<audio-id>|<duration-ms>|<subtitle text>
 # The pipe character is reserved as a field separator in schema 1.
+# Sequence-family rule: saint_denis.pre_fight and any saint_denis.pre_fight.* sequence
+# form one non-repeating variation pool. Whole sequences are selected; individual lines are never shuffled.
 schema=1
 
-# Encounter confrontation. Audio IDs are optional metadata; Phase 12 always has subtitle fallback.
-line=saint_denis.pre_fight|sd_pre_01|THE VAMPIRE|nw.sd.pre.01|nw.audio.sd.pre.01|2500|You followed the dead all this way. Did you think they were leading you home?
-line=saint_denis.pre_fight|sd_pre_02|THE VAMPIRE|nw.sd.pre.02|nw.audio.sd.pre.02|2200|You should have left Saint Denis to its hungers.
+# Saint Denis confrontation family. Calm, old, metaphysical, predatory.
+line=saint_denis.pre_fight|sd_soul_01a|THE VAMPIRE|nw.sd.soul.01a|nw.audio.sd.soul.01a|1700|Do not ask what I am as though the world has only two answers.
+line=saint_denis.pre_fight|sd_soul_01b|THE VAMPIRE|nw.sd.soul.01b|nw.audio.sd.soul.01b|1700|I have stood where life ends and found no wall there.
+line=saint_denis.pre_fight|sd_soul_01c|THE VAMPIRE|nw.sd.soul.01c|nw.audio.sd.soul.01c|1500|Names are for things that stay on one side.
+
+line=saint_denis.pre_fight.soul_02|sd_soul_02a|THE VAMPIRE|nw.sd.soul.02a|nw.audio.sd.soul.02a|1700|Men pray for eternal life until eternity answers them.
+line=saint_denis.pre_fight.soul_02|sd_soul_02b|THE VAMPIRE|nw.sd.soul.02b|nw.audio.sd.soul.02b|1500|Then they call the answer cursed.
+line=saint_denis.pre_fight.soul_02|sd_soul_02c|THE VAMPIRE|nw.sd.soul.02c|nw.audio.sd.soul.02c|1600|I have had centuries to enjoy the joke.
+
+line=saint_denis.pre_fight.soul_03|sd_soul_03a|THE VAMPIRE|nw.sd.soul.03a|nw.audio.sd.soul.03a|1800|Death is not life's opposite. It is its oldest shadow.
+line=saint_denis.pre_fight.soul_03|sd_soul_03b|THE VAMPIRE|nw.sd.soul.03b|nw.audio.sd.soul.03b|1800|I have walked between them so long neither claims me.
+line=saint_denis.pre_fight.soul_03|sd_soul_03c|THE VAMPIRE|nw.sd.soul.03c|nw.audio.sd.soul.03c|1400|And still you step closer.
+
+line=saint_denis.pre_fight.soul_04|sd_soul_04a|THE VAMPIRE|nw.sd.soul.04a|nw.audio.sd.soul.04a|1500|The grave was once a terror to me.
+line=saint_denis.pre_fight.soul_04|sd_soul_04b|THE VAMPIRE|nw.sd.soul.04b|nw.audio.sd.soul.04b|2100|Then I learned it is only a door built by those afraid to look beyond it.
+line=saint_denis.pre_fight.soul_04|sd_soul_04c|THE VAMPIRE|nw.sd.soul.04c|nw.audio.sd.soul.04c|1600|I stopped knocking a very long time ago.
+
+line=saint_denis.pre_fight.soul_05|sd_soul_05a|THE VAMPIRE|nw.sd.soul.05a|nw.audio.sd.soul.05a|2100|You hear a heartbeat and call it life. You hear silence and call it death.
+line=saint_denis.pre_fight.soul_05|sd_soul_05b|THE VAMPIRE|nw.sd.soul.05b|nw.audio.sd.soul.05b|1800|Small words for a world that has never obeyed them.
+line=saint_denis.pre_fight.soul_05|sd_soul_05c|THE VAMPIRE|nw.sd.soul.05c|nw.audio.sd.soul.05c|1600|I learned that before this city had a name.
+
+line=saint_denis.pre_fight.soul_06|sd_soul_06a|THE VAMPIRE|nw.sd.soul.06a|nw.audio.sd.soul.06a|1900|Hunger is not beneath reason. Hunger is reason without manners.
+line=saint_denis.pre_fight.soul_06|sd_soul_06b|THE VAMPIRE|nw.sd.soul.06b|nw.audio.sd.soul.06b|1600|Men call theirs duty, love, ambition.
+line=saint_denis.pre_fight.soul_06|sd_soul_06c|THE VAMPIRE|nw.sd.soul.06c|nw.audio.sd.soul.06c|1600|I have only been more honest with mine.
+
+line=saint_denis.pre_fight.soul_07|sd_soul_07a|THE VAMPIRE|nw.sd.soul.07a|nw.audio.sd.soul.07a|1500|Every church promises another world.
+line=saint_denis.pre_fight.soul_07|sd_soul_07b|THE VAMPIRE|nw.sd.soul.07b|nw.audio.sd.soul.07b|1400|I merely returned from mine.
+line=saint_denis.pre_fight.soul_07|sd_soul_07c|THE VAMPIRE|nw.sd.soul.07c|nw.audio.sd.soul.07c|1600|You seem disappointed that it has teeth.
+
+line=saint_denis.pre_fight.soul_08|sd_soul_08a|THE VAMPIRE|nw.sd.soul.08a|nw.audio.sd.soul.08a|2200|I watched kings pile stone toward heaven because they feared the earth beneath them.
+line=saint_denis.pre_fight.soul_08|sd_soul_08b|THE VAMPIRE|nw.sd.soul.08b|nw.audio.sd.soul.08b|1700|Their crowns are dust. Their prayers are forgotten.
+line=saint_denis.pre_fight.soul_08|sd_soul_08c|THE VAMPIRE|nw.sd.soul.08c|nw.audio.sd.soul.08c|1200|I remain.
 
 # Defeat text. This remains valid even if no audio is supplied.
 line=saint_denis.post_defeat|sd_post_01||nw.sd.post.01||3200|Inside the vampire's coat is a strip of paper bearing the same cut mark seen near the church.
