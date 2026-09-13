@@ -8,7 +8,7 @@ Set-StrictMode -Version Latest
 $root=(Resolve-Path $RepositoryRoot).Path
 $partsRoot=Join-Path $root "content/voicepack"
 $parts=@(Get-ChildItem $partsRoot -File -Filter "Nightwalker.voicepack.part*.b64" | Sort-Object Name)
-if ($parts.Count -ne 8) { throw "Expected 8 Nightwalker voicepack source chunks, found $($parts.Count)." }
+if ($parts.Count -ne 34) { throw "Expected 34 Nightwalker voicepack source chunks, found $($parts.Count)." }
 
 $builder=New-Object System.Text.StringBuilder
 foreach ($part in $parts) {
