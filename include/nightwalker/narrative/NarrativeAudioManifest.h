@@ -125,7 +125,9 @@ public:
         if (!IsSafeNarrativeAudioAssetId(assetId)) return std::nullopt;
         const auto found = assets_.find(std::string(assetId));
         if (found != assets_.end()) return (pluginDirectory / found->second).lexically_normal();
+
         std::filesystem::path fallback = pluginDirectory / L"audio";
+        if (assetId.starts_with("nw.audio.player.")) fallback /= L"player";
         fallback /= std::string(assetId) + ".wav";
         return fallback.lexically_normal();
     }
