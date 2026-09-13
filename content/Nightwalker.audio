@@ -1,31 +1,42 @@
 # Nightwalker narrative voice manifest
 # schema 1
-# asset=<audio-id>|<relative WAV path>
+# asset=<audio-id>|<relative audio path>
 #
-# Explicit mappings are optional. If an audio id is not listed here, Nightwalker
-# automatically tries: audio/<audio-id>.wav
+# Reviewed voice assets may be WAV or MP3. If an audio id is not listed here,
+# Nightwalker still tries the legacy fallback: audio/<audio-id>.wav
 #
-# Paths must remain relative to the Nightwalker plugin directory, may not contain
-# '..', and must end in .wav. Only original/licensed voice recordings belong here.
+# Paths must remain relative to the Nightwalker plugin directory and may not contain '..'.
 schema=1
 
-# Voice batch 1 — owner-supplied Nightwalker AI voice takes.
-asset=nw.audio.sd.first_contact.nearer.01|audio/nw.audio.sd.first_contact.nearer.01.wav
-asset=nw.audio.sd.first_contact.wiser.01|audio/nw.audio.sd.first_contact.wiser.01.wav
-asset=nw.audio.sd.first_contact.wiser.02|audio/nw.audio.sd.first_contact.wiser.02.wav
-asset=nw.audio.sd.question.names.01|audio/nw.audio.sd.question.names.01.wav
-asset=nw.audio.sd.question.names.02|audio/nw.audio.sd.question.names.02.wav
-asset=nw.audio.sd.question.none.01|audio/nw.audio.sd.question.none.01.wav
-asset=nw.audio.sd.question.none.02|audio/nw.audio.sd.question.none.02.wav
+# Voice Batch 1 — first contact and recorded QUESTION performances.
+asset=nw.audio.sd.first_contact.nearer.01|audio/nw.audio.sd.first_contact.nearer.01.mp3
+asset=nw.audio.sd.first_contact.wiser.01|audio/nw.audio.sd.first_contact.wiser.01.mp3
+asset=nw.audio.sd.first_contact.wiser.02|audio/nw.audio.sd.first_contact.wiser.02.mp3
+asset=nw.audio.sd.question.names.01|audio/nw.audio.sd.question.names.01.mp3
+asset=nw.audio.sd.question.names.02|audio/nw.audio.sd.question.names.02.mp3
+asset=nw.audio.sd.question.none.01|audio/nw.audio.sd.question.none.01.mp3
+asset=nw.audio.sd.question.none.02|audio/nw.audio.sd.question.none.02.mp3
 
-# Voice batch 2 — supplemental soul, question, leave and warning performances.
-asset=nw.audio.sd.soul.recorded.01|audio/nw.audio.sd.soul.recorded.01.wav
-asset=nw.audio.sd.question.city.01a|audio/nw.audio.sd.question.city.01a.wav
-asset=nw.audio.sd.question.city.01b|audio/nw.audio.sd.question.city.01b.wav
-asset=nw.audio.sd.question.city.01c|audio/nw.audio.sd.question.city.01c.wav
-asset=nw.audio.sd.leave.rare_wisdom.01|audio/nw.audio.sd.leave.rare_wisdom.01.wav
-asset=nw.audio.sd.leave.rare_wisdom.02|audio/nw.audio.sd.leave.rare_wisdom.02.wav
-asset=nw.audio.sd.leave.rare_wisdom.03|audio/nw.audio.sd.leave.rare_wisdom.03.wav
-asset=nw.audio.sd.aimhold.care.01|audio/nw.audio.sd.aimhold.care.01.wav
-asset=nw.audio.sd.question.church.01a|audio/nw.audio.sd.question.church.01a.wav
-asset=nw.audio.sd.question.church.01b|audio/nw.audio.sd.question.church.01b.wav
+# Voice Batch 2 — Saint Denis, leave, aim-hold and church performances.
+asset=nw.audio.sd.soul.recorded.01|audio/nw.audio.sd.soul.recorded.01.mp3
+asset=nw.audio.sd.question.city.01a|audio/nw.audio.sd.question.city.01a.mp3
+asset=nw.audio.sd.question.city.01b|audio/nw.audio.sd.question.city.01b.mp3
+asset=nw.audio.sd.question.city.01c|audio/nw.audio.sd.question.city.01c.mp3
+asset=nw.audio.sd.leave.rare_wisdom.01|audio/nw.audio.sd.leave.rare_wisdom.01.mp3
+asset=nw.audio.sd.leave.rare_wisdom.02|audio/nw.audio.sd.leave.rare_wisdom.02.mp3
+asset=nw.audio.sd.leave.rare_wisdom.03|audio/nw.audio.sd.leave.rare_wisdom.03.mp3
+asset=nw.audio.sd.aimhold.care.01|audio/nw.audio.sd.aimhold.care.01.mp3
+asset=nw.audio.sd.question.church.01a|audio/nw.audio.sd.question.church.01a.mp3
+asset=nw.audio.sd.question.church.01b|audio/nw.audio.sd.question.church.01b.mp3
+
+# Voice Batch 3 — soul conversations. Soul 01a intentionally reuses the
+# identical owner-recorded performance already stored by Batch 2.
+asset=nw.audio.sd.soul.01a|audio/nw.audio.sd.soul.recorded.01.mp3
+asset=nw.audio.sd.soul.01b|audio/nw.audio.sd.soul.01b.mp3
+asset=nw.audio.sd.soul.01c|audio/nw.audio.sd.soul.01c.mp3
+asset=nw.audio.sd.soul.02a|audio/nw.audio.sd.soul.02a.mp3
+asset=nw.audio.sd.soul.02b|audio/nw.audio.sd.soul.02b.mp3
+asset=nw.audio.sd.soul.02c|audio/nw.audio.sd.soul.02c.mp3
+asset=nw.audio.sd.soul.03a|audio/nw.audio.sd.soul.03a.mp3
+asset=nw.audio.sd.soul.03b|audio/nw.audio.sd.soul.03b.mp3
+asset=nw.audio.sd.soul.04a|audio/nw.audio.sd.soul.04a.mp3
