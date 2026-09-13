@@ -65,8 +65,6 @@ using NarrativeDiagnosticSink = std::function<void(std::string_view)>;
                                                     std::size_t maxLines = 3);
 
 namespace ids {
-inline constexpr std::string_view kSaintDenisRecordedOpening = "saint_denis.recorded_opening";
-inline constexpr std::string_view kSaintDenisRecordedQuestion = "saint_denis.recorded_question";
 inline constexpr std::string_view kSaintDenisPreFight = "saint_denis.pre_fight";
 inline constexpr std::string_view kSaintDenisPostDefeat = "saint_denis.post_defeat";
 inline constexpr std::string_view kSaintDenisClueBloodlessBody = "saint_denis.clue.bloodless_body";
