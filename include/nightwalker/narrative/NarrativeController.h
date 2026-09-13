@@ -30,17 +30,22 @@ public:
 
     void LoadScript(const std::filesystem::path& path);
     bool StartSequence(std::string_view sequenceId, std::uint64_t nowMs) noexcept;
+    bool StartSequenceFamily(std::string_view familyId, std::uint64_t nowMs) noexcept;
     void RequestSkip(std::uint64_t nowMs) noexcept;
 
     [[nodiscard]] bool Active() const noexcept { return playback_.Active(); }
     [[nodiscard]] bool IsPlaying(std::string_view sequenceId) const noexcept {
         return playback_.IsPlaying(sequenceId);
     }
+    [[nodiscard]] bool IsPlayingFamily(std::string_view familyId) const noexcept {
+        return playback_.Active() && SequenceBelongsToFamily(playback_.SequenceId(), familyId);
+    }
     [[nodiscard]] std::uint64_t RemainingMs(std::uint64_t nowMs) const noexcept {
         return playback_.RemainingMs(nowMs);
     }
 
 private:
+    bool StartResolvedSequence(const NarrativeSequence& sequence, std::uint64_t nowMs) noexcept;
     bool SkipKeyDown() const noexcept;
     void PresentAudioForCurrentLine() noexcept;
     void DrawCurrentSubtitle() noexcept;
@@ -50,9 +55,11 @@ private:
     util::Logger& logger_;
     const core::Config& config_;
     NarrativeCatalog catalog_{};
+    NarrativeVariantSelector variants_{};
     NarrativePlayback playback_{};
     std::filesystem::path scriptPath_{};
     std::string presentedLineId_{};
+    std::uint64_t variationNonce_{0};
     bool skipWasDown_{false};
 };
 
