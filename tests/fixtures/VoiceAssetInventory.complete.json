@@ -1,0 +1,47 @@
+{
+  "schema": 1,
+  "name": "Nightwalker Voice Assets - Batches 1-3",
+  "physical_assets": 25,
+  "manifest_mappings": 26,
+  "format": {
+    "container": "mp3",
+    "codec": "mp3",
+    "sample_rate_hz": 44100,
+    "channels": 1,
+    "target_bitrate_kbps": 128
+  },
+  "aliases": [
+    {
+      "audio_id": "nw.audio.sd.soul.01a",
+      "path": "audio/nw.audio.sd.soul.recorded.01.mp3",
+      "reason": "Same owner-recorded performance is reused by the base Soul 01 sequence."
+    }
+  ],
+  "assets": [
+    {"audio_id":"nw.audio.sd.aimhold.care.01","duration_ms":3762,"sample_rate_hz":44100,"channels":1,"codec":"mp3","bit_rate":128980,"bytes":60647,"sha256":"07711a3a78d4f5d6af3b5b28b2915bcbda2f20d0e73c3236f8fe7a3beb422e63","batch":2},
+    {"audio_id":"nw.audio.sd.first_contact.nearer.01","duration_ms":2038,"sample_rate_hz":44100,"channels":1,"codec":"mp3","bit_rate":129806,"bytes":33061,"sha256":"bdc9120ddeb0abc4b16bb2abd4b90938727618d20394f6bed07aaca3434e5c96","batch":1},
+    {"audio_id":"nw.audio.sd.first_contact.wiser.01","duration_ms":4911,"sample_rate_hz":44100,"channels":1,"codec":"mp3","bit_rate":128750,"bytes":79037,"sha256":"56077f952cd1072dad75480802bf01316931dfb39cb4b6f40fe582c3484c2ba9","batch":1},
+    {"audio_id":"nw.audio.sd.first_contact.wiser.02","duration_ms":4911,"sample_rate_hz":44100,"channels":1,"codec":"mp3","bit_rate":128750,"bytes":79037,"sha256":"08fb87df4b179f1d7857d056cc239ebf6fcdfccbc30f244302b01e2075569773","batch":1},
+    {"audio_id":"nw.audio.sd.leave.rare_wisdom.01","duration_ms":2038,"sample_rate_hz":44100,"channels":1,"codec":"mp3","bit_rate":129806,"bytes":33061,"sha256":"63538d6c2bb80bba7429e8436165354985caee7c952c7eaf0dcfcf68cf24e7ad","batch":2},
+    {"audio_id":"nw.audio.sd.leave.rare_wisdom.02","duration_ms":3344,"sample_rate_hz":44100,"channels":1,"codec":"mp3","bit_rate":129101,"bytes":53959,"sha256":"eade56553fc2639e9fa44a367bd95b052190c873c8afea4fbd56f7045556cc61","batch":2},
+    {"audio_id":"nw.audio.sd.leave.rare_wisdom.03","duration_ms":1985,"sample_rate_hz":44100,"channels":1,"codec":"mp3","bit_rate":129854,"bytes":32225,"sha256":"ed14f28454c6d85dac4d5a562f51596d82a2fe706ca9c0a8883c12c9e55e2e9a","batch":2},
+    {"audio_id":"nw.audio.sd.question.church.01a","duration_ms":3344,"sample_rate_hz":44100,"channels":1,"codec":"mp3","bit_rate":129101,"bytes":53959,"sha256":"84cc38373620e97a081169d3e43708abf6246fddd60686129fe391b2cf80baa9","batch":2},
+    {"audio_id":"nw.audio.sd.question.church.01b","duration_ms":1332,"sample_rate_hz":44100,"channels":1,"codec":"mp3","bit_rate":130762,"bytes":21776,"sha256":"3ebf7d61c921e2f78f5bc4649b17534ff6a21aa0b0c8c1f3de486e8305f282cd","batch":2},
+    {"audio_id":"nw.audio.sd.question.city.01a","duration_ms":4467,"sample_rate_hz":44100,"channels":1,"codec":"mp3","bit_rate":128825,"bytes":71932,"sha256":"fa8b7b16b8532146cbd8f8e4db906af42566c61969ec19b1cf53b92a5f528043","batch":2},
+    {"audio_id":"nw.audio.sd.question.city.01b","duration_ms":1855,"sample_rate_hz":44100,"channels":1,"codec":"mp3","bit_rate":129988,"bytes":30136,"sha256":"9f93edce075c1bdf8d42b484f2c0f974ff7a58413abd137ed72e50bfb13c4c91","batch":2},
+    {"audio_id":"nw.audio.sd.question.city.01c","duration_ms":1541,"sample_rate_hz":44100,"channels":1,"codec":"mp3","bit_rate":130389,"bytes":25120,"sha256":"3763509f650d2427937f36a46b6f9176bb7c1bb17a26c8a0b876ae6eaca13226","batch":2},
+    {"audio_id":"nw.audio.sd.question.names.01","duration_ms":2873,"sample_rate_hz":44100,"channels":1,"codec":"mp3","bit_rate":129282,"bytes":46436,"sha256":"dcaaafb5f9811ce843311f0958c386e4a08651b6639fe5a9861bf07048e71f6b","batch":1},
+    {"audio_id":"nw.audio.sd.question.names.02","duration_ms":2560,"sample_rate_hz":44100,"channels":1,"codec":"mp3","bit_rate":129440,"bytes":41421,"sha256":"ee86de1b7b0eed0c670e1412126b02f74bec92c671d2d656583ca5805b6e9ee0","batch":1},
+    {"audio_id":"nw.audio.sd.question.none.01","duration_ms":3657,"sample_rate_hz":44100,"channels":1,"codec":"mp3","bit_rate":129007,"bytes":58975,"sha256":"89e9354a62b29abf7013a8a30faf3a60dbfe3c7dd91a5ac8e244672064e810b6","batch":1},
+    {"audio_id":"nw.audio.sd.question.none.02","duration_ms":3657,"sample_rate_hz":44100,"channels":1,"codec":"mp3","bit_rate":129007,"bytes":58975,"sha256":"78841e8df7559590bfed191e82760d96c1a0e53379047227450a0a93ad1944f0","batch":1},
+    {"audio_id":"nw.audio.sd.soul.01b","duration_ms":5094,"sample_rate_hz":44100,"channels":1,"codec":"mp3","bit_rate":128723,"bytes":81963,"sha256":"9114e8d59a07af570c9fd4dc7b95283f298c2cd9da15043725f7515125a854e2","batch":3},
+    {"audio_id":"nw.audio.sd.soul.01c","duration_ms":3344,"sample_rate_hz":44100,"channels":1,"codec":"mp3","bit_rate":129101,"bytes":53959,"sha256":"108ea1dece68eec7b157703c1a6e78a9768b62be48025db3a3fe5344e6d56413","batch":3},
+    {"audio_id":"nw.audio.sd.soul.02a","duration_ms":4911,"sample_rate_hz":44100,"channels":1,"codec":"mp3","bit_rate":128750,"bytes":79037,"sha256":"abf724c0dbcf75a0948441527b38a95393ea643d96d03da8733654f2e82f4717","batch":3},
+    {"audio_id":"nw.audio.sd.soul.02b","duration_ms":2691,"sample_rate_hz":44100,"channels":1,"codec":"mp3","bit_rate":129368,"bytes":43510,"sha256":"603da39b337fb41c2852d3476447c6d1d25a973c78df71d5509c621a7853f991","batch":3},
+    {"audio_id":"nw.audio.sd.soul.02c","duration_ms":3161,"sample_rate_hz":44100,"channels":1,"codec":"mp3","bit_rate":129166,"bytes":51034,"sha256":"8713cbb462cdf4e4dc3bbeab5f2ccf024203db9017d12a108db669fa7a4d7ae7","batch":3},
+    {"audio_id":"nw.audio.sd.soul.03a","duration_ms":5564,"sample_rate_hz":44100,"channels":1,"codec":"mp3","bit_rate":128662,"bytes":89486,"sha256":"a3f80184aa475e2c68f79c80ce2a5ad31d8c7bb8c5163e3aef264808d2429791","batch":3},
+    {"audio_id":"nw.audio.sd.soul.03b","duration_ms":4467,"sample_rate_hz":44100,"channels":1,"codec":"mp3","bit_rate":128825,"bytes":71932,"sha256":"ed03f2951f7c3319aa5c81527ada4527680a83663035ce3f60e6f0346321cd63","batch":3},
+    {"audio_id":"nw.audio.sd.soul.04a","duration_ms":3161,"sample_rate_hz":44100,"channels":1,"codec":"mp3","bit_rate":129166,"bytes":51034,"sha256":"0794f40226464d9fa5faa84291bdffb83398dab5ed4a7069d84885f4593c697b","batch":3},
+    {"audio_id":"nw.audio.sd.soul.recorded.01","duration_ms":5381,"sample_rate_hz":44100,"channels":1,"codec":"mp3","bit_rate":128684,"bytes":86560,"sha256":"96622d90ff495ebf8fff933b9b35b6b0931fa6335cc51d4ca3412f750860d462","batch":2}
+  ]
+}
