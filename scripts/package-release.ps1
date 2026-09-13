@@ -42,25 +42,23 @@ foreach ($source in $files.Keys) {
   Copy-Item $full (Join-Path $package $files[$source])
 }
 
-# Voice assets are part of the normal Nightwalker release. The repository stores
-# the reviewed archive as deterministic base64 source chunks to keep connector
-# writes safe; materialization verifies the exact archive SHA before extraction.
-$voicePack=Join-Path $stage "Nightwalker.voicepack"
-& (Join-Path $PSScriptRoot "materialize-voicepack.ps1") -RepositoryRoot $root -OutputPath $voicePack
-Add-Type -AssemblyName System.IO.Compression.FileSystem
-$voiceStage=Join-Path $stage "voicepack"
-New-Item -ItemType Directory -Path $voiceStage -Force | Out-Null
-[System.IO.Compression.ZipFile]::ExtractToDirectory($voicePack, $voiceStage)
-$voiceSource=Join-Path $voiceStage "audio"
-if (-not (Test-Path $voiceSource -PathType Container)) { throw "Nightwalker.voicepack is missing its audio directory." }
+# Canonical owner-provided voice assets live directly in source control under
+# content/audio/. The release package copies those exact stable-id WAVs beside
+# the plugin; no separate voice-pack materialization step is required.
+$voiceSource=Join-Path $root "content/audio"
+if (-not (Test-Path $voiceSource -PathType Container)) { throw "Missing canonical voice directory: content/audio" }
 $voiceDestination=Join-Path $package "audio"
 New-Item -ItemType Directory -Path $voiceDestination -Force | Out-Null
-Copy-Item (Join-Path $voiceSource "*") $voiceDestination -Recurse -Force
-$voiceFiles=@(Get-ChildItem $voiceDestination -Recurse -File)
-if ($voiceFiles.Count -ne 25) { throw "Expected 25 physical voice assets, found $($voiceFiles.Count)." }
+$voiceFiles=@(Get-ChildItem $voiceSource -File -Filter "*.wav" | Sort-Object Name)
+if ($voiceFiles.Count -ne 59) { throw "Expected 59 canonical voice WAVs, found $($voiceFiles.Count)." }
 foreach ($voiceFile in $voiceFiles) {
-  $extension=$voiceFile.Extension.ToLowerInvariant()
-  if ($extension -ne ".wav" -and $extension -ne ".mp3") {
+  if ($voiceFile.Name -match 'voice_batch_1') { throw "Fallback voice filename survived cleanup: $($voiceFile.Name)" }
+  Copy-Item $voiceFile.FullName (Join-Path $voiceDestination $voiceFile.Name)
+}
+$packagedVoiceFiles=@(Get-ChildItem $voiceDestination -File)
+if ($packagedVoiceFiles.Count -ne 59) { throw "Expected 59 packaged voice WAVs, found $($packagedVoiceFiles.Count)." }
+foreach ($voiceFile in $packagedVoiceFiles) {
+  if ($voiceFile.Extension.ToLowerInvariant() -ne ".wav") {
     throw "Unsupported voice payload in release package: $($voiceFile.FullName)"
   }
 }
