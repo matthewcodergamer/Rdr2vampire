@@ -12,7 +12,7 @@ ReactiveConversationController::ReactiveConversationController(game::IGameApi& a
 bool ReactiveConversationController::Initialize() {
     Cancel();
     logger_.Write(util::LogLevel::Info,
-        "Reactive conversation initialized; entity prompts and weapon reactions are confrontation-only.");
+        "Reactive conversation initialized; focus prompts, shuffle-bag dialogue and weapon reactions are confrontation-only.");
     return true;
 }
 
@@ -21,8 +21,11 @@ bool ReactiveConversationController::BindActor(game::PedHandle actor) noexcept {
     ReleaseActor();
     if (actor == 0 || !api_.EntityExists(actor) || !api_.PedAlive(actor)) return false;
     actor_ = actor;
-    questionPrompt_ = conversationApi_.CreateEntityPrompt(actor_, "INPUT_CONTEXT_X", "QUESTION");
-    challengePrompt_ = conversationApi_.CreateEntityPrompt(actor_, "INPUT_CONTEXT_Y", "CHALLENGE");
+    // These prompts live in RDR2's entity-target group. The player focuses the vampire
+    // with the game's normal focus control (L2/LT on controller), then chooses a face-button action.
+    // R2/RT remains untouched so aiming/firing can naturally interrupt the conversation.
+    questionPrompt_ = conversationApi_.CreateEntityPrompt(actor_, "INPUT_CONTEXT_X", "TALK");
+    challengePrompt_ = conversationApi_.CreateEntityPrompt(actor_, "INPUT_CONTEXT_Y", "ANTAGONIZE");
     leavePrompt_ = conversationApi_.CreateEntityPrompt(actor_, "INPUT_CONTEXT_B", "LEAVE");
     if (questionPrompt_ == 0 || challengePrompt_ == 0 || leavePrompt_ == 0)
         logger_.Write(util::LogLevel::Warning,
