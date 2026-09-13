@@ -2,7 +2,8 @@ param(
   [Parameter(Mandatory=$true)][string]$PluginPath,
   [string]$Version="1.0.0-rc1",
   [string]$RepositoryRoot=(Split-Path -Parent $PSScriptRoot),
-  [string]$OutputDirectory=""
+  [string]$OutputDirectory="",
+  [string]$VoiceAssetsDirectory=""
 )
 $ErrorActionPreference="Stop"
 Set-StrictMode -Version Latest
@@ -42,27 +43,32 @@ foreach ($source in $files.Keys) {
   Copy-Item $full (Join-Path $package $files[$source])
 }
 
-# Voice assets are part of the normal Nightwalker release. The repository stores
-# the reviewed archive as deterministic base64 source chunks to keep connector
-# writes safe; materialization verifies the exact archive SHA before extraction.
-$voicePack=Join-Path $stage "Nightwalker.voicepack"
-& (Join-Path $PSScriptRoot "materialize-voicepack.ps1") -RepositoryRoot $root -OutputPath $voicePack
-Add-Type -AssemblyName System.IO.Compression.FileSystem
-$voiceStage=Join-Path $stage "voicepack"
-New-Item -ItemType Directory -Path $voiceStage -Force | Out-Null
-[System.IO.Compression.ZipFile]::ExtractToDirectory($voicePack, $voiceStage)
-$voiceSource=Join-Path $voiceStage "audio"
-if (-not (Test-Path $voiceSource -PathType Container)) { throw "Nightwalker.voicepack is missing its audio directory." }
-$voiceDestination=Join-Path $package "audio"
-New-Item -ItemType Directory -Path $voiceDestination -Force | Out-Null
-Copy-Item (Join-Path $voiceSource "*") $voiceDestination -Recurse -Force
-$voiceFiles=@(Get-ChildItem $voiceDestination -Recurse -File)
-if ($voiceFiles.Count -ne 25) { throw "Expected 25 physical voice assets, found $($voiceFiles.Count)." }
-foreach ($voiceFile in $voiceFiles) {
-  $extension=$voiceFile.Extension.ToLowerInvariant()
-  if ($extension -ne ".wav" -and $extension -ne ".mp3") {
-    throw "Unsupported voice payload in release package: $($voiceFile.FullName)"
+$voiceSource=$null
+if (-not [string]::IsNullOrWhiteSpace($VoiceAssetsDirectory)) {
+  $candidate=$VoiceAssetsDirectory
+  if (-not [System.IO.Path]::IsPathRooted($candidate)) { $candidate=Join-Path (Get-Location).Path $candidate }
+  if (-not (Test-Path $candidate -PathType Container)) { throw "VoiceAssetsDirectory does not exist: $candidate" }
+  $voiceSource=(Resolve-Path $candidate).Path
+} else {
+  $candidate=Join-Path $root "content/audio"
+  if (Test-Path $candidate -PathType Container) { $voiceSource=(Resolve-Path $candidate).Path }
+}
+
+if ($null -ne $voiceSource) {
+  $voiceDestination=Join-Path $package "audio"
+  New-Item -ItemType Directory -Path $voiceDestination -Force | Out-Null
+  Copy-Item (Join-Path $voiceSource "*") $voiceDestination -Recurse -Force
+  $voiceFiles=@(Get-ChildItem $voiceDestination -Recurse -File)
+  if ($voiceFiles.Count -ne 25) { throw "Expected 25 physical Nightwalker voice assets, found $($voiceFiles.Count)." }
+  foreach ($voiceFile in $voiceFiles) {
+    $extension=$voiceFile.Extension.ToLowerInvariant()
+    if ($extension -ne ".wav" -and $extension -ne ".mp3") {
+      throw "Unsupported voice payload in release package: $($voiceFile.FullName)"
+    }
   }
+  Write-Host "Included 25 Nightwalker voice assets."
+} else {
+  Write-Host "No binary voice directory supplied; packaging subtitle-capable base release."
 }
 
 $expected=@("CHANGELOG.md","Nightwalker.asi","Nightwalker.audio","Nightwalker.dialogue","Nightwalker.ini","Nightwalker.voice.dialogue","README.md","THIRD_PARTY_NOTICES.md") | Sort-Object
