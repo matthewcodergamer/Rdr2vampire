@@ -15,16 +15,20 @@ int main() {
     const bool parsed = manifest.Parse(
         "schema=1\n"
         "asset=nw.audio.sd.soul.01a|audio/opening_01a.wav\n"
-        "asset=nw.audio.sd.aim.04|audio/aim/hand-speaks.wav\n",
+        "asset=nw.audio.sd.aim.04|audio/aim/hand-speaks.mp3\n",
         [&](std::string_view message) { diagnostics.emplace_back(message); });
     assert(parsed);
     assert(manifest.Count() == 2);
     assert(diagnostics.empty());
 
     const std::filesystem::path root = std::filesystem::path("NightwalkerRoot");
-    const auto mapped = manifest.Resolve("nw.audio.sd.soul.01a", root);
-    assert(mapped.has_value());
-    assert(mapped->generic_string().find("audio/opening_01a.wav") != std::string::npos);
+    const auto mappedWav = manifest.Resolve("nw.audio.sd.soul.01a", root);
+    assert(mappedWav.has_value());
+    assert(mappedWav->generic_string().find("audio/opening_01a.wav") != std::string::npos);
+
+    const auto mappedMp3 = manifest.Resolve("nw.audio.sd.aim.04", root);
+    assert(mappedMp3.has_value());
+    assert(mappedMp3->generic_string().find("audio/aim/hand-speaks.mp3") != std::string::npos);
 
     const auto fallback = manifest.Resolve("nw.audio.sd.melee.hit.03", root);
     assert(fallback.has_value());
@@ -37,12 +41,13 @@ int main() {
     NarrativeAudioManifest guarded;
     assert(guarded.Parse(
         "schema=1\n"
-        "asset=good.id|audio/good.wav\n"
+        "asset=good.wav|audio/good.wav\n"
+        "asset=good.mp3|audio/good.mp3\n"
         "asset=bad.path|../outside.wav\n"
-        "asset=bad.type|audio/not-a-wave.mp3\n"
-        "asset=good.id|audio/duplicate.wav\n",
+        "asset=bad.type|audio/not-audio.txt\n"
+        "asset=good.wav|audio/duplicate.wav\n",
         [&](std::string_view message) { diagnostics.emplace_back(message); }));
-    assert(guarded.Count() == 1);
+    assert(guarded.Count() == 2);
     assert(diagnostics.size() == 3);
 
     NarrativeAudioManifest future;
