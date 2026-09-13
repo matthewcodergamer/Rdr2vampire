@@ -1,34 +1,15 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
-import base64
-import hashlib
-import io
 import json
 import pathlib
-import zipfile
+import re
 
 ROOT = pathlib.Path(__file__).resolve().parents[1]
-VOICEPARTS = ROOT / "content/voicepack"
 MANIFEST = ROOT / "content/Nightwalker.audio"
 BASE_DIALOGUE = ROOT / "content/Nightwalker.dialogue"
 SUPPLEMENT_DIALOGUE = ROOT / "Nightwalker.voice.dialogue"
-EXPECTED_PACK_SHA256 = "b377d1ce81ac8c0f5b86f8fba15270721bba2ba430d5a5a940ea01f793fa4ba6"
-
-
-def materialize_voicepack() -> bytes:
-    parts = sorted(VOICEPARTS.glob("Nightwalker.voicepack.part*.b64"))
-    if len(parts) != 8:
-        raise SystemExit(f"Expected 8 voicepack source chunks, found {len(parts)}")
-    encoded = "".join(part.read_text(encoding="ascii").strip() for part in parts)
-    try:
-        payload = base64.b64decode(encoded, validate=True)
-    except Exception as exc:
-        raise SystemExit(f"Voicepack source chunks are not valid base64: {exc}") from exc
-    digest = hashlib.sha256(payload).hexdigest()
-    if digest != EXPECTED_PACK_SHA256:
-        raise SystemExit(f"Voicepack SHA-256 mismatch: {digest}")
-    return payload
+INVENTORY = ROOT / "tests/fixtures/VoiceAssetInventory.complete.json"
 
 
 def parse_manifest() -> dict[str, str]:
@@ -66,73 +47,65 @@ mappings = parse_manifest()
 if len(mappings) != 26:
     raise SystemExit(f"Expected 26 stable audio-id mappings, found {len(mappings)}")
 
-voicepack = materialize_voicepack()
-with zipfile.ZipFile(io.BytesIO(voicepack)) as archive:
-    bad = archive.testzip()
-    if bad:
-        raise SystemExit(f"Voicepack ZIP integrity failed at {bad}")
-    names = set(archive.namelist())
-    audio_names = sorted(
-        name for name in names
-        if name.startswith("audio/") and name.lower().endswith((".mp3", ".wav"))
-    )
-    if len(audio_names) != 25:
-        raise SystemExit(f"Expected 25 unique physical voice assets, found {len(audio_names)}")
-    if "inventory.json" not in names:
-        raise SystemExit("Nightwalker.voicepack is missing inventory.json")
-    inventory = json.loads(archive.read("inventory.json").decode("utf-8"))
-    if not isinstance(inventory, list) or len(inventory) != 25:
-        raise SystemExit("Voice inventory must describe all 25 physical assets")
+inventory = json.loads(INVENTORY.read_text(encoding="utf-8"))
+if inventory.get("schema") != 1:
+    raise SystemExit("Unsupported complete voice inventory schema")
+if inventory.get("physical_assets") != 25 or inventory.get("manifest_mappings") != 26:
+    raise SystemExit("Complete voice inventory count contract changed")
+fmt = inventory.get("format", {})
+if fmt.get("codec") != "mp3" or fmt.get("sample_rate_hz") != 44100 or fmt.get("channels") != 1:
+    raise SystemExit("Complete voice inventory format contract changed")
 
-    inventory_by_path: dict[str, dict] = {}
-    for item in inventory:
-        relative = "audio/" + item["file"]
-        if relative in inventory_by_path:
-            raise SystemExit(f"Duplicate inventory file: {relative}")
-        if relative not in names:
-            raise SystemExit(f"Inventory references missing voice asset: {relative}")
-        payload = archive.read(relative)
-        if len(payload) != int(item["bytes"]):
-            raise SystemExit(f"Voice size mismatch: {relative}")
-        digest = hashlib.sha256(payload).hexdigest()
-        if digest != item["sha256"]:
-            raise SystemExit(f"Voice SHA-256 mismatch: {relative}")
-        if int(item["duration_ms"]) <= 0:
-            raise SystemExit(f"Invalid voice duration: {relative}")
-        inventory_by_path[relative] = item
+assets = inventory.get("assets", [])
+if len(assets) != 25:
+    raise SystemExit(f"Expected 25 physical voice inventory records, found {len(assets)}")
+assets_by_id: dict[str, dict] = {}
+for item in assets:
+    audio_id = item["audio_id"]
+    if audio_id in assets_by_id:
+        raise SystemExit(f"Duplicate inventory audio id: {audio_id}")
+    if item.get("duration_ms", 0) <= 0 or item.get("bytes", 0) <= 0:
+        raise SystemExit(f"Invalid size/duration for {audio_id}")
+    if item.get("sample_rate_hz") != 44100 or item.get("channels") != 1 or item.get("codec") != "mp3":
+        raise SystemExit(f"Unexpected media contract for {audio_id}")
+    if not re.fullmatch(r"[0-9a-f]{64}", item.get("sha256", "")):
+        raise SystemExit(f"Invalid SHA-256 for {audio_id}")
+    if item.get("batch") not in (1, 2, 3):
+        raise SystemExit(f"Invalid batch number for {audio_id}")
+    assets_by_id[audio_id] = item
 
-    if set(audio_names) != set(inventory_by_path):
-        raise SystemExit("Voice archive and inventory file sets differ")
-
-for audio_id, relative in mappings.items():
-    if relative not in inventory_by_path:
-        raise SystemExit(f"Manifest audio is absent from voice pack: {audio_id} -> {relative}")
+aliases = inventory.get("aliases", [])
+if aliases != [{
+    "audio_id": "nw.audio.sd.soul.01a",
+    "path": "audio/nw.audio.sd.soul.recorded.01.mp3",
+    "reason": "Same owner-recorded performance is reused by the base Soul 01 sequence.",
+}]:
+    raise SystemExit("Expected Soul 01a alias contract changed")
 
 physical_paths = set(mappings.values())
 if len(physical_paths) != 25:
-    raise SystemExit(
-        f"Expected one intentional alias (26 IDs -> 25 files), found {len(physical_paths)} physical mappings"
-    )
+    raise SystemExit(f"Expected 26 IDs to resolve to 25 physical files, got {len(physical_paths)}")
 if mappings.get("nw.audio.sd.soul.01a") != mappings.get("nw.audio.sd.soul.recorded.01"):
-    raise SystemExit("Soul 01a must reuse the reviewed Batch 2 'Do not ask' performance")
+    raise SystemExit("Soul 01a must reuse the reviewed Batch 2 performance")
+
+for audio_id, item in assets_by_id.items():
+    path = mappings.get(audio_id)
+    if path is None:
+        raise SystemExit(f"Inventory asset missing manifest mapping: {audio_id}")
+    if path != f"audio/{audio_id}.mp3":
+        raise SystemExit(f"Unexpected physical path for {audio_id}: {path}")
 
 line_durations = parse_durations(BASE_DIALOGUE)
 line_durations.update(parse_durations(SUPPLEMENT_DIALOGUE))
-for audio_id, relative in mappings.items():
+for audio_id in mappings:
     if audio_id not in line_durations:
         raise SystemExit(f"Mapped voice id is not used by authored dialogue: {audio_id}")
-    source_ms = int(inventory_by_path[relative]["duration_ms"])
+    physical_id = "nw.audio.sd.soul.recorded.01" if audio_id == "nw.audio.sd.soul.01a" else audio_id
+    source_ms = int(assets_by_id[physical_id]["duration_ms"])
     authored_ms = int(line_durations[audio_id])
     if authored_ms < source_ms:
-        raise SystemExit(
-            f"Dialogue timing clips {audio_id}: authored={authored_ms}ms source={source_ms}ms"
-        )
+        raise SystemExit(f"Dialogue timing clips {audio_id}: {authored_ms}ms < {source_ms}ms")
     if authored_ms - source_ms > 850:
-        raise SystemExit(
-            f"Excessive timing tail for {audio_id}: authored={authored_ms}ms source={source_ms}ms"
-        )
+        raise SystemExit(f"Excessive timing tail for {audio_id}: {authored_ms - source_ms}ms")
 
-print(
-    f"Validated Nightwalker voice archive: {len(mappings)} IDs, "
-    f"{len(physical_paths)} physical assets, pack SHA-256 and timing contract OK"
-)
+print("Validated Nightwalker voice catalog: 26 IDs, 25 reviewed MP3 assets, Batches 1-3 timing contract OK")
