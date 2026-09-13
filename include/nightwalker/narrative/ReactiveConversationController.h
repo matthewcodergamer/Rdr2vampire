@@ -31,6 +31,7 @@ public:
     void Cancel() noexcept override;
     void Shutdown() noexcept override;
 
+    void SetEncounterConversationEnabled(bool enabled) noexcept;
     ConversationIntent ConsumeIntent() noexcept;
 
 private:
@@ -55,6 +56,7 @@ private:
     game::PromptHandle leavePrompt_{0};
     ConversationIntent intent_{ConversationIntent::None};
     std::uint64_t nextAmbientReactionMs_{0};
+    bool enabled_{false};
 };
 
 } // namespace nightwalker::narrative
