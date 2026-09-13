@@ -34,6 +34,7 @@ BOOL GET_ENTITY_PLAYER_IS_FREE_AIMING_AT(Player player, Entity* entity);
 namespace PED {
 BOOL IS_PED_IN_COMBAT(Ped ped, Ped target);
 BOOL IS_PED_IN_MELEE_COMBAT(Ped ped);
+Ped GET_MELEE_TARGET_FOR_PED(Ped ped);
 BOOL IS_PED_HUMAN(Ped ped);
 BOOL IS_PED_IN_ANY_VEHICLE(Ped ped, BOOL atGetIn);
 BOOL IS_PED_USING_ANY_SCENARIO(Ped ped);
@@ -46,6 +47,11 @@ BOOL IS_PED_ON_MOUNT(Ped ped);
 BOOL IS_PED_SHOOTING(Ped ped);
 BOOL CAN_PED_RAGDOLL(Ped ped);
 BOOL SET_PED_TO_RAGDOLL(Ped ped, int time1, int time2, int ragdollType, BOOL p4, BOOL p5, BOOL p6);
+}
+
+namespace WEAPON {
+BOOL GET_CURRENT_PED_WEAPON(Ped ped, Hash* weaponHash, BOOL p2, int attachPoint, BOOL p4);
+Hash GET_WEAPONTYPE_GROUP(Hash weaponHash);
 }
 
 namespace TASK {
