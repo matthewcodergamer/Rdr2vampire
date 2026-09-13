@@ -48,4 +48,24 @@ bool GameConversationApi::IsPedShooting(PedHandle ped) const noexcept {
     return ped != 0 && PED::IS_PED_SHOOTING(ped) == TRUE;
 }
 
+PlayerWeaponKind GameConversationApi::CurrentWeaponKind(PedHandle ped) const noexcept {
+    if (ped == 0) return PlayerWeaponKind::Unknown;
+    Hash weapon = 0;
+    if (WEAPON::GET_CURRENT_PED_WEAPON(ped, &weapon, FALSE, 0, FALSE) != TRUE)
+        return PlayerWeaponKind::Unknown;
+
+    if (weapon == MISC::GET_HASH_KEY("WEAPON_UNARMED")) return PlayerWeaponKind::Unarmed;
+    if (weapon == MISC::GET_HASH_KEY("WEAPON_LASSO")) return PlayerWeaponKind::Lasso;
+
+    const Hash group = WEAPON::GET_WEAPONTYPE_GROUP(weapon);
+    if (group == MISC::GET_HASH_KEY("GROUP_MELEE")) return PlayerWeaponKind::Melee;
+    if (group == MISC::GET_HASH_KEY("GROUP_THROWN")) return PlayerWeaponKind::Thrown;
+    return PlayerWeaponKind::Ranged;
+}
+
+bool GameConversationApi::IsMeleeEngagedWith(PedHandle ped, PedHandle target) const noexcept {
+    if (ped == 0 || target == 0 || PED::IS_PED_IN_MELEE_COMBAT(ped) != TRUE) return false;
+    return PED::GET_MELEE_TARGET_FOR_PED(ped) == target;
+}
+
 } // namespace nightwalker::game
