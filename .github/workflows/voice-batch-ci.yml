@@ -1,0 +1,41 @@
+name: Voice Batch CI
+
+on:
+  push:
+    branches: [phase-12-voice-batch-1-final]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  recorded-dialogue:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and run recorded dialogue tests
+        run: |
+          mkdir -p build/voice-batch-ci
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude \
+            tests/VoiceBatchTests.cpp \
+            src/narrative/NarrativeScript.cpp \
+            -o build/voice-batch-ci/voice-batch-tests
+          ./build/voice-batch-ci/voice-batch-tests
+      - name: Compile supplemental catalog loader
+        run: |
+          g++ -std=c++20 -Wall -Wextra -Wpedantic \
+            -Itests/stubs -Iinclude -Isrc/core \
+            -c src/narrative/NarrativeController.cpp \
+            -o build/voice-batch-ci/NarrativeController.o
+      - name: Compile encounter and QUESTION routing
+        run: |
+          g++ -std=c++20 -Wall -Wextra -Wpedantic \
+            -Itests/stubs -Iinclude -Isrc/core \
+            -c src/narrative/ReactiveConversationEvents.cpp \
+            -o build/voice-batch-ci/ReactiveConversationEvents.o
+          g++ -std=c++20 -Wall -Wextra -Wpedantic \
+            -Itests/stubs -Iinclude -Isrc/core \
+            -c src/systems/SaintDenisDirectorActive.cpp \
+            -o build/voice-batch-ci/SaintDenisDirectorActive.o
