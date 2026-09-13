@@ -54,7 +54,7 @@ line=saint_denis.choice.leave.02|sd_leave_02a|THE VAMPIRE|nw.sd.leave.02a|nw.aud
 line=saint_denis.choice.leave.02|sd_leave_02b|THE VAMPIRE|nw.sd.leave.02b|nw.audio.sd.leave.02b|1700|Tonight need not remember your name.
 line=saint_denis.choice.leave.03|sd_leave_03|THE VAMPIRE|nw.sd.leave.03|nw.audio.sd.leave.03|1500|Take your heartbeat somewhere I cannot hear it.
 
-# Weapon reactions. Aiming does not force combat; firing does.
+# Firearm aim reactions. Aiming does not force combat; firing does.
 line=saint_denis.react.aim|sd_aim_01|THE VAMPIRE|nw.sd.aim.01|nw.audio.sd.aim.01|1200|Careful. Steel makes men confuse courage with distance.
 line=saint_denis.react.aim.02|sd_aim_02|THE VAMPIRE|nw.sd.aim.02|nw.audio.sd.aim.02|1200|You have raised the weapon. Not yet the nerve.
 line=saint_denis.react.aim.03|sd_aim_03|THE VAMPIRE|nw.sd.aim.03|nw.audio.sd.aim.03|1300|Point it if you must. The grave has seen worse instruments.
@@ -75,6 +75,45 @@ line=saint_denis.react.shot_miss|sd_miss_01|THE VAMPIRE|nw.sd.shot.miss.01|nw.au
 line=saint_denis.react.shot_miss.02|sd_miss_02|THE VAMPIRE|nw.sd.shot.miss.02|nw.audio.sd.shot.miss.02|1100|The night was not your enemy.
 line=saint_denis.react.shot_miss.03|sd_miss_03|THE VAMPIRE|nw.sd.shot.miss.03|nw.audio.sd.shot.miss.03|1000|Again, if pride requires it.
 line=saint_denis.react.shot_miss.04|sd_miss_04|THE VAMPIRE|nw.sd.shot.miss.04|nw.audio.sd.shot.miss.04|1300|You chose violence and still found empty air.
+
+# Weapon posture reactions. These are observations, not automatic combat triggers.
+line=saint_denis.react.melee_draw|sd_md_01|THE VAMPIRE|nw.sd.melee.draw.01|nw.audio.sd.melee.draw.01|1300|A blade. Intimate. Honest.
+line=saint_denis.react.melee_draw.02|sd_md_02|THE VAMPIRE|nw.sd.melee.draw.02|nw.audio.sd.melee.draw.02|1500|Steel at arm's length. At least you have abandoned the illusion of safety.
+line=saint_denis.react.melee_draw.03|sd_md_03|THE VAMPIRE|nw.sd.melee.draw.03|nw.audio.sd.melee.draw.03|1300|You prefer the old distance between enemies.
+line=saint_denis.react.ranged_draw|sd_rd_01|THE VAMPIRE|nw.sd.ranged.draw.01|nw.audio.sd.ranged.draw.01|1300|There. The machine men use to make distance feel like courage.
+line=saint_denis.react.ranged_draw.02|sd_rd_02|THE VAMPIRE|nw.sd.ranged.draw.02|nw.audio.sd.ranged.draw.02|1200|Keep it low and it remains only metal.
+line=saint_denis.react.ranged_draw.03|sd_rd_03|THE VAMPIRE|nw.sd.ranged.draw.03|nw.audio.sd.ranged.draw.03|1300|I have watched better weapons fail worse men.
+line=saint_denis.react.lasso_draw|sd_ld_01|THE VAMPIRE|nw.sd.lasso.draw.01|nw.audio.sd.lasso.draw.01|1300|A rope. You would bind what death could not keep.
+line=saint_denis.react.lasso_draw.02|sd_ld_02|THE VAMPIRE|nw.sd.lasso.draw.02|nw.audio.sd.lasso.draw.02|1300|You mistake a body for the thing that inhabits it.
+line=saint_denis.react.lasso_draw.03|sd_ld_03|THE VAMPIRE|nw.sd.lasso.draw.03|nw.audio.sd.lasso.draw.03|1200|Try the rope, if symbolism comforts you.
+line=saint_denis.react.thrown_draw|sd_td_01|THE VAMPIRE|nw.sd.thrown.draw.01|nw.audio.sd.thrown.draw.01|1200|Something small, for a fear you cannot hold.
+line=saint_denis.react.thrown_draw.02|sd_td_02|THE VAMPIRE|nw.sd.thrown.draw.02|nw.audio.sd.thrown.draw.02|1400|Throw it. Men have always preferred danger at a distance.
+line=saint_denis.react.thrown_draw.03|sd_td_03|THE VAMPIRE|nw.sd.thrown.draw.03|nw.audio.sd.thrown.draw.03|1100|Even your courage wishes to leave your hand.
+line=saint_denis.react.holster|sd_holster_01|THE VAMPIRE|nw.sd.holster.01|nw.audio.sd.holster.01|1000|Good. Let it be metal again.
+line=saint_denis.react.holster.02|sd_holster_02|THE VAMPIRE|nw.sd.holster.02|nw.audio.sd.holster.02|1100|A wiser hand, for the moment.
+line=saint_denis.react.holster.03|sd_holster_03|THE VAMPIRE|nw.sd.holster.03|nw.audio.sd.holster.03|1200|Restraint is merely violence that remembered tomorrow.
+
+# Starting hand-to-hand violence is a hostile decision. Confirmed hits have separate combat barks.
+line=saint_denis.react.unarmed_start|sd_us_01|THE VAMPIRE|nw.sd.unarmed.start.01|nw.audio.sd.unarmed.start.01|1200|With your hands? How devoutly human.
+line=saint_denis.react.unarmed_start.02|sd_us_02|THE VAMPIRE|nw.sd.unarmed.start.02|nw.audio.sd.unarmed.start.02|1200|No steel. No distance. Very well.
+line=saint_denis.react.unarmed_start.03|sd_us_03|THE VAMPIRE|nw.sd.unarmed.start.03|nw.audio.sd.unarmed.start.03|1300|Come then. Let your bones make the argument.
+line=saint_denis.react.melee_start|sd_ms_01|THE VAMPIRE|nw.sd.melee.start.01|nw.audio.sd.melee.start.01|1100|Come then. Let steel learn what blood remembers.
+line=saint_denis.react.melee_start.02|sd_ms_02|THE VAMPIRE|nw.sd.melee.start.02|nw.audio.sd.melee.start.02|1200|So the conversation narrows to an edge.
+line=saint_denis.react.melee_start.03|sd_ms_03|THE VAMPIRE|nw.sd.melee.start.03|nw.audio.sd.melee.start.03|1200|An old answer. I know it well.
+line=saint_denis.react.unarmed_hit|sd_uh_01|THE VAMPIRE|nw.sd.unarmed.hit.01|nw.audio.sd.unarmed.hit.01|900|Good.
+line=saint_denis.react.unarmed_hit.02|sd_uh_02|THE VAMPIRE|nw.sd.unarmed.hit.02|nw.audio.sd.unarmed.hit.02|1100|Warm knuckles. Living pain. Almost nostalgic.
+line=saint_denis.react.unarmed_hit.03|sd_uh_03|THE VAMPIRE|nw.sd.unarmed.hit.03|nw.audio.sd.unarmed.hit.03|1000|Again. Convince your bones.
+line=saint_denis.react.melee_hit|sd_mh_01|THE VAMPIRE|nw.sd.melee.hit.01|nw.audio.sd.melee.hit.01|1100|Steel still bites. I had almost forgotten.
+line=saint_denis.react.melee_hit.02|sd_mh_02|THE VAMPIRE|nw.sd.melee.hit.02|nw.audio.sd.melee.hit.02|900|Better.
+line=saint_denis.react.melee_hit.03|sd_mh_03|THE VAMPIRE|nw.sd.melee.hit.03|nw.audio.sd.melee.hit.03|1200|The blade is honest. Are you?
+
+# Movement reactions are sparse and cooldown-limited.
+line=saint_denis.react.approach|sd_ap_01|THE VAMPIRE|nw.sd.approach.01|nw.audio.sd.approach.01|1200|Closer? You mistake stillness for invitation.
+line=saint_denis.react.approach.02|sd_ap_02|THE VAMPIRE|nw.sd.approach.02|nw.audio.sd.approach.02|1200|Come then. Hear how quiet the dead can be.
+line=saint_denis.react.approach.03|sd_ap_03|THE VAMPIRE|nw.sd.approach.03|nw.audio.sd.approach.03|1100|Your pulse grows louder as you near me.
+line=saint_denis.react.back_away|sd_ba_01|THE VAMPIRE|nw.sd.backaway.01|nw.audio.sd.backaway.01|1100|There. Instinct remembers its office.
+line=saint_denis.react.back_away.02|sd_ba_02|THE VAMPIRE|nw.sd.backaway.02|nw.audio.sd.backaway.02|1200|Distance is the first prayer of the living.
+line=saint_denis.react.back_away.03|sd_ba_03|THE VAMPIRE|nw.sd.backaway.03|nw.audio.sd.backaway.03|1100|Go farther, if fear requires room.
 
 line=saint_denis.post_defeat|sd_post_01||nw.sd.post.01||3200|Inside the vampire's coat is a strip of paper bearing the same cut mark seen near the church.
 line=saint_denis.clue.bloodless_body|sd_clue_body_01||nw.sd.clue.body.01||3000|The corpse is pale and nearly bloodless. The mud shows it was carried here.
