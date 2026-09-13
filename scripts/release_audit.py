@@ -138,8 +138,9 @@ if len(physical_audio) != 64:
     fail(f"expected 64 physical owner voice MP3s, found {len(physical_audio)}")
 if len(mapped_paths) != 64:
     fail(f"expected 64 unique mapped voice files, found {len(mapped_paths)}")
-if manifest.count("asset=") != 67:
-    fail(f"expected 67 dialogue audio mappings, found {manifest.count('asset=')}")
+mapping_count = sum(1 for raw in manifest.splitlines() if raw.strip().startswith("asset="))
+if mapping_count != 67:
+    fail(f"expected 67 dialogue audio mappings, found {mapping_count}")
 
 source_text = "\n".join(
     (ROOT / path).read_text(encoding="utf-8", errors="ignore")
@@ -158,7 +159,7 @@ for token in ("ATTACH_ENTITY_TO_ENTITY", "DETACH_ENTITY"):
 hud_hits: list[str] = []
 for path in files:
     if path.startswith("src/"):
-        text = (ROOT / path).read_text(encoding="utf-8", errors="ignore")
+        text = (ROOT/ path).read_text(encoding="utf-8", errors="ignore")
         if "DRAW_RECT" in text or "_BG_DISPLAY_TEXT" in text:
             hud_hits.append(path)
 if sorted(set(hud_hits)) != ["src/game/GameBossBarApi.cpp"]:
