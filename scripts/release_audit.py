@@ -91,7 +91,7 @@ for marker in (
 files = tracked_files()
 forbidden_suffixes = {
     ".asi", ".dll", ".exe", ".lib", ".pdb", ".obj", ".zip", ".log",
-    ".ilk", ".exp", ".iobj", ".ipdb", ".tlog",
+    ".ilk", ".exp", ".iobj", ".ipdb", ".tlog", ".voicepack",
 }
 for path in files:
     p = pathlib.PurePosixPath(path)
@@ -105,31 +105,20 @@ for path in files:
     if "dawnwalker" in p.name.lower():
         fail(f"Dawnwalker-named payload is tracked: {path}")
 
-voice_parts = sorted(
-    path for path in files
-    if path.startswith("content/voicepack/Nightwalker.voicepack.part") and path.endswith(".b64")
-)
-expected_voice_parts = [
-    f"content/voicepack/Nightwalker.voicepack.part{index:02d}.b64"
-    for index in range(1, 35)
-]
-if voice_parts != expected_voice_parts:
-    fail(f"voicepack source chunk set changed: {voice_parts}")
-
 for path in files:
     if not path.startswith("content/"):
         continue
-    if path in {
-        "content/Nightwalker.dialogue",
-        "content/Nightwalker.audio",
-    }:
-        continue
-    if path in expected_voice_parts:
+    if path in {"content/Nightwalker.dialogue", "content/Nightwalker.audio"}:
         continue
     suffix = pathlib.PurePosixPath(path).suffix.lower()
     if path.startswith("content/audio/") and suffix in {".wav", ".mp3"}:
         continue
     fail(f"unreviewed release content payload under content/: {path}")
+
+inventory = read("tests/fixtures/VoiceAssetInventory.complete.json")
+for marker in ('"physical_assets": 25', '"manifest_mappings": 26', '"sample_rate_hz": 44100'):
+    if marker not in inventory:
+        fail(f"complete voice inventory missing contract marker: {marker}")
 
 source_text = "\n".join(
     (ROOT / path).read_text(encoding="utf-8", errors="ignore")
@@ -163,16 +152,15 @@ if sorted(set(hud_hits)) != ["src/game/GameBossBarApi.cpp"]:
 packager = read("scripts/package-release.ps1")
 for marker in (
     "Nightwalker.asi", "Nightwalker.ini", "Nightwalker.dialogue",
-    "Nightwalker.voice.dialogue", "Nightwalker.audio", "materialize-voicepack.ps1",
+    "Nightwalker.voice.dialogue", "Nightwalker.audio", "VoiceAssetsDirectory",
     "README.md", "CHANGELOG.md", "THIRD_PARTY_NOTICES.md", "Compress-Archive",
 ):
     if marker not in packager:
         fail(f"release packager allowlist/behavior missing: {marker}")
 
-materializer = read("scripts/materialize-voicepack.ps1")
-if "b377d1ce81ac8c0f5b86f8fba15270721bba2ba430d5a5a940ea01f793fa4ba6" not in materializer:
-    fail("voicepack materializer is missing the reviewed SHA-256 lock")
-if "Expected 34 Nightwalker voicepack source chunks" not in materializer:
-    fail("voicepack materializer chunk-count lock is missing")
+voice_packager = read("scripts/package-voice-assets.ps1")
+for marker in ("VoiceAssetsDirectory", "VoicePackPath", "Expected 25 unique voice files"):
+    if marker not in voice_packager:
+        fail(f"voice packager behavior missing: {marker}")
 
 print(f"Nightwalker release audit passed for {EXPECTED_VERSION}")
