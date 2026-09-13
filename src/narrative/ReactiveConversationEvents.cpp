@@ -34,15 +34,15 @@ void ReactiveConversationController::HandleEvent(ReactiveDialogueEvent event,
             if (StartFamily(kLeave, nowMs, false)) intent_ = ConversationIntent::Leave;
             return;
         case ReactiveDialogueEvent::AimStarted:
-            if (nowMs >= nextAmbientReactionMs_ && StartFamily(kAim, nowMs, false))
+            if (nowMs >= nextAmbientReactionMs_ && StartFamily(kAim, nowMs, true))
                 nextAmbientReactionMs_ = nowMs + kAmbientReactionCooldownMs;
             return;
         case ReactiveDialogueEvent::AimHeld:
-            if (nowMs >= nextAmbientReactionMs_ && StartFamily(kAimHeld, nowMs, false))
+            if (nowMs >= nextAmbientReactionMs_ && StartFamily(kAimHeld, nowMs, true))
                 nextAmbientReactionMs_ = nowMs + kAmbientReactionCooldownMs;
             return;
         case ReactiveDialogueEvent::AimLowered:
-            if (nowMs >= nextAmbientReactionMs_ && StartFamily(kLowered, nowMs, false))
+            if (nowMs >= nextAmbientReactionMs_ && StartFamily(kLowered, nowMs, true))
                 nextAmbientReactionMs_ = nowMs + kAmbientReactionCooldownMs;
             return;
         case ReactiveDialogueEvent::ShotStarted:
