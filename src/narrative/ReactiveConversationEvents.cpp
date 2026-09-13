@@ -28,11 +28,9 @@ void ReactiveConversationController::HandleEvent(ReactiveDialogueEvent event,
         case ReactiveDialogueEvent::Question:
             StartFamily(kQuestion, nowMs, false); return;
         case ReactiveDialogueEvent::Challenge:
-            if (StartFamily(kChallenge, nowMs, false)) intent_ = ConversationIntent::Challenge;
-            return;
+            StartFamily(kChallenge, nowMs, false); intent_ = ConversationIntent::Challenge; return;
         case ReactiveDialogueEvent::Leave:
-            if (StartFamily(kLeave, nowMs, false)) intent_ = ConversationIntent::Leave;
-            return;
+            StartFamily(kLeave, nowMs, false); intent_ = ConversationIntent::Leave; return;
         case ReactiveDialogueEvent::AimStarted:
             if (nowMs >= nextAmbientReactionMs_ && StartFamily(kAim, nowMs, true))
                 nextAmbientReactionMs_ = nowMs + kAmbientReactionCooldownMs;
