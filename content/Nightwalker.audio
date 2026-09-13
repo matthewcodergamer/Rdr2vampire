@@ -1,0 +1,13 @@
+# Nightwalker narrative voice manifest
+# schema 1
+# asset=<audio-id>|<relative WAV path>
+#
+# Explicit mappings are optional. If an audio id is not listed here, Nightwalker
+# automatically tries: audio/<audio-id>.wav
+#
+# Example for an uploaded file with a friendly filename:
+# asset=nw.audio.sd.soul.01a|audio/Opening Soul 01A.wav
+#
+# Paths must remain relative to the Nightwalker plugin directory, may not contain
+# '..', and must end in .wav. Only original/licensed voice recordings belong here.
+schema=1
