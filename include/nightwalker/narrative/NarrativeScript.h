@@ -31,7 +31,28 @@ struct NarrativeCatalog final {
     std::vector<NarrativeSequence> sequences{};
 
     [[nodiscard]] const NarrativeSequence* Find(std::string_view id) const noexcept;
+    [[nodiscard]] std::vector<const NarrativeSequence*> FindFamily(std::string_view familyId) const;
     [[nodiscard]] bool Empty() const noexcept { return sequences.empty(); }
+};
+
+[[nodiscard]] bool SequenceBelongsToFamily(std::string_view sequenceId,
+                                           std::string_view familyId) noexcept;
+
+class NarrativeVariantSelector final {
+public:
+    [[nodiscard]] const NarrativeSequence* Choose(const NarrativeCatalog& catalog,
+                                                  std::string_view familyId,
+                                                  std::uint64_t entropy);
+    void Reset() noexcept { families_.clear(); }
+
+private:
+    struct FamilyState final {
+        std::string familyId{};
+        std::vector<std::string> remainingIds{};
+        std::string lastId{};
+    };
+
+    std::vector<FamilyState> families_{};
 };
 
 using NarrativeDiagnosticSink = std::function<void(std::string_view)>;
