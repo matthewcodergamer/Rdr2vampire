@@ -43,8 +43,13 @@ void ReactiveConversationController::HandleEvent(ReactiveDialogueEvent event,
     };
 
     switch (event) {
-        case ReactiveDialogueEvent::Question:
-            StartFamily(kQuestion, nowMs, false); return;
+        case ReactiveDialogueEvent::Question: {
+            const auto family = narrative_.HasSequenceFamily(ids::kSaintDenisRecordedQuestion)
+                ? ids::kSaintDenisRecordedQuestion
+                : kQuestion;
+            StartFamily(family, nowMs, false);
+            return;
+        }
         case ReactiveDialogueEvent::Challenge:
             StartFamily(kChallenge, nowMs, false); intent_ = ConversationIntent::Challenge; return;
         case ReactiveDialogueEvent::Leave:
