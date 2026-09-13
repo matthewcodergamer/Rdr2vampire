@@ -34,6 +34,11 @@ int main() {
     assert(fallback.has_value());
     assert(fallback->generic_string().find("audio/nw.audio.sd.melee.hit.03.wav") != std::string::npos);
 
+    const auto playerFallback = manifest.Resolve("nw.audio.player.arthur.talk.01", root);
+    assert(playerFallback.has_value());
+    assert(playerFallback->generic_string().find(
+        "audio/player/nw.audio.player.arthur.talk.01.wav") != std::string::npos);
+
     const auto unsafeId = manifest.Resolve("../escape", root);
     assert(!unsafeId.has_value());
 
