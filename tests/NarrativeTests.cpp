@@ -5,6 +5,7 @@
 #include <cassert>
 #include <filesystem>
 #include <fstream>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -16,10 +17,27 @@ int main(){
  const std::string script=
   "schema=1\n"
   "line=test.pre|l1|THE VAMPIRE|text.1|audio.1|1000|First original line.\n"
-  "line=test.pre|l2||text.2||1500|Second original line.\n";
+  "line=test.pre|l2||text.2||1500|Second original line.\n"
+  "line=test.pre.alt_01|l3|THE VAMPIRE|text.3|audio.3|1200|Alternate coherent line one.\n"
+  "line=test.pre.alt_02|l4|THE VAMPIRE|text.4|audio.4|1200|Alternate coherent line two.\n";
  assert(ParseNarrativeScript(script,catalog,[&](std::string_view m){warnings.emplace_back(m);}));
  const auto* seq=catalog.Find("test.pre");assert(seq&&seq->lines.size()==2);
  assert(seq->lines[0].speaker=="THE VAMPIRE");assert(seq->lines[0].audioId=="audio.1");
+ assert(SequenceBelongsToFamily("test.pre","test.pre"));
+ assert(SequenceBelongsToFamily("test.pre.alt_01","test.pre"));
+ assert(!SequenceBelongsToFamily("test.prefight","test.pre"));
+ const auto family=catalog.FindFamily("test.pre");assert(family.size()==3);
+
+ NarrativeVariantSelector selector{};
+ std::set<std::string> firstCycle;
+ const NarrativeSequence* previous=nullptr;
+ for(std::uint64_t entropy=1;entropy<=3;++entropy){
+  const auto* chosen=selector.Choose(catalog,"test.pre",entropy);assert(chosen);firstCycle.insert(chosen->id);previous=chosen;
+ }
+ assert(firstCycle.size()==3);
+ const auto* fourth=selector.Choose(catalog,"test.pre",99);assert(fourth);
+ assert(previous&&fourth->id!=previous->id);
+ selector.Reset();
 
  NarrativePlayback playback{};assert(playback.Start(*seq,100,5000));
  assert(playback.Active());assert(playback.CurrentLine()->id=="l1");
@@ -35,6 +53,7 @@ int main(){
 
  const auto builtIn=BuiltInNarrativeCatalog();
  assert(builtIn.Find(ids::kSaintDenisPreFight));
+ assert(builtIn.FindFamily(ids::kSaintDenisPreFight).size()>=8);
  assert(builtIn.Find(ids::kSaintDenisPostDefeat));
  assert(builtIn.Find(ids::kSaintDenisClueBloodlessBody));
  assert(builtIn.Find(ids::kSaintDenisOutcomeSpared));
