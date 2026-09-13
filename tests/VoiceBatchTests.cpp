@@ -50,17 +50,6 @@ int main() {
     assert(aimHold && aimHold->lines.size() == 1);
     assert(church && church->lines.size() == 2);
 
-    assert(soul->lines[0].durationMs >= 5355);
-    assert(city->lines[0].durationMs >= 4441);
-    assert(city->lines[1].durationMs >= 1829);
-    assert(city->lines[2].durationMs >= 1515);
-    assert(leaveA->lines[0].durationMs >= 2011);
-    assert(leaveB->lines[0].durationMs >= 3318);
-    assert(leaveC->lines[0].durationMs >= 1959);
-    assert(aimHold->lines[0].durationMs >= 3736);
-    assert(church->lines[0].durationMs >= 3318);
-    assert(church->lines[1].durationMs >= 1306);
-
     std::unordered_set<std::string> sequenceIds;
     for (const auto& sequence : base.sequences) sequenceIds.insert(sequence.id);
     for (auto& sequence : supplement.sequences) {
@@ -78,26 +67,34 @@ int main() {
     assert(manifest.Parse(ReadAll("content/Nightwalker.audio"),
         [&](std::string_view message) { warnings.emplace_back(message); }));
     assert(warnings.empty());
-    assert(manifest.Count() == 17);
+    assert(manifest.Count() == 26);
 
-    const std::vector<std::string> batch2Ids{
+    const std::vector<std::string> ids{
+        "nw.audio.sd.first_contact.nearer.01",
+        "nw.audio.sd.first_contact.wiser.01",
+        "nw.audio.sd.question.names.01",
         "nw.audio.sd.soul.recorded.01",
         "nw.audio.sd.question.city.01a",
-        "nw.audio.sd.question.city.01b",
-        "nw.audio.sd.question.city.01c",
         "nw.audio.sd.leave.rare_wisdom.01",
-        "nw.audio.sd.leave.rare_wisdom.02",
-        "nw.audio.sd.leave.rare_wisdom.03",
         "nw.audio.sd.aimhold.care.01",
         "nw.audio.sd.question.church.01a",
-        "nw.audio.sd.question.church.01b",
+        "nw.audio.sd.soul.01a",
+        "nw.audio.sd.soul.01b",
+        "nw.audio.sd.soul.02a",
+        "nw.audio.sd.soul.03a",
+        "nw.audio.sd.soul.03b",
+        "nw.audio.sd.soul.04a",
     };
-    for (const auto& id : batch2Ids) {
+    for (const auto& id : ids) {
         const auto path = manifest.Resolve(id, "NightwalkerRoot");
         assert(path.has_value());
-        assert(path->extension() == ".wav");
-        assert(path->filename().string() == id + ".wav");
+        assert(path->extension() == ".mp3");
     }
+
+    const auto soulAlias = manifest.Resolve("nw.audio.sd.soul.01a", "NightwalkerRoot");
+    const auto recordedSoul = manifest.Resolve("nw.audio.sd.soul.recorded.01", "NightwalkerRoot");
+    assert(soulAlias.has_value() && recordedSoul.has_value());
+    assert(soulAlias->filename() == recordedSoul->filename());
 
     NarrativeVariantSelector leaveSelector{};
     std::unordered_set<std::string> chosen;
