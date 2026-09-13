@@ -27,7 +27,7 @@ No manifest entry is required when the WAV filename matches the audio ID. `Night
 
 ## First integrated voice batch
 
-The first user-supplied Nightwalker batch is normalized to 22.05 kHz, mono, 16-bit PCM WAV and wired as coherent randomized exchanges:
+The first owner-supplied Nightwalker AI voice batch contains seven game-ready WAV files normalized to 44.1 kHz, mono, 16-bit PCM with restrained level matching and wired as coherent randomized exchanges:
 
 - `Come no nearer.`
 - `There. You have proven yourself wiser than the last.` — two alternate performances
@@ -37,6 +37,12 @@ The first user-supplied Nightwalker batch is normalized to 22.05 kHz, mono, 16-b
 The first two lines form two complete `saint_denis.pre_fight` variants. The latter two form two complete `saint_denis.choice.question` variants. The game randomizes the complete exchange; it never mixes the first half of one take with the second half of another.
 
 The uploaded `clip_*` source excerpts are reference-only and are deliberately excluded from release voice payloads.
+
+## Installing a voice pack
+
+Copy `Nightwalker.audio` and the `audio` folder from the voice pack beside `Nightwalker.asi`. Keep `OptionalAudio=true` under `[Narrative]` in `Nightwalker.ini`, then restart Nightwalker/RDR2. Missing clips remain subtitle-only.
+
+The release packager includes `Nightwalker.audio` and automatically copies reviewed `.wav` files from `content/audio/` when that directory is present.
 
 ## Friendly/uploaded filenames
 

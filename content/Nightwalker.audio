@@ -5,9 +5,15 @@
 # Explicit mappings are optional. If an audio id is not listed here, Nightwalker
 # automatically tries: audio/<audio-id>.wav
 #
-# Example for an uploaded file with a friendly filename:
-# asset=nw.audio.sd.soul.01a|audio/Opening Soul 01A.wav
-#
 # Paths must remain relative to the Nightwalker plugin directory, may not contain
 # '..', and must end in .wav. Only original/licensed voice recordings belong here.
 schema=1
+
+# Voice batch 1 — owner-supplied Nightwalker AI voice takes.
+asset=nw.audio.sd.first_contact.nearer.01|audio/nw.audio.sd.first_contact.nearer.01.wav
+asset=nw.audio.sd.first_contact.wiser.01|audio/nw.audio.sd.first_contact.wiser.01.wav
+asset=nw.audio.sd.first_contact.wiser.02|audio/nw.audio.sd.first_contact.wiser.02.wav
+asset=nw.audio.sd.question.names.01|audio/nw.audio.sd.question.names.01.wav
+asset=nw.audio.sd.question.names.02|audio/nw.audio.sd.question.names.02.wav
+asset=nw.audio.sd.question.none.01|audio/nw.audio.sd.question.none.01.wav
+asset=nw.audio.sd.question.none.02|audio/nw.audio.sd.question.none.02.wav

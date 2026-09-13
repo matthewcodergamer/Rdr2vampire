@@ -29,6 +29,7 @@ New-Item -ItemType Directory -Path $package -Force | Out-Null
 $files=@{
   "config/Nightwalker.example.ini"="Nightwalker.ini";
   "content/Nightwalker.dialogue"="Nightwalker.dialogue";
+  "content/Nightwalker.audio"="Nightwalker.audio";
   "README.md"="README.md";
   "CHANGELOG.md"="CHANGELOG.md";
   "THIRD_PARTY_NOTICES.md"="THIRD_PARTY_NOTICES.md"
@@ -40,7 +41,19 @@ foreach ($source in $files.Keys) {
   Copy-Item $full (Join-Path $package $files[$source])
 }
 
-$expected=@("CHANGELOG.md","Nightwalker.asi","Nightwalker.dialogue","Nightwalker.ini","README.md","THIRD_PARTY_NOTICES.md") | Sort-Object
+$voiceSource=Join-Path $root "content/audio"
+if (Test-Path $voiceSource -PathType Container) {
+  $voiceDestination=Join-Path $package "audio"
+  New-Item -ItemType Directory -Path $voiceDestination -Force | Out-Null
+  Copy-Item (Join-Path $voiceSource "*") $voiceDestination -Recurse -Force
+  foreach ($voiceFile in Get-ChildItem $voiceDestination -Recurse -File) {
+    if ($voiceFile.Extension.ToLowerInvariant() -ne ".wav") {
+      throw "Unsupported voice payload in release package: $($voiceFile.FullName)"
+    }
+  }
+}
+
+$expected=@("CHANGELOG.md","Nightwalker.asi","Nightwalker.audio","Nightwalker.dialogue","Nightwalker.ini","README.md","THIRD_PARTY_NOTICES.md") | Sort-Object
 $actual=Get-ChildItem $package -File | ForEach-Object Name | Sort-Object
 if (($expected -join "|") -ne ($actual -join "|")) { throw "Release package allowlist mismatch." }
 
