@@ -14,10 +14,10 @@ NarrativeController::NarrativeController(game::IGameBossBarApi& textApi,
                                          const core::Config& config) noexcept
     : textApi_(textApi), audioApi_(audioApi), logger_(logger), config_(config) {}
 
-bool NarrativeController::Initialize(){if(catalog_.Empty())catalog_=BuiltInNarrativeCatalog();Cancel();logger_.Write(util::LogLevel::Info,"NarrativeController initialized; subtitles are cancellable and optional audio cannot block gameplay.");return true;}
+bool NarrativeController::Initialize(){if(catalog_.Empty())catalog_=BuiltInNarrativeCatalog();variants_.Reset();variationNonce_=0;Cancel();logger_.Write(util::LogLevel::Info,"NarrativeController initialized; coherent sequence families use a non-repeating shuffle bag and optional audio cannot block gameplay.");return true;}
 
 void NarrativeController::LoadScript(const std::filesystem::path& path){
- Cancel();scriptPath_=path;catalog_=BuiltInNarrativeCatalog();
+ Cancel();scriptPath_=path;catalog_=BuiltInNarrativeCatalog();variants_.Reset();variationNonce_=0;
  try{
   std::ifstream in(path);if(!in){logger_.Write(util::LogLevel::Info,"Nightwalker.dialogue not found/readable; built-in original subtitles are active.");return;}
   std::ostringstream buffer;buffer<<in.rdbuf();NarrativeCatalog parsed{};
@@ -26,14 +26,27 @@ void NarrativeController::LoadScript(const std::filesystem::path& path){
  }catch(...){logger_.Write(util::LogLevel::Error,"Narrative source load failed; built-in original subtitles remain active.");}
 }
 
-bool NarrativeController::StartSequence(std::string_view sequenceId,std::uint64_t nowMs) noexcept {
+bool NarrativeController::StartResolvedSequence(const NarrativeSequence& sequence,std::uint64_t nowMs) noexcept {
  if(!config_.IsFeatureEnabled(core::Feature::Narrative))return false;
- const auto* sequence=catalog_.Find(sequenceId);if(!sequence){logger_.Write(util::LogLevel::Warning,std::string("Narrative sequence missing: ")+std::string(sequenceId));return false;}
  audioApi_.Stop();presentedLineId_.clear();
- if(!playback_.Start(*sequence,nowMs,static_cast<std::uint64_t>(config_.narrative.maxSequenceMs)))return false;
+ if(!playback_.Start(sequence,nowMs,static_cast<std::uint64_t>(config_.narrative.maxSequenceMs)))return false;
  skipWasDown_=SkipKeyDown();PresentAudioForCurrentLine();
- if(config_.debug.enabled)logger_.Write(util::LogLevel::Debug,std::string("Narrative sequence started: ")+std::string(sequenceId));
+ if(config_.debug.enabled)logger_.Write(util::LogLevel::Debug,std::string("Narrative sequence started: ")+sequence.id);
  return true;
+}
+
+bool NarrativeController::StartSequence(std::string_view sequenceId,std::uint64_t nowMs) noexcept {
+ const auto* sequence=catalog_.Find(sequenceId);if(!sequence){logger_.Write(util::LogLevel::Warning,std::string("Narrative sequence missing: ")+std::string(sequenceId));return false;}
+ return StartResolvedSequence(*sequence,nowMs);
+}
+
+bool NarrativeController::StartSequenceFamily(std::string_view familyId,std::uint64_t nowMs) noexcept {
+ if(!config_.IsFeatureEnabled(core::Feature::Narrative))return false;
+ ++variationNonce_;
+ const auto entropy=nowMs^(variationNonce_*0x9E3779B97F4A7C15ULL);
+ const auto* sequence=variants_.Choose(catalog_,familyId,entropy);
+ if(!sequence){logger_.Write(util::LogLevel::Warning,std::string("Narrative sequence family missing: ")+std::string(familyId));return false;}
+ return StartResolvedSequence(*sequence,nowMs);
 }
 
 void NarrativeController::Update(const core::FrameContext& frame){
@@ -49,7 +62,7 @@ void NarrativeController::Update(const core::FrameContext& frame){
 void NarrativeController::RequestSkip(std::uint64_t nowMs) noexcept {if(!playback_.Active())return;audioApi_.Stop();presentedLineId_.clear();playback_.Skip(nowMs);if(playback_.Active())PresentAudioForCurrentLine();}
 
 void NarrativeController::Cancel() noexcept {if(playback_.Active()&&config_.debug.enabled)logger_.Write(util::LogLevel::Debug,"Narrative sequence cancelled.");audioApi_.Stop();playback_.Cancel();presentedLineId_.clear();skipWasDown_=false;}
-void NarrativeController::Shutdown() noexcept {Cancel();catalog_={};scriptPath_.clear();}
+void NarrativeController::Shutdown() noexcept {Cancel();variants_.Reset();variationNonce_=0;catalog_={};scriptPath_.clear();}
 
 bool NarrativeController::SkipKeyDown() const noexcept {const int key=config_.narrative.skipKey;if(key<=0||key>255)return false;return (::GetAsyncKeyState(key)&0x8000)!=0;}
 
