@@ -1,6 +1,8 @@
 param(
   [string]$RepositoryRoot=(Split-Path -Parent $PSScriptRoot),
-  [string]$OutputDirectory=""
+  [string]$OutputDirectory="",
+  [string]$VoiceAssetsDirectory="",
+  [string]$VoicePackPath=""
 )
 $ErrorActionPreference="Stop"
 Set-StrictMode -Version Latest
@@ -24,24 +26,44 @@ $stage=Join-Path $OutputDirectory "Nightwalker-Voice-Assets-stage"
 $package=Join-Path $stage "Nightwalker-Voice-Assets"
 if (Test-Path $stage) { Remove-Item $stage -Recurse -Force }
 New-Item -ItemType Directory -Path $package -Force | Out-Null
-
 Copy-Item $manifest (Join-Path $package "Nightwalker.audio")
 Copy-Item $dialogue (Join-Path $package "Nightwalker.voice.dialogue")
 
-$sourcePack=Join-Path $stage "Nightwalker.voicepack"
-& (Join-Path $PSScriptRoot "materialize-voicepack.ps1") -RepositoryRoot $root -OutputPath $sourcePack
+$voiceSource=$null
+if (-not [string]::IsNullOrWhiteSpace($VoiceAssetsDirectory) -and -not [string]::IsNullOrWhiteSpace($VoicePackPath)) {
+  throw "Specify either VoiceAssetsDirectory or VoicePackPath, not both."
+}
+if (-not [string]::IsNullOrWhiteSpace($VoiceAssetsDirectory)) {
+  $candidate=$VoiceAssetsDirectory
+  if (-not [System.IO.Path]::IsPathRooted($candidate)) { $candidate=Join-Path (Get-Location).Path $candidate }
+  if (-not (Test-Path $candidate -PathType Container)) { throw "VoiceAssetsDirectory does not exist: $candidate" }
+  $voiceSource=(Resolve-Path $candidate).Path
+} elseif (-not [string]::IsNullOrWhiteSpace($VoicePackPath)) {
+  $candidate=$VoicePackPath
+  if (-not [System.IO.Path]::IsPathRooted($candidate)) { $candidate=Join-Path (Get-Location).Path $candidate }
+  if (-not (Test-Path $candidate -PathType Leaf)) { throw "VoicePackPath does not exist: $candidate" }
+  Add-Type -AssemblyName System.IO.Compression.FileSystem
+  $expanded=Join-Path $stage "expanded"
+  New-Item -ItemType Directory -Path $expanded -Force | Out-Null
+  [System.IO.Compression.ZipFile]::ExtractToDirectory((Resolve-Path $candidate).Path, $expanded)
+  $direct=Join-Path $expanded "audio"
+  $nested=Join-Path $expanded "Nightwalker-Voice-Assets/audio"
+  if (Test-Path $direct -PathType Container) { $voiceSource=$direct }
+  elseif (Test-Path $nested -PathType Container) { $voiceSource=$nested }
+  else { throw "VoicePackPath is missing an audio/ directory." }
+} else {
+  $candidate=Join-Path $root "content/audio"
+  if (Test-Path $candidate -PathType Container) { $voiceSource=(Resolve-Path $candidate).Path }
+}
 
-Add-Type -AssemblyName System.IO.Compression.FileSystem
-$expanded=Join-Path $stage "expanded"
-New-Item -ItemType Directory -Path $expanded -Force | Out-Null
-[System.IO.Compression.ZipFile]::ExtractToDirectory($sourcePack, $expanded)
-$voiceSource=Join-Path $expanded "audio"
-if (-not (Test-Path $voiceSource -PathType Container)) { throw "Nightwalker.voicepack is missing audio/." }
+if ($null -eq $voiceSource) {
+  throw "No voice payload found. Supply -VoiceAssetsDirectory or -VoicePackPath, or add content/audio/."
+}
+
 $voiceDestination=Join-Path $package "audio"
 New-Item -ItemType Directory -Path $voiceDestination -Force | Out-Null
 Copy-Item (Join-Path $voiceSource "*") $voiceDestination -Recurse -Force
-
-$voiceFiles=Get-ChildItem $voiceDestination -File | Sort-Object Name
+$voiceFiles=@(Get-ChildItem $voiceDestination -File | Sort-Object Name)
 if ($voiceFiles.Count -ne 25) { throw "Expected 25 unique voice files, found $($voiceFiles.Count)." }
 foreach ($voiceFile in $voiceFiles) {
   $extension=$voiceFile.Extension.ToLowerInvariant()
