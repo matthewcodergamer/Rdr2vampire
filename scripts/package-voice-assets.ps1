@@ -50,8 +50,8 @@ foreach ($voiceFile in $voiceFiles) {
 
 $zip=Join-Path $OutputDirectory "Nightwalker-Voice-Assets-All-Batches.zip"
 if (Test-Path $zip) { Remove-Item $zip -Force }
-Push-Location $stage
-try { Compress-Archive -Path "Nightwalker-Voice-Assets" -DestinationPath $zip -CompressionLevel Optimal }
+Push-Location $package
+try { Compress-Archive -Path "*" -DestinationPath $zip -CompressionLevel Optimal }
 finally { Pop-Location }
 Remove-Item $stage -Recurse -Force
 Write-Host "VOICE_ARTIFACT_NAME=Nightwalker-Voice-Assets-All-Batches.zip"
