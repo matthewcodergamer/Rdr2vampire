@@ -27,7 +27,7 @@ No manifest entry is required when the WAV filename matches the audio ID. `Night
 
 ## First integrated voice batch
 
-The first owner-supplied Nightwalker AI voice batch is normalized to 44.1 kHz, mono, 16-bit PCM WAV with restrained level matching and wired as coherent randomized exchanges:
+The first owner-supplied Nightwalker AI voice batch contains seven game-ready WAV files normalized to 44.1 kHz, mono, 16-bit PCM with restrained level matching and wired as coherent randomized exchanges:
 
 - `Come no nearer.`
 - `There. You have proven yourself wiser than the last.` — two alternate performances
