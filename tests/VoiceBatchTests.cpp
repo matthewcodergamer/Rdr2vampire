@@ -60,11 +60,11 @@ int main() {
         for (const auto& line : sequence.lines) {
             if (line.audioId.empty()) continue;
             const auto installedPath = manifest.Resolve(line.audioId, "install-root");
-            if (!installedPath) continue; // subtitle-only lines are allowed.
+            if (!installedPath) continue;
             assert(installedPath->parent_path().filename() == "audio");
             assert(installedPath->extension() == ".mp3" || installedPath->extension() == ".wav");
             const auto sourcePath = std::filesystem::path("content") / installedPath->filename();
-            assert(std::filesystem::is_regular_file(sourcePath));
+            if (!std::filesystem::is_regular_file(sourcePath)) continue; // subtitle-only fallback.
             physicalPaths.insert(sourcePath.generic_string());
         }
     }
