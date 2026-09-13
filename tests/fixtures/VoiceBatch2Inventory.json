@@ -1,0 +1,119 @@
+{
+  "schema": 1,
+  "batch": "Nightwalker Voice Batch 2",
+  "format": {
+    "sample_rate_hz": 44100,
+    "channels": 1,
+    "bits_per_sample": 16
+  },
+  "assets": [
+    {
+      "audio_id": "nw.audio.sd.soul.recorded.01",
+      "source": "Vam-2026-09-13-04-33-Do-not-ask-what-I-am-as-though-the-world-has-onl(1).mp3",
+      "duration_ms": 5355,
+      "gain_db": 0.42,
+      "dBFS": -18.0,
+      "peak_dBFS": -2.19,
+      "bytes": 472398,
+      "sha256": "18c69d3b21cd9770685e44721c01cf3240e962a8f2b8f05a7711036b99dd24fb"
+    },
+    {
+      "audio_id": "nw.audio.sd.question.city.01a",
+      "source": "Vam-2026-09-12-20-55-A-thousand-souls-pressed-together-behind-brick-a(1).mp3",
+      "duration_ms": 4441,
+      "gain_db": -2.15,
+      "dBFS": -18.0,
+      "peak_dBFS": -3.58,
+      "bytes": 391758,
+      "sha256": "8ca2792719a3c7cffddcfc18a81c47cdf8517195eb65115e6c484a57c5b5834f"
+    },
+    {
+      "audio_id": "nw.audio.sd.question.city.01b",
+      "source": "Vam-2026-09-12-20-54-Look-around-you(1).mp3",
+      "duration_ms": 1829,
+      "gain_db": 1.46,
+      "dBFS": -18.39,
+      "peak_dBFS": -1.5,
+      "bytes": 161358,
+      "sha256": "27af0318321789ad2a4fefa2322ac6a9ddb03e0140b3745ed76dfd3574707214"
+    },
+    {
+      "audio_id": "nw.audio.sd.question.city.01c",
+      "source": "Vam-2026-09-12-20-53-Keep-it(1).mp3",
+      "duration_ms": 1515,
+      "gain_db": 4.54,
+      "dBFS": -20.23,
+      "peak_dBFS": -1.5,
+      "bytes": 133710,
+      "sha256": "5c9fede53e826b69d2978ba78e235037d995417b4a86208cf7f4ff24d0592dba"
+    },
+    {
+      "audio_id": "nw.audio.sd.leave.rare_wisdom.01",
+      "source": "Vam-2026-09-12-20-52-A-rare-wisdom 2(1).mp3",
+      "duration_ms": 2011,
+      "gain_db": -0.65,
+      "dBFS": -18.0,
+      "peak_dBFS": -2.56,
+      "bytes": 177486,
+      "sha256": "b7164f2b0585141302c4cd9a65d3431930484c6c9f3665a1cd92f97983c383d0"
+    },
+    {
+      "audio_id": "nw.audio.sd.leave.rare_wisdom.02",
+      "source": "Vam-2026-09-12-20-52-A-rare-wisdom(1).mp3",
+      "duration_ms": 3318,
+      "gain_db": 2.35,
+      "dBFS": -18.0,
+      "peak_dBFS": -1.91,
+      "bytes": 292686,
+      "sha256": "7d62ae1f42338eff2e0d1b3f302ed9f31e0ceebbb647407eebe3c98405e5d7fe"
+    },
+    {
+      "audio_id": "nw.audio.sd.leave.rare_wisdom.03",
+      "source": "Vam-2026-09-12-20-51-A-rare-wisdom(1).mp3",
+      "duration_ms": 1959,
+      "gain_db": 3.92,
+      "dBFS": -18.0,
+      "peak_dBFS": -2.55,
+      "bytes": 172878,
+      "sha256": "ef15cf9c52fdbffc38d0619f49303201e0ac293e9347a05aa928526be267234d"
+    },
+    {
+      "audio_id": "nw.audio.sd.aimhold.care.01",
+      "source": "Vam-2026-09-12-20-51-Choose-your-next-words-with-greater-care(1).mp3",
+      "duration_ms": 3736,
+      "gain_db": 0.39,
+      "dBFS": -18.0,
+      "peak_dBFS": -3.42,
+      "bytes": 329550,
+      "sha256": "bebba8487b23a9709506eebc664c0f0c8bc18964577dd70840aa23217f724582"
+    },
+    {
+      "audio_id": "nw.audio.sd.question.church.01a",
+      "source": "Vam-2026-09-12-20-50-He-has-gone-farther-from-you-than-I-ever-could(1).mp3",
+      "duration_ms": 3318,
+      "gain_db": -2.15,
+      "dBFS": -18.0,
+      "peak_dBFS": -3.98,
+      "bytes": 292686,
+      "sha256": "db1d674730d9e3a430fada70a335ef0a259c4fab0b7704a542020a9147391c4a"
+    },
+    {
+      "audio_id": "nw.audio.sd.question.church.01b",
+      "source": "Vam-2026-09-12-20-49-From-him(1).mp3",
+      "duration_ms": 1306,
+      "gain_db": -0.94,
+      "dBFS": -18.0,
+      "peak_dBFS": -5.03,
+      "bytes": 115278,
+      "sha256": "36e7c5c2b72819fac3e65aab04c8c2b03b70a1957b03c59c9bf9f028efed3c4a"
+    }
+  ],
+  "excluded_duplicates": [
+    {
+      "source": "Vam-2026-09-12-20-48-None-of-those-men-lived-long-enough-to-make-one 2(2).mp3",
+      "matches_audio_id": "nw.audio.sd.question.none.01",
+      "decoded_pcm_correlation": 0.9999999955,
+      "reason": "Exact performance already shipped in Voice Batch 1."
+    }
+  ]
+}

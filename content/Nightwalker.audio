@@ -17,3 +17,15 @@ asset=nw.audio.sd.question.names.01|audio/nw.audio.sd.question.names.01.wav
 asset=nw.audio.sd.question.names.02|audio/nw.audio.sd.question.names.02.wav
 asset=nw.audio.sd.question.none.01|audio/nw.audio.sd.question.none.01.wav
 asset=nw.audio.sd.question.none.02|audio/nw.audio.sd.question.none.02.wav
+
+# Voice batch 2 — supplemental soul, question, leave and warning performances.
+asset=nw.audio.sd.soul.recorded.01|audio/nw.audio.sd.soul.recorded.01.wav
+asset=nw.audio.sd.question.city.01a|audio/nw.audio.sd.question.city.01a.wav
+asset=nw.audio.sd.question.city.01b|audio/nw.audio.sd.question.city.01b.wav
+asset=nw.audio.sd.question.city.01c|audio/nw.audio.sd.question.city.01c.wav
+asset=nw.audio.sd.leave.rare_wisdom.01|audio/nw.audio.sd.leave.rare_wisdom.01.wav
+asset=nw.audio.sd.leave.rare_wisdom.02|audio/nw.audio.sd.leave.rare_wisdom.02.wav
+asset=nw.audio.sd.leave.rare_wisdom.03|audio/nw.audio.sd.leave.rare_wisdom.03.wav
+asset=nw.audio.sd.aimhold.care.01|audio/nw.audio.sd.aimhold.care.01.wav
+asset=nw.audio.sd.question.church.01a|audio/nw.audio.sd.question.church.01a.wav
+asset=nw.audio.sd.question.church.01b|audio/nw.audio.sd.question.church.01b.wav
