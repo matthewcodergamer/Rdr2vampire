@@ -43,7 +43,8 @@ inline std::string LowerNarrativeAudioText(std::string value) {
     for (const auto& part : path) {
         if (part == "..") return false;
     }
-    return LowerNarrativeAudioText(path.extension().string()) == ".wav";
+    const auto extension = LowerNarrativeAudioText(path.extension().string());
+    return extension == ".wav" || extension == ".mp3";
 }
 
 class NarrativeAudioManifest final {
@@ -104,7 +105,7 @@ public:
                 continue;
             }
             if (!IsSafeNarrativeAudioRelativePath(relativePath)) {
-                diagnose("Nightwalker.audio rejected an unsafe/non-WAV path at line " + std::to_string(lineNumber) + ".");
+                diagnose("Nightwalker.audio rejected an unsafe/unsupported audio path at line " + std::to_string(lineNumber) + ".");
                 continue;
             }
             if (assets_.contains(assetId)) {
