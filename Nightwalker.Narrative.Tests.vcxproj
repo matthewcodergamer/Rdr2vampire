@@ -8,7 +8,7 @@
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <PropertyGroup><TargetName>Nightwalker.Narrative.Tests</TargetName><OutDir>$(ProjectDir)bin\tests\$(Configuration)\</OutDir><IntDir>$(ProjectDir)build\narrative-tests\$(Configuration)\</IntDir></PropertyGroup>
   <ItemDefinitionGroup><ClCompile><WarningLevel>Level4</WarningLevel><ConformanceMode>true</ConformanceMode><LanguageStandard>stdcpp20</LanguageStandard><ExceptionHandling>Sync</ExceptionHandling><AdditionalIncludeDirectories>$(ProjectDir)include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories></ClCompile></ItemDefinitionGroup>
-  <ItemGroup><ClCompile Include="tests\NarrativeTests.cpp"/><ClCompile Include="src\narrative\NarrativeScript.cpp"/><ClCompile Include="src\narrative\NarrativePlayback.cpp"/><ClCompile Include="src\narrative\NarrativeSettingsLoader.cpp"/></ItemGroup>
-  <ItemGroup><ClInclude Include="include\nightwalker\core\Config.h"/><ClInclude Include="include\nightwalker\narrative\NarrativeScript.h"/><ClInclude Include="include\nightwalker\narrative\NarrativePlayback.h"/><ClInclude Include="include\nightwalker\narrative\NarrativeSettingsLoader.h"/></ItemGroup>
+  <ItemGroup><ClCompile Include="tests\NarrativeTests.cpp"/><ClCompile Include="src\narrative\NarrativeScript.cpp"/><ClCompile Include="src\narrative\NarrativePlayback.cpp"/><ClCompile Include="src\narrative\NarrativeSettingsLoader.cpp"/><ClCompile Include="src\narrative\ReactiveDialogueModel.cpp"/></ItemGroup>
+  <ItemGroup><ClInclude Include="include\nightwalker\core\Config.h"/><ClInclude Include="include\nightwalker\narrative\NarrativeScript.h"/><ClInclude Include="include\nightwalker\narrative\NarrativePlayback.h"/><ClInclude Include="include\nightwalker\narrative\NarrativeSettingsLoader.h"/><ClInclude Include="include\nightwalker\narrative\ReactiveDialogueModel.h"/></ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
 </Project>
