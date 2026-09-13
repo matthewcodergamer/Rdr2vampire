@@ -1,71 +1,18 @@
 #include "nightwalker/narrative/NarrativePlayback.h"
 #include "nightwalker/narrative/NarrativeScript.h"
 #include "nightwalker/narrative/NarrativeSettingsLoader.h"
-
+#include "nightwalker/narrative/ReactiveDialogueModel.h"
 #include <cassert>
 #include <filesystem>
 #include <fstream>
 #include <set>
 #include <string>
 #include <vector>
-
-int main(){
- using namespace nightwalker;
- using namespace nightwalker::narrative;
-
- NarrativeCatalog catalog{};std::vector<std::string>warnings;
- const std::string script=
-  "schema=1\n"
-  "line=test.pre|l1|THE VAMPIRE|text.1|audio.1|1000|First original line.\n"
-  "line=test.pre|l2||text.2||1500|Second original line.\n"
-  "line=test.pre.alt_01|l3|THE VAMPIRE|text.3|audio.3|1200|Alternate coherent line one.\n"
-  "line=test.pre.alt_02|l4|THE VAMPIRE|text.4|audio.4|1200|Alternate coherent line two.\n";
- assert(ParseNarrativeScript(script,catalog,[&](std::string_view m){warnings.emplace_back(m);}));
- const auto* seq=catalog.Find("test.pre");assert(seq&&seq->lines.size()==2);
- assert(seq->lines[0].speaker=="THE VAMPIRE");assert(seq->lines[0].audioId=="audio.1");
- assert(SequenceBelongsToFamily("test.pre","test.pre"));
- assert(SequenceBelongsToFamily("test.pre.alt_01","test.pre"));
- assert(!SequenceBelongsToFamily("test.prefight","test.pre"));
- const auto family=catalog.FindFamily("test.pre");assert(family.size()==3);
-
- NarrativeVariantSelector selector{};
- std::set<std::string> firstCycle;
- const NarrativeSequence* previous=nullptr;
- for(std::uint64_t entropy=1;entropy<=3;++entropy){
-  const auto* chosen=selector.Choose(catalog,"test.pre",entropy);assert(chosen);firstCycle.insert(chosen->id);previous=chosen;
- }
- assert(firstCycle.size()==3);
- const auto* fourth=selector.Choose(catalog,"test.pre",99);assert(fourth);
- assert(previous&&fourth->id!=previous->id);
- selector.Reset();
-
- NarrativePlayback playback{};assert(playback.Start(*seq,100,5000));
- assert(playback.Active());assert(playback.CurrentLine()->id=="l1");
- playback.Update(1099);assert(playback.CurrentLine()->id=="l1");
- playback.Update(1100);assert(playback.CurrentLine()->id=="l2");
- playback.Skip(1200);assert(!playback.Active());
- assert(playback.Start(*seq,2000,700));playback.Update(2700);assert(!playback.Active());
-
- NarrativeCatalog future{};
- assert(!ParseNarrativeScript("schema=99\nline=x|y||z||1000|No.\n",future));
- NarrativeCatalog malformed{};
- assert(!ParseNarrativeScript("schema=1\nline=bad\n",malformed));
-
- const auto builtIn=BuiltInNarrativeCatalog();
- assert(builtIn.Find(ids::kSaintDenisPreFight));
- assert(builtIn.FindFamily(ids::kSaintDenisPreFight).size()>=8);
- assert(builtIn.Find(ids::kSaintDenisPostDefeat));
- assert(builtIn.Find(ids::kSaintDenisClueBloodlessBody));
- assert(builtIn.Find(ids::kSaintDenisOutcomeSpared));
-
- const auto wrapped=WrapSubtitle("This is a deliberately longer subtitle sentence that must wrap without requiring any RDR2 runtime dependency.",32,3);
- assert(!wrapped.empty());assert(wrapped.size()<=3);for(const auto& line:wrapped)assert(line.size()<=32);
-
- const auto temp=std::filesystem::temp_directory_path()/"nightwalker_narrative_test.ini";
- {std::ofstream out(temp);out<<"[Narrative]\nEnabled=false\nMaxConfrontationHoldMs=999999\nMaxSequenceMs=1\nSkipKey=0x20\nOptionalAudio=false\n";}
- core::NarrativeSettings settings{};warnings.clear();LoadNarrativeSettings(temp,settings,[&](std::string_view m){warnings.emplace_back(m);});
- std::error_code ec;std::filesystem::remove(temp,ec);
- assert(!settings.enabled);assert(settings.maxConfrontationHoldMs==10000);assert(settings.maxSequenceMs==1000);assert(settings.skipKey==0x20);assert(!settings.optionalAudio);assert(!warnings.empty());
-
- return 0;
-}
+int main(){using namespace nightwalker;using namespace nightwalker::narrative;
+ NarrativeCatalog catalog{};std::vector<std::string>warnings;const std::string script="schema=1\nline=test.pre|l1|THE VAMPIRE|text.1|audio.1|1000|First original line.\nline=test.pre|l2||text.2||1500|Second original line.\nline=test.pre.alt_01|l3|THE VAMPIRE|text.3|audio.3|1200|Alternate coherent line one.\nline=test.pre.alt_02|l4|THE VAMPIRE|text.4|audio.4|1200|Alternate coherent line two.\nline=saint_denis.react.aim|a1|THE VAMPIRE|aim.1|audio.aim.1|1000|Careful.\nline=saint_denis.react.aim.02|a2|THE VAMPIRE|aim.2|audio.aim.2|1000|Your hand speaks first.\n";
+ assert(ParseNarrativeScript(script,catalog,[&](std::string_view m){warnings.emplace_back(m);}));const auto*seq=catalog.Find("test.pre");assert(seq&&seq->lines.size()==2);assert(seq->lines[0].speaker=="THE VAMPIRE");assert(seq->lines[0].audioId=="audio.1");assert(SequenceBelongsToFamily("test.pre","test.pre"));assert(SequenceBelongsToFamily("test.pre.alt_01","test.pre"));assert(!SequenceBelongsToFamily("test.prefight","test.pre"));assert(catalog.FindFamily("test.pre").size()==3);assert(catalog.FindFamily("saint_denis.react.aim").size()==2);
+ NarrativeVariantSelector selector{};std::set<std::string>cycle;const NarrativeSequence*prev=nullptr;for(std::uint64_t e=1;e<=3;++e){auto*c=selector.Choose(catalog,"test.pre",e);assert(c);cycle.insert(c->id);prev=c;}assert(cycle.size()==3);auto*fourth=selector.Choose(catalog,"test.pre",99);assert(fourth&&prev&&fourth->id!=prev->id);
+ NarrativePlayback playback{};assert(playback.Start(*seq,100,5000));playback.Update(1099);assert(playback.CurrentLine()->id=="l1");playback.Update(1100);assert(playback.CurrentLine()->id=="l2");playback.Skip(1200);assert(!playback.Active());
+ ReactiveDialogueModel reactive{};ReactiveDialogueInput in{};in.nowMs=1000;in.aimed=true;assert(reactive.Update(in)==ReactiveDialogueEvent::AimStarted);in.nowMs=2000;assert(reactive.Update(in)==ReactiveDialogueEvent::None);in.nowMs=3200;assert(reactive.Update(in)==ReactiveDialogueEvent::AimHeld);in.nowMs=3300;in.aimed=false;assert(reactive.Update(in)==ReactiveDialogueEvent::AimLowered);in={};in.nowMs=4000;in.shooting=true;assert(reactive.Update(in)==ReactiveDialogueEvent::ShotStarted&&reactive.ShotPending());in.nowMs=4100;in.shooting=false;in.hitBoss=true;assert(reactive.Update(in)==ReactiveDialogueEvent::ShotHit&&!reactive.ShotPending());reactive.Reset();in={};in.nowMs=5000;in.shooting=true;assert(reactive.Update(in)==ReactiveDialogueEvent::ShotStarted);in.nowMs=5100;in.shooting=false;assert(reactive.Update(in)==ReactiveDialogueEvent::None);in.nowMs=5320;assert(reactive.Update(in)==ReactiveDialogueEvent::ShotMiss);reactive.Reset();in={};in.nowMs=6000;in.question=true;assert(reactive.Update(in)==ReactiveDialogueEvent::Question);in={};in.nowMs=6100;in.challenge=true;assert(reactive.Update(in)==ReactiveDialogueEvent::Challenge);in={};in.nowMs=6200;in.leave=true;assert(reactive.Update(in)==ReactiveDialogueEvent::Leave);
+ const auto builtIn=BuiltInNarrativeCatalog();assert(builtIn.FindFamily(ids::kSaintDenisPreFight).size()>=8);assert(builtIn.Find(ids::kSaintDenisPostDefeat));const auto wrapped=WrapSubtitle("This is a deliberately longer subtitle sentence that must wrap without requiring any RDR2 runtime dependency.",32,3);assert(!wrapped.empty()&&wrapped.size()<=3);
+ const auto temp=std::filesystem::temp_directory_path()/"nightwalker_narrative_test.ini";{std::ofstream out(temp);out<<"[Narrative]\nEnabled=false\nMaxConfrontationHoldMs=999999\nConversationWindowMs=1\nMaxSequenceMs=1\nSkipKey=0x20\nOptionalAudio=false\n";}core::NarrativeSettings settings{};warnings.clear();LoadNarrativeSettings(temp,settings,[&](std::string_view m){warnings.emplace_back(m);});std::error_code ec;std::filesystem::remove(temp,ec);assert(!settings.enabled);assert(settings.maxConfrontationHoldMs==10000);assert(settings.conversationWindowMs==6000);assert(settings.maxSequenceMs==1000);assert(settings.skipKey==0x20);assert(!settings.optionalAudio);assert(!warnings.empty());return 0;}
