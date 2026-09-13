@@ -6,6 +6,20 @@
 
 namespace nightwalker::systems {
 
+bool SaintDenisDirector::EnterCombat(std::uint64_t nowMs, std::string_view reason) noexcept {
+    conversation_.SetEncounterConversationEnabled(false);
+    pendingConversationIntent_ = narrative::ConversationIntent::None;
+    if (!registry_.SetCombatEnabled(actor_, BossOwner::Encounter, true)) {
+        BeginAbort("could not arm encounter combat ownership", nowMs);
+        return false;
+    }
+    if (bossHud_.BeginBoss(actor_, config_.bossHud.displayName, nowMs)) bossHud_.NotifyCombatActivity(nowMs);
+    logger_.Write(util::LogLevel::Info, std::string("Saint Denis vampire encounter entered combat: ") + std::string(reason));
+    outsideSinceMs_ = 0;
+    Transition(SaintDenisState::Combat, nowMs);
+    return true;
+}
+
 void SaintDenisDirector::UpdateActive(const core::FrameContext& frame) {
     switch (state_) {
         case SaintDenisState::Stalking: {
@@ -23,11 +37,12 @@ void SaintDenisDirector::UpdateActive(const core::FrameContext& frame) {
             if (aimed || distance <= static_cast<float>(config_.encounter.confrontationDistance) ||
                 frame.nowMs - stateStartedMs_ >= static_cast<std::uint64_t>(config_.encounter.stalkingMs)) {
                 narrative_.StartSequenceFamily(narrative::ids::kSaintDenisPreFight, frame.nowMs);
-                const int holdMs = narrative_.Active()
-                    ? std::max(config_.encounter.confrontationMs + 200, config_.narrative.maxConfrontationHoldMs + 200)
-                    : config_.encounter.confrontationMs + 200;
+                const int holdMs = std::max(config_.narrative.conversationWindowMs + 1000,
+                    config_.encounter.confrontationMs + 1000);
                 combatApi_.TaskStandStill(actor_, holdMs);
                 presentationApi_.PlayShadowSmoke(api_.EntityCoords(actor_), 0.42F);
+                pendingConversationIntent_ = narrative::ConversationIntent::None;
+                conversation_.SetEncounterConversationEnabled(true);
                 Transition(SaintDenisState::Confrontation, frame.nowMs);
             }
             return;
@@ -35,26 +50,36 @@ void SaintDenisDirector::UpdateActive(const core::FrameContext& frame) {
         case SaintDenisState::Confrontation: {
             if (!ActorValid()) { BeginAbort("confrontation actor invalid", frame.nowMs); return; }
             if (!PreCombatStillSafe()) { BeginAbort("confrontation became unsafe", frame.nowMs); return; }
+
+            const auto intent = conversation_.ConsumeIntent();
+            if (intent == narrative::ConversationIntent::Hostile) {
+                narrative_.Cancel();
+                EnterCombat(frame.nowMs, "player fired during conversation");
+                return;
+            }
+            if (intent == narrative::ConversationIntent::Challenge || intent == narrative::ConversationIntent::Leave)
+                pendingConversationIntent_ = intent;
+
+            if (pendingConversationIntent_ == narrative::ConversationIntent::Challenge && !narrative_.Active()) {
+                EnterCombat(frame.nowMs, "player challenged the vampire");
+                return;
+            }
+            if (pendingConversationIntent_ == narrative::ConversationIntent::Leave && !narrative_.Active()) {
+                conversation_.SetEncounterConversationEnabled(false);
+                BeginAbort("player chose to leave the confrontation", frame.nowMs);
+                return;
+            }
+
             const auto elapsed = frame.nowMs - stateStartedMs_;
-            const bool minimumTellDone = elapsed >= static_cast<std::uint64_t>(config_.encounter.confrontationMs);
-            const bool dialogueDone = !narrative_.IsPlayingFamily(narrative::ids::kSaintDenisPreFight);
-            const bool dialogueWatchdog = elapsed >= static_cast<std::uint64_t>(config_.narrative.maxConfrontationHoldMs);
-            if (minimumTellDone && (dialogueDone || dialogueWatchdog)) {
-                if (dialogueWatchdog && !dialogueDone) {
-                    narrative_.Cancel();
-                    logger_.Write(util::LogLevel::Warning, "Pre-fight narrative watchdog expired; combat continued safely.");
-                }
-                if (!registry_.SetCombatEnabled(actor_, BossOwner::Encounter, true)) {
-                    BeginAbort("could not arm encounter combat ownership", frame.nowMs); return;
-                }
-                if (bossHud_.BeginBoss(actor_, config_.bossHud.displayName, frame.nowMs)) bossHud_.NotifyCombatActivity(frame.nowMs);
-                logger_.Write(util::LogLevel::Info, "Saint Denis vampire encounter entered combat.");
-                outsideSinceMs_ = 0;
-                Transition(SaintDenisState::Combat, frame.nowMs);
+            const bool initialDialogueDone = !narrative_.IsPlayingFamily(narrative::ids::kSaintDenisPreFight);
+            if (initialDialogueDone && elapsed >= static_cast<std::uint64_t>(config_.narrative.conversationWindowMs) &&
+                pendingConversationIntent_ == narrative::ConversationIntent::None && !narrative_.Active()) {
+                EnterCombat(frame.nowMs, "conversation window expired");
             }
             return;
         }
         case SaintDenisState::Combat: {
+            conversation_.SetEncounterConversationEnabled(false);
             if (!ActorValid(false)) { bossHud_.ForceHide(); BeginAbort("combat actor became invalid", frame.nowMs); return; }
             if (!api_.PedAlive(actor_)) {
                 registry_.SetCombatEnabled(actor_, BossOwner::Encounter, false);

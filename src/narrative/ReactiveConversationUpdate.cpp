@@ -3,9 +3,9 @@
 namespace nightwalker::narrative {
 
 void ReactiveConversationController::Update(const core::FrameContext& frame) {
-    if (!config_.IsFeatureEnabled(core::Feature::Narrative) ||
+    if (!enabled_ || !config_.IsFeatureEnabled(core::Feature::Narrative) ||
         !registry_.IsOwnedBy(systems::BossOwner::Encounter)) {
-        if (actor_ != 0) ReleaseActor();
+        SetPrompts(false);
         return;
     }
 
@@ -15,16 +15,17 @@ void ReactiveConversationController::Update(const core::FrameContext& frame) {
 
     const auto player = api_.PlayerPed();
     const bool combat = registry_.CombatEnabled();
+    if (combat && !model_.ShotPending()) { SetPrompts(false); return; }
+
     const bool aimed = combatApi_.PlayerAimedPed(player) == actor_;
     const bool shooting = conversationApi_.IsPedShooting(player);
     const bool hitBoss = physicalApi_.WasContactFrom(actor_, player);
-
     const bool choicesAvailable = !combat && !narrative_.Active() && !aimed && !shooting;
     SetPrompts(choicesAvailable);
 
     ReactiveDialogueInput input{};
     input.nowMs = frame.nowMs;
-    input.aimed = aimed;
+    input.aimed = combat ? false : aimed;
     input.shooting = shooting;
     input.hitBoss = hitBoss;
     if (choicesAvailable) {
@@ -35,8 +36,6 @@ void ReactiveConversationController::Update(const core::FrameContext& frame) {
 
     const auto event = model_.Update(input);
     if (event != ReactiveDialogueEvent::None) HandleEvent(event, frame.nowMs);
-
-    if (combat && !model_.ShotPending()) SetPrompts(false);
 }
 
 } // namespace nightwalker::narrative

@@ -12,7 +12,7 @@ ReactiveConversationController::ReactiveConversationController(game::IGameApi& a
 bool ReactiveConversationController::Initialize() {
     Cancel();
     logger_.Write(util::LogLevel::Info,
-        "Reactive conversation initialized; entity prompts and weapon reactions are pre-combat only.");
+        "Reactive conversation initialized; entity prompts and weapon reactions are confrontation-only.");
     return true;
 }
 
@@ -46,11 +46,16 @@ void ReactiveConversationController::SetPrompts(bool enabled) noexcept {
     conversationApi_.SetPromptEnabled(leavePrompt_, enabled);
 }
 
+void ReactiveConversationController::SetEncounterConversationEnabled(bool enabled) noexcept {
+    enabled_ = enabled;
+    if (!enabled_) { SetPrompts(false); model_.Reset(); intent_ = ConversationIntent::None; }
+}
+
 ConversationIntent ReactiveConversationController::ConsumeIntent() noexcept {
     const auto result = intent_; intent_ = ConversationIntent::None; return result;
 }
 
-void ReactiveConversationController::Cancel() noexcept { ReleaseActor(); }
-void ReactiveConversationController::Shutdown() noexcept { ReleaseActor(); }
+void ReactiveConversationController::Cancel() noexcept { enabled_ = false; ReleaseActor(); }
+void ReactiveConversationController::Shutdown() noexcept { enabled_ = false; ReleaseActor(); }
 
 } // namespace nightwalker::narrative
