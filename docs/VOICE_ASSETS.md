@@ -10,12 +10,15 @@ Voice content is installed beside `Nightwalker.asi`:
 Nightwalker.asi
 Nightwalker.ini
 Nightwalker.dialogue
+Nightwalker.voice.dialogue   # optional supplemental recorded sequences
 Nightwalker.audio
 audio/
-  nw.audio.sd.first_contact.nearer.01.wav
-  nw.audio.sd.question.names.01.wav
+  nw.audio.sd.opening.warning.wav
+  nw.audio.sd.opening.wiser.a.wav
   ...
 ```
+
+`Nightwalker.dialogue` remains the authoritative base catalog. If present, `Nightwalker.voice.dialogue` is parsed separately and appends only new sequence IDs. A missing, corrupt, or duplicate supplemental sequence cannot replace the base dialogue.
 
 If a line has `audio-id=nw.audio.sd.aim.04`, the default lookup is:
 
@@ -23,20 +26,32 @@ If a line has `audio-id=nw.audio.sd.aim.04`, the default lookup is:
 audio/nw.audio.sd.aim.04.wav
 ```
 
-No manifest entry is required when the WAV filename matches the audio ID. `Nightwalker.audio` may still provide explicit mappings for friendly uploaded filenames.
+No manifest entry is required when the WAV filename matches the audio ID. `Nightwalker.audio` may provide explicit mappings for friendly uploaded filenames.
 
-## First integrated voice batch
+## First owner-supplied voice batch
 
-The first user-supplied Nightwalker batch is normalized to 22.05 kHz, mono, 16-bit PCM WAV and wired as coherent randomized exchanges:
+Batch 1 contains seven owner-supplied AI voice performances normalized to 44.1 kHz, mono, 16-bit PCM WAV:
 
 - `Come no nearer.`
 - `There. You have proven yourself wiser than the last.` — two alternate performances
 - `Men have given me many names.` — two alternate performances
 - `None of those men lived long enough to make one matter.` — two alternate performances
 
-The first two lines form two complete `saint_denis.pre_fight` variants. The latter two form two complete `saint_denis.choice.question` variants. The game randomizes the complete exchange; it never mixes the first half of one take with the second half of another.
+On first approach, the game prefers the two-item `saint_denis.recorded_opening` family when the supplemental catalog is installed. Selecting **QUESTION** prefers the two-item `saint_denis.recorded_question` family. Each A/B exchange stays intact; individual recordings are never shuffled across performances. The existing base families remain the automatic fallback when the voice pack is absent or rejected.
 
-The uploaded `clip_*` source excerpts are reference-only and are deliberately excluded from release voice payloads.
+Subtitle durations include a small tail buffer so playback is not clipped when the next authored line starts.
+
+## Installing Batch 1
+
+Copy these from `Nightwalker-Voice-Batch-1.zip` beside `Nightwalker.asi`:
+
+- `Nightwalker.audio`
+- `Nightwalker.voice.dialogue`
+- the complete `audio` folder
+
+Keep `OptionalAudio=true` under `[Narrative]` in `Nightwalker.ini`, then restart RDR2/Nightwalker. Missing clips remain subtitle-only.
+
+The four owner-supplied `clip_*` uploads remain unassigned because their exact transcript and gameplay-trigger mapping have not yet been confirmed. They are not part of Batch 1.
 
 ## Friendly/uploaded filenames
 
@@ -66,6 +81,6 @@ The current backend uses Windows asynchronous WAV playback. Recorded dialogue wo
 
 Keep one WAV per stable `audio-id`. Multi-line conversations remain separate files even when they belong to one randomized sequence. This preserves subtitle timing, interruption, reaction priority, and future facial/lip-sync data per line.
 
-## Original/licensed audio only
+## Audio boundary
 
-Nightwalker may use an original or properly licensed vampire performance. Do not package copied Dawnwalker recordings, cloned proprietary actor performances, or extracted copyrighted dialogue audio.
+Only owner-created or properly licensed voice performances may ship. Do not package extracted game dialogue or recordings from another production.
