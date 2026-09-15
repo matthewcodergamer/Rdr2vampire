@@ -114,6 +114,12 @@ public:
             }
             assets_.emplace(assetId, relativePath.lexically_normal());
         }
+
+        if (!schemaSeen) {
+            diagnose("Nightwalker.audio is missing the required schema=1 declaration.");
+            Clear();
+            return false;
+        }
         return true;
     }
 
