@@ -37,7 +37,12 @@ public:
         constexpr float kBackAwayMeters = 7.5F;
 
         if (in.hitBoss && shotPending_) {
-            shotPending_ = false; shooting_ = in.shooting; aimed_ = in.aimed;
+            shotPending_ = false;
+            shooting_ = in.shooting;
+            // Do not force aimed_ to the current input here. ShotHit has event
+            // priority for this tick; preserving the previous aim state lets
+            // the normal aim state machine emit AimLowered on the next tick if
+            // the player released aim at the same moment the hit registered.
             return ReactiveDialogueEvent::ShotHit;
         }
         if (in.shooting && !shooting_) {
