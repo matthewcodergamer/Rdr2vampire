@@ -42,7 +42,10 @@ public:
     [[nodiscard]] bool Ready() const noexcept { return !pluginDirectory_.empty(); }
 
 private:
-    void WarnOnce(std::string_view key, std::string_view message) noexcept;
+    void WarnOnce(
+        std::string_view assetId,
+        std::string_view reason,
+        std::string_view message) noexcept;
 
     std::filesystem::path pluginDirectory_{};
     std::filesystem::path manifestPath_{};
@@ -131,12 +134,13 @@ inline bool GameNarrativeAudioApi::TryPlay(std::string_view assetId) noexcept {
     try {
         const auto resolved = manifest_.Resolve(assetId, pluginDirectory_);
         if (!resolved) {
-            WarnOnce(assetId, "Rejected unsafe narrative audio id; subtitle fallback active.");
+            WarnOnce(assetId, "unsafe-id",
+                "Rejected unsafe narrative audio id; subtitle fallback active.");
             return false;
         }
         std::error_code error;
         if (!std::filesystem::is_regular_file(*resolved, error) || error) {
-            WarnOnce(assetId,
+            WarnOnce(assetId, "missing-file",
                 std::string("Narrative audio missing for '") + std::string(assetId) +
                 "'; expected " + resolved->string());
             return false;
@@ -150,7 +154,7 @@ inline bool GameNarrativeAudioApi::TryPlay(std::string_view assetId) noexcept {
                 L"open \"" + resolved->wstring() + L"\" type mpegvideo alias " + alias;
             const MCIERROR opened = ::mciSendStringW(openCommand.c_str(), nullptr, 0, nullptr);
             if (opened != 0) {
-                WarnOnce(assetId,
+                WarnOnce(assetId, "mp3-open",
                     std::string("Windows MP3 playback open failed for '") + std::string(assetId) + "'.");
                 return false;
             }
@@ -159,7 +163,7 @@ inline bool GameNarrativeAudioApi::TryPlay(std::string_view assetId) noexcept {
             if (played != 0) {
                 const std::wstring closeCommand = L"close " + alias;
                 ::mciSendStringW(closeCommand.c_str(), nullptr, 0, nullptr);
-                WarnOnce(assetId,
+                WarnOnce(assetId, "mp3-play",
                     std::string("Windows MP3 playback failed for '") + std::string(assetId) + "'.");
                 return false;
             }
@@ -169,13 +173,14 @@ inline bool GameNarrativeAudioApi::TryPlay(std::string_view assetId) noexcept {
         const BOOL played = ::PlaySoundW(
             resolved->c_str(), nullptr, SND_ASYNC | SND_FILENAME | SND_NODEFAULT);
         if (!played) {
-            WarnOnce(assetId,
+            WarnOnce(assetId, "wav-play",
                 std::string("Windows WAV playback failed for '") + std::string(assetId) + "'.");
             return false;
         }
         return true;
     } catch (...) {
-        WarnOnce(assetId, "Narrative audio playback threw unexpectedly; subtitle fallback active.");
+        WarnOnce(assetId, "exception",
+            "Narrative audio playback threw unexpectedly; subtitle fallback active.");
         return false;
     }
 }
@@ -189,9 +194,17 @@ inline void GameNarrativeAudioApi::Stop() noexcept {
     ::mciSendStringW(closeCommand.c_str(), nullptr, 0, nullptr);
 }
 
-inline void GameNarrativeAudioApi::WarnOnce(std::string_view key, std::string_view message) noexcept {
+inline void GameNarrativeAudioApi::WarnOnce(
+    std::string_view assetId,
+    std::string_view reason,
+    std::string_view message) noexcept {
     try {
-        if (!warned_.insert(std::string(key)).second) return;
+        std::string dedupeKey;
+        dedupeKey.reserve(assetId.size() + reason.size() + 1U);
+        dedupeKey.append(assetId);
+        dedupeKey.push_back('\x1f');
+        dedupeKey.append(reason);
+        if (!warned_.insert(std::move(dedupeKey)).second) return;
         if (logger_) logger_->Write(util::LogLevel::Warning, message);
     } catch (...) {
         if (logger_) logger_->Write(util::LogLevel::Warning, message);
