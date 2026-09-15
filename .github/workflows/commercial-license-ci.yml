@@ -1,0 +1,43 @@
+name: Commercial License CI
+
+on:
+  push:
+    branches: [commercial-license-v1]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux-license-model:
+    name: Linux license model tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and run license tests
+        run: |
+          mkdir -p build/license-ci
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude tests/LicenseTests.cpp src/licensing/License.cpp -o build/license-ci/license-tests
+          ./build/license-ci/license-tests
+      - name: Audit commercial release invariants
+        run: python3 scripts/commercial_license_audit.py
+
+  windows-license-boundary:
+    name: Windows commercial license boundary
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile Windows signature/device gate
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path build\license-ci -Force | Out-Null
+          $vswhere = (Get-Command vswhere.exe -ErrorAction Stop).Source
+          $vs = & $vswhere -latest -products * -requires Microsoft.VisualStudio.Component.VC.Tools.x86.x64 -property installationPath
+          if ([string]::IsNullOrWhiteSpace($vs)) { throw 'Visual Studio C++ toolchain not found.' }
+          $vcvars = Join-Path $vs 'VC\Auxiliary\Build\vcvars64.bat'
+          if (-not (Test-Path $vcvars)) { throw "vcvars64.bat not found: $vcvars" }
+          $command = "`"$vcvars`" >nul && cl /nologo /std:c++20 /EHsc /Iinclude /c src\licensing\WindowsLicenseGate.cpp /Fobuild\license-ci\WindowsLicenseGate.obj"
+          cmd.exe /d /s /c $command
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
