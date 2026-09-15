@@ -37,7 +37,12 @@ public:
         constexpr float kBackAwayMeters = 7.5F;
 
         if (in.hitBoss && shotPending_) {
-            shotPending_ = false; shooting_ = in.shooting; aimed_ = in.aimed;
+            shotPending_ = false;
+            shooting_ = in.shooting;
+            // Do not synchronize aimed_ here. ShotHit has priority for this tick,
+            // so preserving the previous aim state lets the normal aim state
+            // machine emit AimStarted/AimLowered on the following tick instead
+            // of silently dropping the transition.
             return ReactiveDialogueEvent::ShotHit;
         }
         if (in.shooting && !shooting_) {
