@@ -99,9 +99,9 @@ bool SaintDenisDirector::FindSpawnPoint(game::Vec3& position, float& heading, bo
     game::Vec3 best{};
 
     for (const auto& offset : kSpawnOffsets) {
-        game::Vec3 near{center.x + offset.x, center.y + offset.y, center.z};
+        game::Vec3 candidate{center.x + offset.x, center.y + offset.y, center.z};
         game::Vec3 safe{};
-        if (!api_.FindSafeCoordForPed(near, safe)) continue;
+        if (!api_.FindSafeCoordForPed(candidate, safe)) continue;
         float groundZ = 0.0F;
         if (!api_.TryGroundZ(safe, 6.0F, groundZ)) continue;
         safe.z = groundZ + 0.05F;

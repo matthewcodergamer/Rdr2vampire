@@ -106,14 +106,30 @@ for path in files:
     if "dawnwalker" in p.name.lower():
         fail(f"Dawnwalker-named payload is tracked: {path}")
 
+# The canonical Saint Denis vampire library is the 59 WAV files directly under
+# content/audio/. Player-character uploads live under content/audio/player/ and
+# are intentionally audited separately so they cannot corrupt the fixed vampire set.
 voice_wavs = sorted(
     path for path in files
-    if path.startswith("content/audio/") and pathlib.PurePosixPath(path).suffix.lower() == ".wav"
+    if pathlib.PurePosixPath(path).parent == pathlib.PurePosixPath("content/audio")
+    and pathlib.PurePosixPath(path).suffix.lower() == ".wav"
 )
 if len(voice_wavs) != EXPECTED_VOICE_WAVS:
     fail(f"canonical voice WAV set changed: expected {EXPECTED_VOICE_WAVS}, found {len(voice_wavs)}")
 if any("voice_batch_1" in pathlib.PurePosixPath(path).name for path in voice_wavs):
-    fail("fallback voice_batch_1 filename remains in canonical voice library")
+    fail("fallback voice_batch_1 filename remains in canonical vampire voice library")
+if any(not pathlib.PurePosixPath(path).name.startswith("nw.audio.sd.") for path in voice_wavs):
+    fail("non-Saint-Denis id found in canonical vampire voice library")
+
+player_wavs = sorted(
+    path for path in files
+    if pathlib.PurePosixPath(path).parent == pathlib.PurePosixPath("content/audio/player")
+    and pathlib.PurePosixPath(path).suffix.lower() == ".wav"
+)
+for path in player_wavs:
+    name = pathlib.PurePosixPath(path).name
+    if not name.startswith("nw.audio.player."):
+        print(f"RELEASE AUDIT NOTE: staged player WAV is not release-mapped yet and will be skipped: {path}")
 
 for path in files:
     if not path.startswith("content/"):
@@ -122,10 +138,14 @@ for path in files:
         "content/Nightwalker.dialogue",
         "content/Nightwalker.audio",
         "content/audio/README.md",
+        "content/audio/player/README.md",
     }:
         continue
-    suffix = pathlib.PurePosixPath(path).suffix.lower()
-    if path.startswith("content/audio/") and suffix == ".wav":
+    p = pathlib.PurePosixPath(path)
+    suffix = p.suffix.lower()
+    if p.parent == pathlib.PurePosixPath("content/audio") and suffix == ".wav":
+        continue
+    if p.parent == pathlib.PurePosixPath("content/audio/player") and suffix == ".wav":
         continue
     fail(f"unreviewed release content payload under content/: {path}")
 
@@ -162,8 +182,8 @@ packager = read("scripts/package-release.ps1")
 for marker in (
     "Nightwalker.asi", "Nightwalker.ini", "Nightwalker.dialogue",
     "Nightwalker.voice.dialogue", "Nightwalker.audio", "content/audio",
-    "Expected 59 canonical voice WAVs", "README.md", "CHANGELOG.md",
-    "THIRD_PARTY_NOTICES.md", "Compress-Archive",
+    "Expected 59 canonical vampire voice WAVs", "nw.audio.player.*.wav",
+    "README.md", "CHANGELOG.md", "THIRD_PARTY_NOTICES.md", "Compress-Archive",
 ):
     if marker not in packager:
         fail(f"release packager allowlist/behavior missing: {marker}")
@@ -184,4 +204,7 @@ if "content/Nightwalker.voicepack" in files:
 if any(path.startswith("content/voicepack/") for path in files):
     fail("obsolete base64 voicepack chunks are still tracked")
 
-print(f"Nightwalker release audit passed for {EXPECTED_VERSION}")
+print(
+    f"Nightwalker release audit passed for {EXPECTED_VERSION}; "
+    f"{len(voice_wavs)} canonical vampire WAVs, {len(player_wavs)} staged player WAVs"
+)
