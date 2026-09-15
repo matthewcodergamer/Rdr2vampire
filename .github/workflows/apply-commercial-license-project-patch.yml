@@ -1,0 +1,42 @@
+name: Apply Commercial License Project Patch
+
+on:
+  push:
+    branches: [commercial-license-v1]
+
+permissions:
+  contents: write
+
+jobs:
+  patch-project:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: commercial-license-v1
+          fetch-depth: 0
+      - name: Patch Nightwalker project
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('Nightwalker.vcxproj')
+          s = p.read_text(encoding='utf-8')
+          replacements = [
+              ('<AdditionalDependencies>ScriptHookRDR2.lib;%(AdditionalDependencies)</AdditionalDependencies>', '<AdditionalDependencies>ScriptHookRDR2.lib;bcrypt.lib;%(AdditionalDependencies)</AdditionalDependencies>'),
+              ('<PreprocessorDefinitions>_DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>', '<PreprocessorDefinitions>_DEBUG;NIGHTWALKER_DEV_LICENSE_BYPASS=1;%(PreprocessorDefinitions)</PreprocessorDefinitions>'),
+              ('<ClCompile Include="src\\core\\SaveData.cpp"/>', '<ClCompile Include="src\\core\\SaveData.cpp"/><ClCompile Include="src\\licensing\\License.cpp"/><ClCompile Include="src\\licensing\\WindowsLicenseGate.cpp"/>'),
+              ('<ClInclude Include="include\\nightwalker\\core\\SaveData.h"/>', '<ClInclude Include="include\\nightwalker\\core\\SaveData.h"/><ClInclude Include="include\\nightwalker\\licensing\\License.h"/>'),
+          ]
+          for old, new in replacements:
+              if old not in s:
+                  raise SystemExit(f'missing expected project marker: {old}')
+              s = s.replace(old, new, 1)
+          p.write_text(s, encoding='utf-8')
+          PY
+          rm .github/workflows/apply-commercial-license-project-patch.yml
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add Nightwalker.vcxproj .github/workflows/apply-commercial-license-project-patch.yml
+          git commit -m "Wire commercial license verifier into native build"
+          git push origin HEAD:commercial-license-v1
