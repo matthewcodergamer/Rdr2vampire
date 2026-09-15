@@ -107,6 +107,23 @@ int main() {
 
     reactive.Reset();
     input = {};
+    input.nowMs = 4200;
+    input.aimed = true;
+    assert(reactive.Update(input) == ReactiveDialogueEvent::AimStarted);
+    input.nowMs = 4300;
+    input.shooting = true;
+    assert(reactive.Update(input) == ReactiveDialogueEvent::ShotStarted);
+    input.nowMs = 4350;
+    input.shooting = false;
+    input.hitBoss = true;
+    input.aimed = false;
+    assert(reactive.Update(input) == ReactiveDialogueEvent::ShotHit);
+    input.nowMs = 4360;
+    input.hitBoss = false;
+    assert(reactive.Update(input) == ReactiveDialogueEvent::AimLowered);
+
+    reactive.Reset();
+    input = {};
     input.nowMs = 5000;
     input.shooting = true;
     assert(reactive.Update(input) == ReactiveDialogueEvent::ShotStarted);
