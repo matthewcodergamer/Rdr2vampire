@@ -2,6 +2,7 @@
 #include "nightwalker/util/Logger.h"
 #include <Windows.h>
 #include <bcrypt.h>
+#include <algorithm>
 #include <array>
 #include <chrono>
 #include <filesystem>
@@ -61,15 +62,23 @@ bool ReadMachineGuid(std::wstring& guid) {
     return !guid.empty();
 }
 
+std::string WideToUtf8(std::wstring_view text) {
+    if (text.empty()) return {};
+    const int length = static_cast<int>(text.size());
+    const int needed = WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, text.data(), length, nullptr, 0, nullptr, nullptr);
+    if (needed <= 0) return {};
+    std::string utf8(static_cast<std::size_t>(needed), '\0');
+    const int written = WideCharToMultiByte(CP_UTF8, WC_ERR_INVALID_CHARS, text.data(), length, utf8.data(), needed, nullptr, nullptr);
+    if (written != needed) return {};
+    return utf8;
+}
+
 std::string DeviceHash() {
     std::wstring machineGuid;
     if (!ReadMachineGuid(machineGuid)) return {};
-    std::string utf8;
-    const int needed = WideCharToMultiByte(CP_UTF8, 0, machineGuid.c_str(), -1, nullptr, 0, nullptr, nullptr);
-    if (needed <= 1) return {};
-    utf8.resize(static_cast<std::size_t>(needed - 1));
-    WideCharToMultiByte(CP_UTF8, 0, machineGuid.c_str(), -1, utf8.data(), needed, nullptr, nullptr);
-    std::string source = "gamerstriperdev|nightwalker-rdr2|" + utf8;
+    const std::string utf8 = WideToUtf8(machineGuid);
+    if (utf8.empty()) return {};
+    const std::string source = "gamerstriperdev|nightwalker-rdr2|" + utf8;
     std::array<std::uint8_t, 32> digest{};
     if (!Sha256(std::span<const std::uint8_t>(reinterpret_cast<const std::uint8_t*>(source.data()), source.size()), digest)) return {};
     return HexLower(digest);
