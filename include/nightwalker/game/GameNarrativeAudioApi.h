@@ -191,7 +191,15 @@ inline void GameNarrativeAudioApi::Stop() noexcept {
 
 inline void GameNarrativeAudioApi::WarnOnce(std::string_view key, std::string_view message) noexcept {
     try {
-        if (!warned_.insert(std::string(key)).second) return;
+        // Deduplicate the same failure, not every future failure for the asset.
+        // An asset can legitimately progress from "missing" to "open failed" to
+        // another playback failure while troubleshooting without Reload().
+        std::string warningKey;
+        warningKey.reserve(key.size() + message.size() + 1U);
+        warningKey.append(key);
+        warningKey.push_back('\x1f');
+        warningKey.append(message);
+        if (!warned_.insert(std::move(warningKey)).second) return;
         if (logger_) logger_->Write(util::LogLevel::Warning, message);
     } catch (...) {
         if (logger_) logger_->Write(util::LogLevel::Warning, message);

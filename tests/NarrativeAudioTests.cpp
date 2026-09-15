@@ -59,6 +59,15 @@ int main() {
     assert(!future.Parse("schema=2\nasset=a|audio/a.wav\n"));
     assert(future.Count() == 0);
 
+    diagnostics.clear();
+    NarrativeAudioManifest missingSchema;
+    assert(!missingSchema.Parse(
+        "asset=nw.audio.sd.test|audio/test.wav\n",
+        [&](std::string_view message) { diagnostics.emplace_back(message); }));
+    assert(missingSchema.Count() == 0);
+    assert(diagnostics.size() == 1);
+    assert(diagnostics.front().find("schema=1") != std::string::npos);
+
     nightwalker::game::SubtitleOnlyNarrativeAudioApi fallbackAudio;
     assert(!fallbackAudio.TryPlay("nw.audio.sd.test"));
     fallbackAudio.Stop();
