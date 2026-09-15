@@ -1,0 +1,36 @@
+name: Commercial License CI
+
+on:
+  push:
+    branches: [commercial-license-v1]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  linux-license-model:
+    name: Linux license model tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and run license tests
+        run: |
+          mkdir -p build/license-ci
+          g++ -std=c++20 -Wall -Wextra -Wpedantic -Iinclude tests/LicenseTests.cpp src/licensing/License.cpp -o build/license-ci/license-tests
+          ./build/license-ci/license-tests
+
+  windows-license-boundary:
+    name: Windows commercial license boundary
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: microsoft/setup-msbuild@v2
+      - name: Compile Windows signature/device gate
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path build\license-ci -Force | Out-Null
+          cl /nologo /std:c++20 /EHsc /Iinclude /c src\licensing\WindowsLicenseGate.cpp /Fobuild\license-ci\WindowsLicenseGate.obj
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
