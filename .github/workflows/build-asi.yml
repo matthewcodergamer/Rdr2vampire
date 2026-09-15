@@ -13,6 +13,9 @@ on:
       - 'scripts/**'
       - 'config/Nightwalker.example.ini'
       - 'content/Nightwalker.dialogue'
+      - 'content/Nightwalker.audio'
+      - 'Nightwalker.voice.dialogue'
+      - 'content/audio/**'
       - 'README.md'
       - 'CHANGELOG.md'
       - 'THIRD_PARTY_NOTICES.md'
@@ -20,6 +23,18 @@ on:
     branches: [main]
     paths:
       - '.github/workflows/build-asi.yml'
+      - 'Nightwalker.vcxproj'
+      - 'src/**'
+      - 'include/**'
+      - 'scripts/**'
+      - 'config/Nightwalker.example.ini'
+      - 'content/Nightwalker.dialogue'
+      - 'content/Nightwalker.audio'
+      - 'Nightwalker.voice.dialogue'
+      - 'content/audio/**'
+      - 'README.md'
+      - 'CHANGELOG.md'
+      - 'THIRD_PARTY_NOTICES.md'
 
 permissions:
   contents: write
@@ -176,40 +191,31 @@ jobs:
           Write-Host "File: $($asi.FullName)"
           Write-Host "Size: $($asi.Length) bytes"
 
-      - name: Prepare downloadable Nightwalker build
+      - name: Build install-ready Nightwalker package
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
           $output = 'github-build'
-          $package = Join-Path $output 'Nightwalker'
-
           Remove-Item $output -Recurse -Force -ErrorAction SilentlyContinue
-          New-Item -ItemType Directory -Force -Path $package | Out-Null
+          New-Item -ItemType Directory -Force -Path $output | Out-Null
 
-          Copy-Item 'bin\Release\Nightwalker.asi' "$package\Nightwalker.asi" -Force
+          & .\scripts\package-release.ps1 `
+            -PluginPath 'bin\Release\Nightwalker.asi' `
+            -Version '1.0.0-rc1' `
+            -OutputDirectory $output
 
-          if (Test-Path 'config\Nightwalker.example.ini') {
-            Copy-Item 'config\Nightwalker.example.ini' "$package\Nightwalker.ini" -Force
-          }
-          if (Test-Path 'content\Nightwalker.dialogue') {
-            Copy-Item 'content\Nightwalker.dialogue' "$package\Nightwalker.dialogue" -Force
-          }
-          foreach ($doc in @('README.md', 'CHANGELOG.md', 'THIRD_PARTY_NOTICES.md')) {
-            if (Test-Path $doc) {
-              Copy-Item $doc (Join-Path $package $doc) -Force
-            }
+          $zipPath = Join-Path $output 'Nightwalker-1.0.0-rc1-win64.zip'
+          if (!(Test-Path $zipPath -PathType Leaf)) {
+            throw 'Release packager did not produce the install-ready ZIP.'
           }
 
-          $hash = (Get-FileHash "$package\Nightwalker.asi" -Algorithm SHA256).Hash
-          "SHA256 Nightwalker.asi: $hash" | Set-Content "$package\Nightwalker.asi.sha256.txt"
-
-          $zipPath = Join-Path $output 'Nightwalker-Windows-x64.zip'
-          Compress-Archive -Path "$package\*" -DestinationPath $zipPath -Force
+          $hash = (Get-FileHash 'bin\Release\Nightwalker.asi' -Algorithm SHA256).Hash
+          "SHA256 Nightwalker.asi: $hash" | Set-Content (Join-Path $output 'Nightwalker.asi.sha256.txt')
 
           "## Nightwalker ASI build complete" >> $env:GITHUB_STEP_SUMMARY
           "Download the **Nightwalker-ASI** artifact below this workflow run." >> $env:GITHUB_STEP_SUMMARY
-          "Inside it, use **Nightwalker-Windows-x64.zip** for the install-ready package." >> $env:GITHUB_STEP_SUMMARY
-          ("SHA256: " + $hash) >> $env:GITHUB_STEP_SUMMARY
+          "Install **Nightwalker-1.0.0-rc1-win64.zip** from inside that artifact." >> $env:GITHUB_STEP_SUMMARY
+          ("SHA256 Nightwalker.asi: " + $hash) >> $env:GITHUB_STEP_SUMMARY
 
           Write-Host 'Download payload:'
           Get-ChildItem $output -Recurse -File | ForEach-Object {
@@ -229,7 +235,7 @@ jobs:
         shell: pwsh
         run: |
           $ErrorActionPreference = 'Stop'
-          $source = 'github-build\Nightwalker-Windows-x64.zip'
+          $source = 'github-build\Nightwalker-1.0.0-rc1-win64.zip'
           $destination = 'Nightwalker-1.0.0-rc1-win64.zip'
 
           if (!(Test-Path $source -PathType Leaf)) {
